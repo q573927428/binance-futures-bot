@@ -5,14 +5,14 @@
     "BNB/USDT",
     "SOL/USDT"
   ],
-  "leverage": 10,
-  "maxRiskPercentage": 1,
+  "leverage": 3,
+  "maxRiskPercentage": 5,
   "stopLossATRMultiplier": 1.2,
   "maxStopLossPercentage": 1.5,
   "positionTimeoutHours": 6,
   "scanInterval": 30,
   "aiConfig": {
-    "enabled": false,
+    "enabled": true,
     "analysisInterval": 10,
     "minConfidence": 60,
     "maxRiskLevel": "MEDIUM",

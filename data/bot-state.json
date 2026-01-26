@@ -1,5 +1,5 @@
 {
-  "status": "IDLE",
+  "status": "MONITORING",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,

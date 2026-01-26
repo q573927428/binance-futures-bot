@@ -3,7 +3,7 @@ import type { OHLCV, Order, AccountInfo, Position, CryptoBalance } from '../../t
 
 export class BinanceService {
   private exchange: ccxt.binance
-
+  private marketsLoaded: boolean = false
   constructor(apiKey: string, apiSecret: string) {
     this.exchange = new ccxt.binance({
       apiKey,
@@ -14,6 +14,13 @@ export class BinanceService {
       },
       enableRateLimit: true,
     })
+  }
+
+  async initialize(): Promise<void> {
+    if (!this.marketsLoaded) {
+      await this.exchange.loadMarkets()
+      this.marketsLoaded = true
+    }
   }
 
   /**
@@ -75,7 +82,7 @@ export class BinanceService {
       const balance = await this.exchange.fetchBalance()
       
       // 定义我们感兴趣的加密货币
-      const targetAssets = ['USDT', 'USDC', 'BTC']
+      const targetAssets = ['USDT', 'BTC', 'ETH', 'BNB', 'SOL', 'DOGE']
       const cryptoBalances: CryptoBalance[] = []
       
       for (const asset of targetAssets) {
@@ -312,16 +319,40 @@ export class BinanceService {
    */
   async calculateOrderAmount(symbol: string, usdtAmount: number, price: number): Promise<number> {
     try {
-      const market = await this.exchange.market(symbol)
+      // 确保市场信息已加载
+      if (!this.marketsLoaded) {
+        await this.initialize()
+      }
+      
+      const market = this.exchange.market(symbol)
       const amount = usdtAmount / price
       
+      // 获取最小交易量限制
+      const minAmount = market.limits?.amount?.min || 0.001 // 默认0.001
+      
+      // 确保数量不小于最小交易量
+      let finalAmount = Math.max(amount, minAmount)
+      
       // 根据交易对精度调整
-      const precision = market.precision?.amount || 3
-      return Number(amount.toFixed(precision))
+      const precision = market.precision?.amount || 5
+      finalAmount = Number(finalAmount.toFixed(precision))
+      
+      console.log('计算下单数量:', {
+        symbol,
+        usdtAmount,
+        price,
+        rawAmount: amount,
+        minAmount,
+        finalAmount,
+        precision
+      })
+      
+      return finalAmount
     } catch (error: any) {
       throw new Error(`计算下单数量失败: ${error.message}`)
     }
   }
+
 }
 
 // 单例模式

@@ -143,20 +143,20 @@ export async function getTodayTradeHistory(): Promise<TradeHistory[]> {
 export function getDefaultConfig(): BotConfig {
   return {
     symbols: ['ETH/USDT', 'BTC/USDT', 'BNB/USDT', 'SOL/USDT'],
-    leverage: 10,
-    maxRiskPercentage: 1,
-    stopLossATRMultiplier: 1.2,
-    maxStopLossPercentage: 1.5,
-    positionTimeoutHours: 6,
-    scanInterval: 30,
-    aiConfig: {
-      enabled: false,
-      analysisInterval: 10,
-      minConfidence: 60,
-      maxRiskLevel: 'MEDIUM',
-      useForEntry: true,
-      useForExit: true,
-      cacheDuration: 10,
+    leverage: 3,                 //杠杆倍数
+    maxRiskPercentage: 30,         //单笔最大风险比例
+    stopLossATRMultiplier: 1.2,   //止损ATR倍数
+    maxStopLossPercentage: 1.5,   //最大止损比例
+    positionTimeoutHours: 6,     //持仓超时时间
+    scanInterval: 30,            //扫描间隔
+    aiConfig: { 
+      enabled: false,            //启用AI分析
+      analysisInterval: 10,      //分析间隔（分钟）
+      minConfidence: 60,         //最小置信度（0-100）
+      maxRiskLevel: 'MEDIUM',    //最大风险等级
+      useForEntry: true,         //用于开仓决策
+      useForExit: true,          //用于平仓决策
+      cacheDuration: 10,         //缓存时长（分钟）
     },
   }
 }
