@@ -72,6 +72,67 @@
               </div>
             </el-card>
 
+            <!-- 加密货币余额 -->
+            <el-card class="card" shadow="hover" style="margin-top: 20px">
+              <template #header>
+                <div class="card-header">
+                  <span>账户余额</span>
+                  <el-button
+                    text
+                    type="primary"
+                    @click="handleRefreshBalances"
+                  >
+                    <el-icon><ElIconRefresh  /></el-icon>
+                    刷新
+                  </el-button>
+                </div>
+              </template>
+
+              <div v-if="botStore.cryptoBalances.length > 0" class="crypto-balances">
+                <el-row :gutter="12">
+                  <el-col 
+                    v-for="balance in botStore.cryptoBalances" 
+                    :key="balance.asset"
+                    :xs="24" 
+                    :sm="12" 
+                    :md="8" 
+                    :lg="8"
+                    style="margin-bottom: 12px"
+                  >
+                    <el-card shadow="never" class="balance-card">
+                      <div class="balance-content">
+                        <div class="balance-header">
+                          <span class="balance-asset">{{ balance.asset }}</span>
+                          <el-tag 
+                            v-if="balance.asset === 'USDT' || balance.asset === 'USDC'" 
+                            type="success" 
+                            size="small"
+                          >
+                            稳定币
+                          </el-tag>
+                          <el-tag 
+                            v-else 
+                            type="info" 
+                            size="small"
+                          >
+                            加密货币
+                          </el-tag>
+                        </div>
+                        <div class="balance-amount">
+                          <span class="balance-total">{{ formatBalance(balance.total) }}</span>
+                          <span class="balance-free">可用: {{ formatBalance(balance.free) }}</span>
+                        </div>
+                        <div class="balance-details">
+                          <span class="balance-locked">锁定: {{ formatBalance(balance.locked) }}</span>
+                        </div>
+                      </div>
+                    </el-card>
+                  </el-col>
+                </el-row>
+              </div>
+              <el-empty v-else description="暂无余额数据" />
+            </el-card>
+
             <!-- 配置面板 -->
             <el-card class="card" shadow="hover" style="margin-top: 20px">
               <template #header>
@@ -92,12 +153,6 @@
                 <div class="config-item">
                   <span>杠杆倍数:</span>
                   <el-tag>{{ botStore.config.leverage }}x</el-tag>
-                </div>
-                <div class="config-item">
-                  <span>交易模式:</span>
-                  <el-tag :type="botStore.config.isTestnet ? 'warning' : 'success'">
-                    {{ botStore.config.isTestnet ? '模拟交易' : '真实交易' }}
-                  </el-tag>
                 </div>
                 <div class="config-item">
                   <span>AI分析:</span>
@@ -264,10 +319,6 @@
           <el-input-number v-model="editConfig.scanInterval" :min="10" :max="300" />
         </el-form-item>
 
-        <el-form-item label="模拟交易">
-          <el-switch v-model="editConfig.isTestnet" />
-        </el-form-item>
-
         <el-form-item label="启用AI分析">
           <el-switch v-model="editConfig.aiConfig.enabled" />
         </el-form-item>
@@ -345,6 +396,11 @@ async function handleRefreshHistory() {
   await botStore.fetchHistory()
 }
 
+async function handleRefreshBalances() {
+  await botStore.fetchStatus()
+  ElMessage.success('余额已刷新')
+}
+
 async function handleSaveConfig() {
   if (!editConfig.value) return
 
@@ -357,13 +413,28 @@ async function handleSaveConfig() {
   }
 }
 
+function formatBalance(value: number): string {
+  if (value === 0) return '0'
+  
+  // 根据数值大小格式化显示
+  if (value < 0.001) {
+    return value.toFixed(8)
+  } else if (value < 1) {
+    return value.toFixed(6)
+  } else if (value < 1000) {
+    return value.toFixed(4)
+  } else {
+    return value.toFixed(2)
+  }
+}
+
 // 页面加载时获取状态
 onMounted(async () => {
   await botStore.fetchStatus()
   await botStore.fetchHistory()
 
   // 开启轮询
-  stopPolling = botStore.startPolling(3000)
+  stopPolling = botStore.startPolling(60000)
 
   // 编辑配置时复制一份
   if (botStore.config) {
@@ -536,6 +607,67 @@ onUnmounted(() => {
   flex: 1;
 }
 
+.crypto-balances {
+  padding: 10px 0;
+}
+
+.balance-card {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.balance-card:hover {
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.balance-content {
+  padding: 12px;
+}
+
+.balance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.balance-asset {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.balance-amount {
+  margin-bottom: 6px;
+}
+
+.balance-total {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #409eff;
+  margin-bottom: 4px;
+}
+
+.balance-free,
+.balance-locked {
+  font-size: 12px;
+  color: #909399;
+  display: block;
+}
+
+.balance-free {
+  margin-bottom: 2px;
+}
+
+.balance-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 @media (max-width: 768px) {
   .header h1 {
     font-size: 16px;
@@ -543,6 +675,10 @@ onUnmounted(() => {
 
   .main {
     padding: 10px;
+  }
+  
+  .balance-card {
+    margin-bottom: 8px;
   }
 }
 </style>

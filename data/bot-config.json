@@ -10,7 +10,6 @@
   "stopLossATRMultiplier": 1.2,
   "maxStopLossPercentage": 1.5,
   "positionTimeoutHours": 6,
-  "isTestnet": false,
   "scanInterval": 30,
   "aiConfig": {
     "enabled": false,

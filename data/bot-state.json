@@ -1,16 +1,16 @@
 {
-  "status": "MONITORING",
+  "status": "IDLE",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1769439236505,
+    "timestamp": 1769444029022,
     "dailyLoss": 0,
     "consecutiveLosses": 0
   },
   "todayTrades": 0,
   "dailyPnL": 0,
-  "lastResetDate": "2026-01-26",
+  "lastResetDate": "2026-01-27",
   "monitoringSymbols": [
     "ETH/USDT",
     "BTC/USDT",

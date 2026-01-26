@@ -1,13 +1,10 @@
 import * as ccxt from 'ccxt'
-import type { OHLCV, Order, AccountInfo, Position } from '../../types'
+import type { OHLCV, Order, AccountInfo, Position, CryptoBalance } from '../../types'
 
 export class BinanceService {
   private exchange: ccxt.binance
-  private isTestnet: boolean
 
-  constructor(apiKey: string, apiSecret: string, isTestnet = false) {
-    this.isTestnet = isTestnet
-    
+  constructor(apiKey: string, apiSecret: string) {
     this.exchange = new ccxt.binance({
       apiKey,
       secret: apiSecret,
@@ -17,11 +14,6 @@ export class BinanceService {
       },
       enableRateLimit: true,
     })
-
-    // 设置测试网模式
-    if (isTestnet) {
-      this.exchange.setSandboxMode(true)
-    }
   }
 
   /**
@@ -60,7 +52,7 @@ export class BinanceService {
    */
   async fetchBalance(): Promise<AccountInfo> {
     try {
-      const balance = await this.exchange.fetchBalance({ type: 'future' })
+      const balance = await this.exchange.fetchBalance()
       const usdt = balance['USDT'] || { free: 0, total: 0 }
       
       return {
@@ -71,6 +63,44 @@ export class BinanceService {
       }
     } catch (error: any) {
       throw new Error(`获取账户余额失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 获取加密货币余额（合约账户）
+   */
+  async fetchCryptoBalances(): Promise<CryptoBalance[]> {
+    try {
+      // 获取合约账户余额
+      const balance = await this.exchange.fetchBalance()
+      
+      // 定义我们感兴趣的加密货币
+      const targetAssets = ['USDT', 'USDC', 'BTC']
+      const cryptoBalances: CryptoBalance[] = []
+      
+      for (const asset of targetAssets) {
+        const assetBalance = balance[asset]
+        if (assetBalance) {
+          const free = Number(assetBalance.free || 0)
+          const locked = Number(assetBalance.used || 0)
+          const total = free + locked
+          
+          if (total > 0) {
+            cryptoBalances.push({
+              asset,
+              free,
+              locked,
+              total,
+            })
+          }
+        }
+      }
+      
+      return cryptoBalances
+    } catch (error: any) {
+      // 如果获取现货余额失败，返回空数组
+      console.warn(`获取加密货币余额失败: ${error.message}`)
+      return []
     }
   }
 
@@ -223,13 +253,13 @@ export class BinanceService {
       const positions = await this.exchange.fetchPositions(symbol ? [symbol] : undefined)
       
       return positions
-        .filter((p: any) => parseFloat(p.contracts || p.info?.positionAmt || 0) !== 0)
+        .filter((p: any) => Number(p.contracts || p.info?.positionAmt || 0) !== 0)
         .map((p: any) => ({
           symbol: p.symbol,
-          direction: parseFloat(p.contracts || p.info?.positionAmt || 0) > 0 ? 'LONG' : 'SHORT',
-          entryPrice: parseFloat(p.entryPrice || 0),
-          quantity: Math.abs(parseFloat(p.contracts || p.info?.positionAmt || 0)),
-          leverage: parseFloat(p.leverage || 1),
+          direction: Number(p.contracts || p.info?.positionAmt || 0) > 0 ? 'LONG' : 'SHORT',
+          entryPrice: Number(p.entryPrice || 0),
+          quantity: Math.abs(Number(p.contracts || p.info?.positionAmt || 0)),
+          leverage: Number(p.leverage || 1),
           stopLoss: 0,
           takeProfit1: 0,
           takeProfit2: 0,
@@ -287,7 +317,7 @@ export class BinanceService {
       
       // 根据交易对精度调整
       const precision = market.precision?.amount || 3
-      return parseFloat(amount.toFixed(precision))
+      return Number(amount.toFixed(precision))
     } catch (error: any) {
       throw new Error(`计算下单数量失败: ${error.message}`)
     }
@@ -299,15 +329,13 @@ let binanceInstance: BinanceService | null = null
 
 export function getBinanceService(
   apiKey?: string,
-  apiSecret?: string,
-  isTestnet?: boolean
+  apiSecret?: string
 ): BinanceService {
   if (!binanceInstance) {
     const config = useRuntimeConfig()
     binanceInstance = new BinanceService(
       apiKey || config.binanceApiKey,
-      apiSecret || config.binanceSecret,
-      isTestnet ?? false
+      apiSecret || config.binanceSecret
     )
   }
   return binanceInstance

@@ -22,7 +22,7 @@ export class FuturesBot {
   constructor() {
     this.config = getDefaultConfig()
     this.state = getDefaultState()
-    this.binance = new BinanceService('', '', this.config.isTestnet)
+    this.binance = new BinanceService('', '')
   }
 
   /**
@@ -53,7 +53,7 @@ export class FuturesBot {
       }
 
       // 初始化币安客户端
-      this.binance = new BinanceService(apiKey, apiSecret, this.config.isTestnet)
+      this.binance = new BinanceService(apiKey, apiSecret)
 
       // 检查是否需要重置每日状态
       if (shouldResetDailyState(this.state.lastResetDate)) {
@@ -342,7 +342,7 @@ export class FuturesBot {
 
       // 设置杠杆
       await this.binance.setLeverage(signal.symbol, this.config.leverage)
-      await this.binance.setMarginMode(signal.symbol, 'isolated')
+      await this.binance.setMarginMode(signal.symbol, 'cross')
 
       // 计算实际下单数量
       const quantity = await this.binance.calculateOrderAmount(
@@ -564,16 +564,6 @@ export class FuturesBot {
   async updateConfig(newConfig: Partial<BotConfig>): Promise<void> {
     this.config = { ...this.config, ...newConfig }
     await saveBotConfig(this.config)
-
-    // 如果测试网模式变化，重新初始化币安客户端
-    if (newConfig.isTestnet !== undefined) {
-      const config = useRuntimeConfig()
-      this.binance = new BinanceService(
-        config.binanceApiKey,
-        config.binanceSecret,
-        this.config.isTestnet
-      )
-    }
 
     logger.success('配置', '配置已更新')
   }

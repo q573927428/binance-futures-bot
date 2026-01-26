@@ -34,9 +34,6 @@ export interface BotConfig {
   // 持仓超时时间（小时）
   positionTimeoutHours: number
   
-  // 是否开启测试网
-  isTestnet: boolean
-  
   // 扫描间隔（秒）
   scanInterval: number
   
@@ -190,12 +187,22 @@ export interface BotState {
   monitoringSymbols: string[]
 }
 
+// 加密货币余额
+export interface CryptoBalance {
+  asset: string
+  free: number
+  locked: number
+  total: number
+  usdValue?: number
+}
+
 // 账户信息
 export interface AccountInfo {
   balance: number
   availableBalance: number
   totalPnL: number
   positions: Position[]
+  cryptoBalances?: CryptoBalance[]
 }
 
 // 日志条目
@@ -221,6 +228,7 @@ export interface StatusResponseData {
   state: BotState
   config: BotConfig
   logs: LogEntry[]
+  cryptoBalances?: CryptoBalance[]
 }
 
 // 历史响应数据

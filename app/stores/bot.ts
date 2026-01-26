@@ -4,6 +4,7 @@ import type {
   BotConfig, 
   TradeHistory, 
   LogEntry,
+  CryptoBalance,
   StatusResponse,
   StartStopResponse,
   ConfigResponse,
@@ -16,6 +17,7 @@ export const useBotStore = defineStore('bot', {
     config: null as BotConfig | null,
     history: [] as TradeHistory[],
     logs: [] as LogEntry[],
+    cryptoBalances: [] as CryptoBalance[],
     isLoading: false,
     error: null as string | null,
   }),
@@ -44,6 +46,10 @@ export const useBotStore = defineStore('bot', {
           this.state = response.data!.state
           this.config = response.data!.config
           this.logs = response.data!.logs
+          // 更新加密货币余额
+          if (response.data!.cryptoBalances) {
+            this.cryptoBalances = response.data!.cryptoBalances
+          }
         } else {
           this.error = response.message || '获取状态失败'
         }

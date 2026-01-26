@@ -148,7 +148,6 @@ export function getDefaultConfig(): BotConfig {
     stopLossATRMultiplier: 1.2,
     maxStopLossPercentage: 1.5,
     positionTimeoutHours: 6,
-    isTestnet: true,
     scanInterval: 30,
     aiConfig: {
       enabled: false,
