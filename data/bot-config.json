@@ -1,0 +1,24 @@
+{
+  "symbols": [
+    "ETH/USDT",
+    "BTC/USDT",
+    "BNB/USDT",
+    "SOL/USDT"
+  ],
+  "leverage": 10,
+  "maxRiskPercentage": 1,
+  "stopLossATRMultiplier": 1.2,
+  "maxStopLossPercentage": 1.5,
+  "positionTimeoutHours": 6,
+  "isTestnet": false,
+  "scanInterval": 30,
+  "aiConfig": {
+    "enabled": false,
+    "analysisInterval": 10,
+    "minConfidence": 60,
+    "maxRiskLevel": "MEDIUM",
+    "useForEntry": true,
+    "useForExit": true,
+    "cacheDuration": 10
+  }
+}

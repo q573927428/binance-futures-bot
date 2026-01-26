@@ -1,0 +1,20 @@
+{
+  "status": "MONITORING",
+  "currentPosition": null,
+  "circuitBreaker": {
+    "isTriggered": false,
+    "reason": "",
+    "timestamp": 1769439236505,
+    "dailyLoss": 0,
+    "consecutiveLosses": 0
+  },
+  "todayTrades": 0,
+  "dailyPnL": 0,
+  "lastResetDate": "2026-01-26",
+  "monitoringSymbols": [
+    "ETH/USDT",
+    "BTC/USDT",
+    "BNB/USDT",
+    "SOL/USDT"
+  ]
+}
