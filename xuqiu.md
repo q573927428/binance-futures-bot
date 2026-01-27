@@ -18,11 +18,11 @@
  `.env` 文件里面是币安模拟交易API密钥：
    ```bash
    # 币安API配置
-   BINANCE_API_KEY=VvwOAZcCoSsqpTjf42mUrFzdjuzat1vVuUhv0XdvyX41tl0zC6rOfbHUcUWGL6YV
-   BINANCE_SECRET=CYhzclBL0vlXGZLnIvxx3D0kq4MZCXaxjAwdA5KpsKvIuUivIMOq5ZOPZkFloG6A
+   BINANCE_API_KEY=
+   BINANCE_SECRET=
 
    # DeepSeek API 配置
-   DEEPSEEK_API_KEY=sk-4af7bcce99fd4fe481d4ef8a56f04879
+   DEEPSEEK_API_KEY=
    DEEPSEEK_API_URL=https://api.deepseek.com
    ```
 
