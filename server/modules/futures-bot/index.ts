@@ -266,7 +266,8 @@ export class FuturesBot {
           indicators.ema60,
           indicators.rsi,
           lastCandle15m.volume,
-          priceChange24h
+          priceChange24h,
+          indicators  // 传递技术指标参数
         )
 
         // 检查AI分析条件

@@ -1,4 +1,4 @@
-import type { AIAnalysis, Direction, RiskLevel } from '../../types'
+import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators } from '../../types'
 
 interface AIAnalysisCache {
   data: AIAnalysis
@@ -6,6 +6,143 @@ interface AIAnalysisCache {
 }
 
 const analysisCache = new Map<string, AIAnalysisCache>()
+
+/**
+ * 基于技术指标计算权重调整因子
+ */
+export function calculateTechnicalWeightAdjustment(
+  indicators: TechnicalIndicators,
+  price: number
+): { confidenceAdjustment: number; scoreAdjustment: number } {
+  // 初始化调整因子
+  let confidenceAdjustment = 0
+  let scoreAdjustment = 0
+  
+  // 1. ADX趋势强度调整（多周期确认）
+  // ADX > 25表示强趋势，ADX > 40表示非常强趋势
+  const adxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
+  if (adxScore >= 40) {
+    confidenceAdjustment += 15
+    scoreAdjustment += 10
+  } else if (adxScore >= 25) {
+    confidenceAdjustment += 8
+    scoreAdjustment += 5
+  } else if (adxScore >= 20) {
+    confidenceAdjustment += 3
+    scoreAdjustment += 2
+  }
+  
+  // 2. 多周期ADX一致性调整
+  const adxConsistency = 
+    (indicators.adx15m >= 20 ? 1 : 0) +
+    (indicators.adx1h >= 22 ? 1 : 0) +
+    (indicators.adx4h >= 25 ? 1 : 0)
+  
+  if (adxConsistency === 3) {
+    confidenceAdjustment += 10
+    scoreAdjustment += 8
+  } else if (adxConsistency === 2) {
+    confidenceAdjustment += 5
+    scoreAdjustment += 3
+  }
+  
+  // 3. RSI位置调整
+  if (indicators.rsi >= 70) {
+    // 超买区域，降低置信度
+    confidenceAdjustment -= 10
+    scoreAdjustment -= 8
+  } else if (indicators.rsi <= 30) {
+    // 超卖区域，降低置信度
+    confidenceAdjustment -= 10
+    scoreAdjustment -= 8
+  } else if (indicators.rsi >= 60) {
+    // 接近超买，轻微降低
+    confidenceAdjustment -= 3
+    scoreAdjustment -= 2
+  } else if (indicators.rsi <= 40) {
+    // 接近超卖，轻微降低
+    confidenceAdjustment -= 3
+    scoreAdjustment -= 2
+  } else {
+    // RSI在40-60理想区间
+    confidenceAdjustment += 5
+    scoreAdjustment += 3
+  }
+  
+  // 4. EMA排列调整
+  const emaDistance20_60 = Math.abs(indicators.ema20 - indicators.ema60) / indicators.ema60
+  if (emaDistance20_60 >= 0.02) { // 2%以上距离
+    if ((indicators.ema20 > indicators.ema60 && price > indicators.ema20) ||
+        (indicators.ema20 < indicators.ema60 && price < indicators.ema20)) {
+      // 趋势一致
+      confidenceAdjustment += 8
+      scoreAdjustment += 6
+    }
+  }
+  
+  // 5. EMA30支撑/阻力调整
+  const priceToEMA30 = Math.abs(price - indicators.ema30) / indicators.ema30
+  if (priceToEMA30 <= 0.005) { // 0.5%以内
+    // 价格接近EMA30，可能形成支撑/阻力
+    confidenceAdjustment += 5
+    scoreAdjustment += 3
+  }
+  
+  // 6. ATR波动性调整（低波动性可能更好）
+  const normalizedATR = indicators.atr / price
+  if (normalizedATR <= 0.01) { // ATR小于1%
+    // 低波动性，趋势可能更稳定
+    confidenceAdjustment += 3
+    scoreAdjustment += 2
+  } else if (normalizedATR >= 0.03) { // ATR大于3%
+    // 高波动性，风险增加
+    confidenceAdjustment -= 5
+    scoreAdjustment -= 3
+  }
+  
+  // 确保调整在合理范围内
+  confidenceAdjustment = Math.max(-30, Math.min(30, confidenceAdjustment))
+  scoreAdjustment = Math.max(-25, Math.min(25, scoreAdjustment))
+  
+  return { confidenceAdjustment, scoreAdjustment }
+}
+
+/**
+ * 应用技术指标权重调整到AI分析结果
+ */
+export function applyTechnicalWeightAdjustment(
+  aiAnalysis: AIAnalysis,
+  indicators: TechnicalIndicators
+): AIAnalysis {
+  const { confidenceAdjustment, scoreAdjustment } = 
+    calculateTechnicalWeightAdjustment(indicators, aiAnalysis.technicalData.price)
+  
+  // 计算调整后的值
+  const adjustedConfidence = Math.min(100, Math.max(0, aiAnalysis.confidence + confidenceAdjustment))
+  const adjustedScore = Math.min(100, Math.max(0, aiAnalysis.score + scoreAdjustment))
+  
+  // 根据技术指标调整风险等级
+  let adjustedRiskLevel = aiAnalysis.riskLevel
+  const adxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
+  
+  if (adxScore >= 30 && indicators.rsi >= 40 && indicators.rsi <= 60) {
+    // 强趋势 + 合理RSI，降低风险等级
+    if (adjustedRiskLevel === 'HIGH') adjustedRiskLevel = 'MEDIUM'
+    else if (adjustedRiskLevel === 'MEDIUM') adjustedRiskLevel = 'LOW'
+  } else if (adxScore < 20 || indicators.rsi >= 70 || indicators.rsi <= 30) {
+    // 弱趋势或极端RSI，提高风险等级
+    if (adjustedRiskLevel === 'LOW') adjustedRiskLevel = 'MEDIUM'
+    else if (adjustedRiskLevel === 'MEDIUM') adjustedRiskLevel = 'HIGH'
+  }
+  
+  return {
+    ...aiAnalysis,
+    confidence: adjustedConfidence,
+    score: adjustedScore,
+    riskLevel: adjustedRiskLevel,
+    reasoning: `${aiAnalysis.reasoning}\n\n[技术指标调整] 置信度${confidenceAdjustment >= 0 ? '+' : ''}${confidenceAdjustment.toFixed(1)}，评分${scoreAdjustment >= 0 ? '+' : ''}${scoreAdjustment.toFixed(1)}，基于：ADX(${adxScore.toFixed(1)})，RSI(${indicators.rsi.toFixed(1)})，ATR(${(indicators.atr / aiAnalysis.technicalData.price * 100).toFixed(2)}%)`,
+  }
+}
 
 /**
  * AI分析服务
@@ -17,7 +154,8 @@ export async function analyzeMarketWithAI(
   ema60: number,
   rsi: number,
   volume: number,
-  priceChange24h: number
+  priceChange24h: number,
+  indicators?: TechnicalIndicators
 ): Promise<AIAnalysis> {
   const config = useRuntimeConfig()
   
@@ -123,13 +261,19 @@ RSI(14): ${rsi.toFixed(2)}
       },
     }
 
+    // 如果提供了技术指标，应用权重调整
+    let finalAnalysis = analysis
+    if (indicators) {
+      finalAnalysis = applyTechnicalWeightAdjustment(analysis, indicators)
+    }
+
     // 缓存结果
     analysisCache.set(cacheKey, {
-      data: analysis,
+      data: finalAnalysis,
       timestamp: Date.now(),
     })
 
-    return analysis
+    return finalAnalysis
   } catch (error: any) {
     console.error('AI分析失败:', error.message)
     
