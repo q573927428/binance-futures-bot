@@ -30,12 +30,12 @@ export class BinanceService {
     try {
       const ohlcv = await this.exchange.fetchOHLCV(symbol, timeframe, undefined, limit)
       return ohlcv.map(candle => ({
-        timestamp: Number(candle[0]) || 0,
-        open: Number(candle[1]) || 0,
-        high: Number(candle[2]) || 0,
-        low: Number(candle[3]) || 0,
-        close: Number(candle[4]) || 0,
-        volume: Number(candle[5]) || 0,
+        timestamp: Number(Number(candle[0] || 0).toFixed(5)),
+        open: Number(Number(candle[1] || 0).toFixed(5)),
+        high: Number(Number(candle[2] || 0).toFixed(5)),
+        low: Number(Number(candle[3] || 0).toFixed(5)),
+        close: Number(Number(candle[4] || 0).toFixed(5)),
+        volume: Number(Number(candle[5] || 0).toFixed(5)),
       }))
     } catch (error: any) {
       throw new Error(`获取K线数据失败: ${error.message}`)
@@ -48,7 +48,7 @@ export class BinanceService {
   async fetchPrice(symbol: string): Promise<number> {
     try {
       const ticker = await this.exchange.fetchTicker(symbol)
-      return ticker.last || 0
+      return Number(Number(ticker.last || 0).toFixed(5))
     } catch (error: any) {
       throw new Error(`获取价格失败: ${error.message}`)
     }
@@ -63,8 +63,8 @@ export class BinanceService {
       const usdt = balance['USDT'] || { free: 0, total: 0 }
       
       return {
-        balance: usdt.total || 0,
-        availableBalance: usdt.free || 0,
+        balance: Number(Number(usdt.total || 0).toFixed(5)),
+        availableBalance: Number(Number(usdt.free || 0).toFixed(5)),
         totalPnL: 0,
         positions: [],
       }
@@ -82,15 +82,15 @@ export class BinanceService {
       const balance = await this.exchange.fetchBalance()
       
       // 定义我们感兴趣的加密货币
-      const targetAssets = ['USDT', 'BTC', 'ETH', 'BNB', 'SOL', 'DOGE']
+      const targetAssets = ['USDT', 'ETH', 'BNB', 'SOL', 'DOGE']
       const cryptoBalances: CryptoBalance[] = []
       
       for (const asset of targetAssets) {
         const assetBalance = balance[asset]
         if (assetBalance) {
-          const free = Number(assetBalance.free || 0)
-          const locked = Number(assetBalance.used || 0)
-          const total = free + locked
+          const free = Number(Number(assetBalance.free || 0).toFixed(5))
+          const locked = Number(Number(assetBalance.used || 0).toFixed(5))
+          const total = Number((free + locked).toFixed(5))
           
           if (total > 0) {
             cryptoBalances.push({
@@ -260,13 +260,13 @@ export class BinanceService {
       const positions = await this.exchange.fetchPositions(symbol ? [symbol] : undefined)
       
       return positions
-        .filter((p: any) => Number(p.contracts || p.info?.positionAmt || 0) !== 0)
+        .filter((p: any) => Number(Number(p.contracts || p.info?.positionAmt || 0).toFixed(5)) !== 0)
         .map((p: any) => ({
           symbol: p.symbol,
-          direction: Number(p.contracts || p.info?.positionAmt || 0) > 0 ? 'LONG' : 'SHORT',
-          entryPrice: Number(p.entryPrice || 0),
-          quantity: Math.abs(Number(p.contracts || p.info?.positionAmt || 0)),
-          leverage: Number(p.leverage || 1),
+          direction: Number(Number(p.contracts || p.info?.positionAmt || 0).toFixed(5)) > 0 ? 'LONG' : 'SHORT',
+          entryPrice: Number(Number(p.entryPrice || 0).toFixed(5)),
+          quantity: Number(Math.abs(Number(Number(p.contracts || p.info?.positionAmt || 0).toFixed(5))).toFixed(5)),
+          leverage: Number(Number(p.leverage || 1).toFixed(5)),
           stopLoss: 0,
           takeProfit1: 0,
           takeProfit2: 0,
@@ -325,16 +325,16 @@ export class BinanceService {
       }
       
       const market = this.exchange.market(symbol)
-      const amount = usdtAmount / price
+      const amount = Number((usdtAmount / price).toFixed(5))
       
       // 获取最小交易量限制
-      const minAmount = market.limits?.amount?.min || 0.001 // 默认0.001
+      const minAmount = Number((market.limits?.amount?.min || 0.001).toFixed(5)) // 默认0.001
       
       // 确保数量不小于最小交易量
-      let finalAmount = Math.max(amount, minAmount)
+      let finalAmount = Number(Math.max(amount, minAmount).toFixed(5))
       
       // 根据交易对精度调整
-      const precision = market.precision?.amount || 5
+      const precision = Math.min(market.precision?.amount || 5, 5)
       finalAmount = Number(finalAmount.toFixed(precision))
       
       console.log('计算下单数量:', {

@@ -1,12 +1,11 @@
 {
   "symbols": [
     "ETH/USDT",
-    "BTC/USDT",
     "BNB/USDT",
     "SOL/USDT"
   ],
-  "leverage": 3,
-  "maxRiskPercentage": 5,
+  "leverage": 10,
+  "maxRiskPercentage": 50,
   "stopLossATRMultiplier": 1.2,
   "maxStopLossPercentage": 1.5,
   "positionTimeoutHours": 6,

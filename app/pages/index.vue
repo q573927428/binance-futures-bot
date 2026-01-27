@@ -301,7 +301,6 @@
         <el-form-item label="交易对">
           <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 100%">
             <el-option label="ETH/USDT" value="ETH/USDT" />
-            <el-option label="BTC/USDT" value="BTC/USDT" />
             <el-option label="BNB/USDT" value="BNB/USDT" />
             <el-option label="SOL/USDT" value="SOL/USDT" />
           </el-select>
@@ -312,7 +311,7 @@
         </el-form-item>
 
         <el-form-item label="最大风险比例(%)">
-          <el-input-number v-model="editConfig.maxRiskPercentage" :min="0.1" :max="5" :step="0.1" />
+          <el-input-number v-model="editConfig.maxRiskPercentage" :min="0.1" :max="50" :step="0.1" />
         </el-form-item>
 
         <el-form-item label="扫描间隔(秒)">
