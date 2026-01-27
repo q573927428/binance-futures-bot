@@ -325,27 +325,48 @@ export class BinanceService {
       }
       
       const market = this.exchange.market(symbol)
-      const amount = Number((usdtAmount / price).toFixed(5))
+      const amount = Number((usdtAmount / price).toFixed(8))
+      
+      // 获取精度信息
+      let precisionDecimals: number
+      const precisionAmount = market.precision?.amount
+      
+      // 判断precision是小数位数还是精度值
+      if (precisionAmount !== undefined && precisionAmount < 1) {
+        // 如果是精度值（如0.01），转换为小数位数
+        precisionDecimals = Math.abs(Math.log10(precisionAmount))
+      } else {
+        // 如果是小数位数（如2），直接使用
+        precisionDecimals = precisionAmount || 3
+      }
       
       // 获取最小交易量限制
-      const minAmount = Number((market.limits?.amount?.min || 0.001).toFixed(5)) // 默认0.001
+      const minAmount = market.limits?.amount?.min || 0.001
+      
+      // 根据精度调整数量
+      let finalAmount = Number(amount.toFixed(precisionDecimals))
       
       // 确保数量不小于最小交易量
-      let finalAmount = Number(Math.max(amount, minAmount).toFixed(5))
-      
-      // 根据交易对精度调整
-      const precision = Math.min(market.precision?.amount || 5, 5)
-      finalAmount = Number(finalAmount.toFixed(precision))
+      if (finalAmount < minAmount) {
+        // 向上取整到满足最小交易量
+        finalAmount = Number(Math.ceil(minAmount / Math.pow(10, -precisionDecimals)) * Math.pow(10, -precisionDecimals))
+      }
       
       console.log('计算下单数量:', {
         symbol,
         usdtAmount,
         price,
         rawAmount: amount,
+        precisionAmount,
+        precisionDecimals,
         minAmount,
-        finalAmount,
-        precision
+        finalAmount
       })
+      
+      // 二次验证：确保最终数量有效
+      if (finalAmount < minAmount) {
+        throw new Error(`计算的数量${finalAmount}小于最小交易量${minAmount}，可能是余额不足`)
+      }
       
       return finalAmount
     } catch (error: any) {
