@@ -148,8 +148,8 @@ export class FuturesBot {
     }
 
     // 检查强制平仓时间
-    if (shouldForceLiquidate() && this.state.currentPosition) {
-      logger.warn('风控', '到达强制平仓时间（23:30）')
+    if (shouldForceLiquidate(this.config.riskConfig) && this.state.currentPosition) {
+      logger.warn('风控', '到达强制平仓时间')
       await this.closePosition('强制平仓时间')
       return
     }
@@ -168,7 +168,7 @@ export class FuturesBot {
    */
   private async scanForOpportunities(): Promise<void> {
     // 检查每日交易次数限制
-    if (!checkDailyTradeLimit(this.state.todayTrades, 3)) {
+    if (!checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)) {
       logger.warn('风控', '已达到每日交易次数限制')
       return
     }
@@ -433,7 +433,7 @@ export class FuturesBot {
       }
 
       // 检查TP2条件
-      if (checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, this.previousADX15m)) {
+      if (checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, this.previousADX15m, this.config.riskConfig)) {
         logger.success('止盈', '达到TP2条件，全部平仓')
         await this.closePosition('TP2止盈')
         return
@@ -519,7 +519,7 @@ export class FuturesBot {
 
       // 检查熔断条件
       const account = await this.binance.fetchBalance()
-      const breaker = checkCircuitBreaker(this.state.dailyPnL, consecutiveLosses, account.balance)
+      const breaker = checkCircuitBreaker(this.state.dailyPnL, consecutiveLosses, account.balance, this.config.riskConfig)
 
       this.state.circuitBreaker = breaker
       this.state.currentPosition = null

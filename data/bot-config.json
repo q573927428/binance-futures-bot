@@ -19,5 +19,25 @@
     "useForEntry": true,
     "useForExit": true,
     "cacheDuration": 10
+  },
+  "riskConfig": {
+    "circuitBreaker": {
+      "dailyLossThreshold": 2,
+      "consecutiveLossesThreshold": 2
+    },
+    "forceLiquidateTime": {
+      "hour": 23,
+      "minute": 30
+    },
+    "takeProfit": {
+      "tp1RiskRewardRatio": 1,
+      "tp2RiskRewardRatio": 2,
+      "rsiExtreme": {
+        "long": 70,
+        "short": 30
+      },
+      "adxDecreaseThreshold": 5
+    },
+    "dailyTradeLimit": 3
   }
 }

@@ -39,6 +39,38 @@ export interface BotConfig {
   
   // AI分析配置
   aiConfig: AIConfig
+  
+  // 风险配置
+  riskConfig: RiskConfig
+}
+
+// 风险配置
+export interface RiskConfig {
+  // 熔断配置
+  circuitBreaker: {
+    dailyLossThreshold: number      // 当日亏损阈值（%）
+    consecutiveLossesThreshold: number // 连续止损阈值（次）
+  }
+  
+  // 强制平仓时间
+  forceLiquidateTime: {
+    hour: number    // 小时（0-23）
+    minute: number  // 分钟（0-59）
+  }
+  
+  // 止盈配置
+  takeProfit: {
+    tp1RiskRewardRatio: number      // TP1盈亏比（1:1）
+    tp2RiskRewardRatio: number      // TP2盈亏比（1:2）
+    rsiExtreme: {
+      long: number   // 多头RSI极值
+      short: number  // 空头RSI极值
+    }
+    adxDecreaseThreshold: number    // ADX下降阈值
+  }
+  
+  // 每日交易限制
+  dailyTradeLimit: number
 }
 
 // AI配置

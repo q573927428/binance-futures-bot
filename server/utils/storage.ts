@@ -158,6 +158,26 @@ export function getDefaultConfig(): BotConfig {
       useForExit: true,          //用于平仓决策
       cacheDuration: 10,         //缓存时长（分钟）
     },
+    riskConfig: {
+      circuitBreaker: {
+        dailyLossThreshold: 2,      // 当日亏损阈值（%）
+        consecutiveLossesThreshold: 2, // 连续止损阈值（次）
+      },
+      forceLiquidateTime: {
+        hour: 23,    // 小时（0-23）
+        minute: 30,  // 分钟（0-59）
+      },
+      takeProfit: {
+        tp1RiskRewardRatio: 1,      // TP1盈亏比（1:1）
+        tp2RiskRewardRatio: 2,      // TP2盈亏比（1:2）
+        rsiExtreme: {
+          long: 70,   // 多头RSI极值
+          short: 30,  // 空头RSI极值
+        },
+        adxDecreaseThreshold: 5,    // ADX下降阈值
+      },
+      dailyTradeLimit: 3,
+    },
   }
 }
 

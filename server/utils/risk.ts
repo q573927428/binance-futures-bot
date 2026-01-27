@@ -7,12 +7,13 @@ import dayjs from 'dayjs'
 export function checkCircuitBreaker(
   dailyPnL: number,
   consecutiveLosses: number,
-  accountBalance: number
+  accountBalance: number,
+  riskConfig: BotConfig['riskConfig']
 ): CircuitBreaker {
   const dailyLossPercent = (Math.abs(dailyPnL) / accountBalance) * 100
 
-  // 当日亏损 >= 2%
-  if (dailyPnL < 0 && dailyLossPercent >= 2) {
+  // 当日亏损 >= 配置阈值
+  if (dailyPnL < 0 && dailyLossPercent >= riskConfig.circuitBreaker.dailyLossThreshold) {
     return {
       isTriggered: true,
       reason: `当日亏损达到${dailyLossPercent.toFixed(2)}%，触发熔断`,
@@ -22,8 +23,8 @@ export function checkCircuitBreaker(
     }
   }
 
-  // 连续2笔止损
-  if (consecutiveLosses >= 2) {
+  // 连续止损达到配置阈值
+  if (consecutiveLosses >= riskConfig.circuitBreaker.consecutiveLossesThreshold) {
     return {
       isTriggered: true,
       reason: `连续${consecutiveLosses}笔止损，触发熔断`,
@@ -51,15 +52,16 @@ export function shouldResetDailyState(lastResetDate: string): boolean {
 }
 
 /**
- * 检查是否到了强制平仓时间（23:30）
+ * 检查是否到了强制平仓时间
  */
-export function shouldForceLiquidate(): boolean {
+export function shouldForceLiquidate(riskConfig: BotConfig['riskConfig']): boolean {
   const now = dayjs()
   const hour = now.hour()
   const minute = now.minute()
   
-  // 23:30-23:59之间强制平仓
-  return hour === 23 && minute >= 30
+  // 根据配置的时间强制平仓
+  return hour === riskConfig.forceLiquidateTime.hour && 
+         minute >= riskConfig.forceLiquidateTime.minute
 }
 
 /**
@@ -102,26 +104,27 @@ export function checkTP2Condition(
   position: Position,
   rsi: number,
   adx15m: number,
-  previousADX15m: number
+  previousADX15m: number,
+  riskConfig: BotConfig['riskConfig']
 ): boolean {
   const { entryPrice, stopLoss, direction } = position
   const risk = Math.abs(entryPrice - stopLoss)
   
-  // 盈亏比1:2
+  // 盈亏比配置
   if (direction === 'LONG') {
     const profit = currentPrice - entryPrice
-    if (profit >= risk * 2) return true
+    if (profit >= risk * riskConfig.takeProfit.tp2RiskRewardRatio) return true
   } else {
     const profit = entryPrice - currentPrice
-    if (profit >= risk * 2) return true
+    if (profit >= risk * riskConfig.takeProfit.tp2RiskRewardRatio) return true
   }
   
-  // RSI极值
-  if (direction === 'LONG' && rsi >= 70) return true
-  if (direction === 'SHORT' && rsi <= 30) return true
+  // RSI极值配置
+  if (direction === 'LONG' && rsi >= riskConfig.takeProfit.rsiExtreme.long) return true
+  if (direction === 'SHORT' && rsi <= riskConfig.takeProfit.rsiExtreme.short) return true
   
-  // ADX走弱（下降超过5个点）
-  if (previousADX15m - adx15m >= 5) return true
+  // ADX走弱配置
+  if (previousADX15m - adx15m >= riskConfig.takeProfit.adxDecreaseThreshold) return true
   
   return false
 }
@@ -219,9 +222,9 @@ export function validateTradeParams(
  */
 export function checkDailyTradeLimit(
   todayTrades: number,
-  maxDailyTrades: number = 3
+  riskConfig: BotConfig['riskConfig']
 ): boolean {
-  return todayTrades < maxDailyTrades
+  return todayTrades < riskConfig.dailyTradeLimit
 }
 
 /**
