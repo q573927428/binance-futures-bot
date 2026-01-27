@@ -137,15 +137,59 @@ export class BinanceService {
   }
 
   /**
+   * 设置持仓模式（单向/双向）
+   */
+  async setPositionMode(symbol: string, hedgeMode: boolean = false): Promise<void> {
+    try {
+      // Binance API: 设置持仓模式
+      // hedgeMode: true = 双向持仓模式, false = 单向持仓模式
+      await this.exchange.setPositionMode(hedgeMode, symbol)
+    } catch (error: any) {
+      // 如果已经是该模式，忽略错误
+      if (!error.message.includes('No need to change')) {
+        throw new Error(`设置持仓模式失败: ${error.message}`)
+      }
+    }
+  }
+
+  /**
+   * 根据交易方向获取持仓方向
+   */
+  private getPositionSide(side: 'buy' | 'sell', isEntry: boolean): 'LONG' | 'SHORT' {
+    // 对于单向持仓模式：
+    // - 开多仓: side='buy', positionSide='LONG'
+    // - 开空仓: side='sell', positionSide='SHORT'
+    // - 平多仓: side='sell', positionSide='LONG'
+    // - 平空仓: side='buy', positionSide='SHORT'
+    
+    if (side === 'buy') {
+      return isEntry ? 'LONG' : 'SHORT'
+    } else {
+      return isEntry ? 'SHORT' : 'LONG'
+    }
+  }
+
+  /**
    * 市价开仓
    */
   async marketOrder(
     symbol: string,
     side: 'buy' | 'sell',
-    amount: number
+    amount: number,
+    isEntry: boolean = true
   ): Promise<Order> {
     try {
-      const order = await this.exchange.createOrder(symbol, 'market', side, amount)
+      const positionSide = this.getPositionSide(side, isEntry)
+      const order = await this.exchange.createOrder(
+        symbol, 
+        'market', 
+        side, 
+        amount,
+        undefined, // price
+        {
+          positionSide: positionSide
+        }
+      )
       
       return {
         orderId: order.id,
@@ -169,16 +213,21 @@ export class BinanceService {
     symbol: string,
     side: 'buy' | 'sell',
     amount: number,
-    stopPrice: number
+    stopPrice: number,
+    isEntry: boolean = false
   ): Promise<Order> {
     try {
+      const positionSide = this.getPositionSide(side, isEntry)
       const order = await this.exchange.createOrder(
         symbol,
         'stop_market',
         side,
         amount,
         undefined,
-        { stopPrice }
+        { 
+          stopPrice,
+          positionSide: positionSide
+        }
       )
       
       return {
@@ -203,16 +252,21 @@ export class BinanceService {
     symbol: string,
     side: 'buy' | 'sell',
     amount: number,
-    stopPrice: number
+    stopPrice: number,
+    isEntry: boolean = false
   ): Promise<Order> {
     try {
+      const positionSide = this.getPositionSide(side, isEntry)
       const order = await this.exchange.createOrder(
         symbol,
         'take_profit_market',
         side,
         amount,
         undefined,
-        { stopPrice }
+        { 
+          stopPrice,
+          positionSide: positionSide
+        }
       )
       
       return {

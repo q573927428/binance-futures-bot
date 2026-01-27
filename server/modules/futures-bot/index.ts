@@ -340,9 +340,18 @@ export class FuturesBot {
         this.config.maxRiskPercentage
       )
 
-      // 设置杠杆
+      // 设置杠杆和持仓模式
       await this.binance.setLeverage(signal.symbol, this.config.leverage)
       await this.binance.setMarginMode(signal.symbol, 'cross')
+      
+      // 设置持仓模式为单向（因为我们一次只持有一个方向的仓位）
+      try {
+        await this.binance.setPositionMode(signal.symbol, false) // false = 单向持仓模式
+        logger.info('持仓模式', '已设置为单向持仓模式')
+      } catch (error: any) {
+        // 如果设置失败，记录警告但继续执行
+        logger.warn('持仓模式', `设置持仓模式失败: ${error.message}`)
+      }
 
       // 计算实际下单数量
       const quantity = await this.binance.calculateOrderAmount(
@@ -358,9 +367,9 @@ export class FuturesBot {
         止损价: stopLoss,
       })
 
-      // 市价开仓
+      // 市价开仓 (开仓操作，isEntry=true)
       const side = getOrderSide(signal.direction, true)
-      const order = await this.binance.marketOrder(signal.symbol, side, quantity)
+      const order = await this.binance.marketOrder(signal.symbol, side, quantity, true)
 
       logger.success('开仓', `开仓成功`, order)
 
@@ -368,9 +377,9 @@ export class FuturesBot {
       const takeProfit1 = calculateTakeProfit(signal.price, stopLoss, signal.direction, 1)
       const takeProfit2 = calculateTakeProfit(signal.price, stopLoss, signal.direction, 2)
 
-      // 设置止损单
+      // 设置止损单 (平仓操作，isEntry=false)
       const stopSide = getOrderSide(signal.direction, false)
-      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, quantity, stopLoss)
+      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, quantity, stopLoss, false)
 
       logger.success('止损', `止损单已设置`, stopOrder)
 
@@ -478,9 +487,9 @@ export class FuturesBot {
       // 取消所有未成交订单
       await this.binance.cancelAllOrders(position.symbol)
 
-      // 市价平仓
+      // 市价平仓 (平仓操作，isEntry=false)
       const side = getOrderSide(position.direction, false)
-      const order = await this.binance.marketOrder(position.symbol, side, position.quantity)
+      const order = await this.binance.marketOrder(position.symbol, side, position.quantity, false)
 
       logger.success('平仓', `平仓成功`, order)
 
