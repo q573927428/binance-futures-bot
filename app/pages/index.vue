@@ -314,12 +314,93 @@
           <el-input-number v-model="editConfig.scanInterval" :min="10" :max="300" />
         </el-form-item>
 
+        <el-form-item label="止损ATR倍数">
+          <el-input-number v-model="editConfig.stopLossATRMultiplier" :min="0.5" :max="5" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item label="最大止损比例(%)">
+          <el-input-number v-model="editConfig.maxStopLossPercentage" :min="0.1" :max="10" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item label="持仓超时时间(小时)">
+          <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="24" />
+        </el-form-item>
+
+        <el-divider>AI分析配置</el-divider>
+
         <el-form-item label="启用AI分析">
           <el-switch v-model="editConfig.aiConfig.enabled" />
         </el-form-item>
 
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析间隔(分钟)">
+          <el-input-number v-model="editConfig.aiConfig.analysisInterval" :min="1" :max="60" />
+        </el-form-item>
+
         <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
           <el-input-number v-model="editConfig.aiConfig.minConfidence" :min="0" :max="100" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="最大风险等级">
+          <el-select v-model="editConfig.aiConfig.maxRiskLevel" placeholder="选择风险等级">
+            <el-option label="低" value="LOW" />
+            <el-option label="中" value="MEDIUM" />
+            <el-option label="高" value="HIGH" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="用于开仓决策">
+          <el-switch v-model="editConfig.aiConfig.useForEntry" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="用于平仓决策">
+          <el-switch v-model="editConfig.aiConfig.useForExit" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="缓存时长(分钟)">
+          <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
+        </el-form-item>
+
+        <el-divider>风险配置</el-divider>
+
+        <el-form-item label="当日亏损阈值(%)">
+          <el-input-number v-model="editConfig.riskConfig.circuitBreaker.dailyLossThreshold" :min="0.1" :max="10" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item label="连续止损阈值(次)">
+          <el-input-number v-model="editConfig.riskConfig.circuitBreaker.consecutiveLossesThreshold" :min="1" :max="10" />
+        </el-form-item>
+
+        <el-form-item label="强制平仓时间">
+          <el-time-picker
+            v-model="forceLiquidateTime"
+            format="HH:mm"
+            value-format="HH:mm"
+            placeholder="选择时间"
+          />
+        </el-form-item>
+
+        <el-form-item label="TP1盈亏比">
+          <el-input-number v-model="editConfig.riskConfig.takeProfit.tp1RiskRewardRatio" :min="0.5" :max="5" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item label="TP2盈亏比">
+          <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2RiskRewardRatio" :min="0.5" :max="5" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item label="多头RSI极值">
+          <el-input-number v-model="editConfig.riskConfig.takeProfit.rsiExtreme.long" :min="50" :max="90" />
+        </el-form-item>
+
+        <el-form-item label="空头RSI极值">
+          <el-input-number v-model="editConfig.riskConfig.takeProfit.rsiExtreme.short" :min="10" :max="50" />
+        </el-form-item>
+
+        <el-form-item label="ADX下降阈值">
+          <el-input-number v-model="editConfig.riskConfig.takeProfit.adxDecreaseThreshold" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-form-item label="每日交易限制">
+          <el-input-number v-model="editConfig.riskConfig.dailyTradeLimit" :min="1" :max="50" />
         </el-form-item>
       </el-form>
 
@@ -332,7 +413,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 import type { BotConfig } from '../../types'
@@ -342,6 +423,24 @@ const botStore = useBotStore()
 const configDialogVisible = ref(false)
 const editConfig = ref<BotConfig | null>(null)
 let stopPolling: (() => void) | null = null
+
+// 强制平仓时间字符串，用于时间选择器
+const forceLiquidateTime = computed({
+  get: () => {
+    if (!editConfig.value) return ''
+    const { hour, minute } = editConfig.value.riskConfig.forceLiquidateTime
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+  },
+  set: (value: string) => {
+    if (!editConfig.value || !value) return
+    const parts = value.split(':')
+    if (parts.length !== 2) return
+    const hour = parseInt(parts[0]!, 10)
+    const minute = parseInt(parts[1]!, 10)
+    if (isNaN(hour) || isNaN(minute)) return
+    editConfig.value.riskConfig.forceLiquidateTime = { hour, minute }
+  }
+})
 
 const statusText = computed(() => {
   const status = botStore.state?.status
