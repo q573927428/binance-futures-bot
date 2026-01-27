@@ -14,12 +14,26 @@ export enum PositionStatus {
   HALTED = 'HALTED'        // 熔断停机
 }
 
+// 动态杠杆配置
+export interface DynamicLeverageConfig {
+  enabled: boolean                    // 启用动态杠杆
+  minLeverage: number                 // 最小杠杆倍数 (2)
+  maxLeverage: number                 // 最大杠杆倍数 (20)
+  baseLeverage: number                // 基础杠杆倍数 (2)
+  aiConfidenceWeight: number          // AI置信度权重 (0.3)
+  aiScoreWeight: number               // AI评分权重 (0.4)
+  riskLevelWeights: Record<RiskLevel, number> // 风险等级权重
+  volatilityPenaltyFactor: number     // 波动性惩罚因子 (0.5)
+  maxVolatilityThreshold: number      // 最大波动性阈值 (0.03 = 3%)
+  useMarketConditionAdjustment: boolean // 使用市场条件调整
+}
+
 // 系统配置
 export interface BotConfig {
   // 交易对
   symbols: string[]
   
-  // 杠杆倍数
+  // 杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
   leverage: number
   
   // 单笔最大风险比例（%）
@@ -42,6 +56,9 @@ export interface BotConfig {
   
   // 风险配置
   riskConfig: RiskConfig
+  
+  // 动态杠杆配置
+  dynamicLeverageConfig: DynamicLeverageConfig
 }
 
 // 风险配置

@@ -39,5 +39,21 @@
       "adxDecreaseThreshold": 5
     },
     "dailyTradeLimit": 3
+  },
+  "dynamicLeverageConfig": {
+    "enabled": true,
+    "minLeverage": 2,
+    "maxLeverage": 20,
+    "baseLeverage": 2,
+    "aiConfidenceWeight": 0.3,
+    "aiScoreWeight": 0.4,
+    "riskLevelWeights": {
+      "LOW": 1.0,
+      "MEDIUM": 0.7,
+      "HIGH": 0.4
+    },
+    "volatilityPenaltyFactor": 0.5,
+    "maxVolatilityThreshold": 0.03,
+    "useMarketConditionAdjustment": true
   }
 }

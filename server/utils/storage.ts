@@ -143,7 +143,7 @@ export async function getTodayTradeHistory(): Promise<TradeHistory[]> {
 export function getDefaultConfig(): BotConfig {
   return {
     symbols: ['BTC/USDT','ETH/USDT', 'BNB/USDT', 'SOL/USDT'],
-    leverage: 10,                     //杠杆倍数
+    leverage: 10,                     //杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
     maxRiskPercentage: 50,           //单笔最大风险比例
     stopLossATRMultiplier: 1.2,      //止损ATR倍数
     maxStopLossPercentage: 1.5,      //最大止损比例
@@ -177,6 +177,22 @@ export function getDefaultConfig(): BotConfig {
         adxDecreaseThreshold: 5,    // ADX下降阈值
       },
       dailyTradeLimit: 3,            // 当天交易次数限制
+    },
+    dynamicLeverageConfig: {
+      enabled: true,                 // 启用动态杠杆
+      minLeverage: 2,                // 最小杠杆倍数
+      maxLeverage: 20,               // 最大杠杆倍数
+      baseLeverage: 2,               // 基础杠杆倍数
+      aiConfidenceWeight: 0.3,       // AI置信度权重
+      aiScoreWeight: 0.4,            // AI评分权重
+      riskLevelWeights: {            // 风险等级权重
+        LOW: 1.0,
+        MEDIUM: 0.7,
+        HIGH: 0.4,
+      },
+      volatilityPenaltyFactor: 0.5,  // 波动性惩罚因子
+      maxVolatilityThreshold: 0.03,  // 最大波动性阈值 (3%)
+      useMarketConditionAdjustment: true, // 使用市场条件调整
     },
   }
 }

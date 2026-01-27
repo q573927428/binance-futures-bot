@@ -6,6 +6,14 @@ import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../utils/ai-a
 import { checkCircuitBreaker, shouldResetDailyState, shouldForceLiquidate, isPositionTimeout, checkTP1Condition, checkTP2Condition, calculatePnL, getOrderSide, checkDailyTradeLimit } from '../../utils/risk'
 import { logger } from '../../utils/logger'
 import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTodayTradeHistory } from '../../utils/storage'
+import { 
+  calculateDynamicLeverage, 
+  determineMarketCondition, 
+  adjustLeverageConfigForMarketCondition,
+  calculateSafeLeverage,
+  calculateFinalLeverage,
+  defaultDynamicLeverageConfig 
+} from '../../utils/dynamic-leverage'
 import dayjs from 'dayjs'
 
 /**
@@ -353,8 +361,70 @@ export class FuturesBot {
         this.config.maxRiskPercentage
       )
 
+      // 计算动态杠杆（如果启用）
+      let finalLeverage = this.config.leverage
+      let leverageCalculationDetails = {}
+
+      if (this.config.dynamicLeverageConfig.enabled && signal.aiAnalysis) {
+        try {
+          // 获取24小时价格变化用于市场条件判断
+          const candles24h = await this.binance.fetchOHLCV(signal.symbol, '1d', 2)
+          let priceChange24h = 0
+          if (candles24h.length >= 2 && candles24h[0]) {
+            priceChange24h = ((signal.price - candles24h[0].close) / candles24h[0].close) * 100
+          }
+
+          // 判断市场条件
+          const marketCondition = determineMarketCondition(signal.indicators, priceChange24h)
+          
+          // 根据市场条件调整配置
+          let leverageConfig = { ...this.config.dynamicLeverageConfig }
+          if (leverageConfig.useMarketConditionAdjustment) {
+            leverageConfig = adjustLeverageConfigForMarketCondition(marketCondition, leverageConfig)
+          }
+
+          // 计算动态杠杆
+          const dynamicLeverage = calculateDynamicLeverage(
+            signal.aiAnalysis,
+            signal.indicators,
+            signal.price,
+            leverageConfig
+          )
+
+          // 计算安全杠杆
+          const safeLeverage = calculateSafeLeverage(
+            account.availableBalance,
+            positionSize,
+            this.config.maxRiskPercentage,
+            stopLoss,
+            signal.price
+          )
+
+          // 计算最终杠杆
+          finalLeverage = calculateFinalLeverage(dynamicLeverage, safeLeverage, leverageConfig)
+
+          leverageCalculationDetails = {
+            marketCondition,
+            dynamicLeverage,
+            safeLeverage,
+            finalLeverage,
+            aiConfidence: signal.aiAnalysis.confidence,
+            aiScore: signal.aiAnalysis.score,
+            riskLevel: signal.aiAnalysis.riskLevel,
+          }
+
+          logger.info('动态杠杆', `杠杆计算完成`, leverageCalculationDetails)
+        } catch (error: any) {
+          logger.warn('动态杠杆', `动态杠杆计算失败，使用静态杠杆: ${error.message}`)
+          // 如果动态杠杆计算失败，使用静态杠杆
+          finalLeverage = this.config.leverage
+        }
+      } else {
+        logger.info('杠杆', `使用静态杠杆: ${finalLeverage}x`)
+      }
+
       // 设置杠杆和持仓模式
-      await this.binance.setLeverage(signal.symbol, this.config.leverage)
+      await this.binance.setLeverage(signal.symbol, finalLeverage)
       await this.binance.setMarginMode(signal.symbol, 'cross')
       
       // 设置持仓模式为单向（因为我们一次只持有一个方向的仓位）
@@ -366,18 +436,19 @@ export class FuturesBot {
         logger.warn('持仓模式', `设置持仓模式失败: ${error.message}`)
       }
 
-      // 计算实际下单数量
+      // 计算实际下单数量（使用最终杠杆）
       const quantity = await this.binance.calculateOrderAmount(
         signal.symbol,
-        positionSize * this.config.leverage,
+        positionSize * finalLeverage,
         signal.price
       )
 
       logger.info('开仓', `仓位参数`, {
         数量: quantity,
-        杠杆: this.config.leverage,
+        杠杆: finalLeverage,
         入场价: signal.price,
         止损价: stopLoss,
+        ...leverageCalculationDetails,
       })
 
       // 市价开仓 (开仓操作，isEntry=true)
@@ -402,7 +473,7 @@ export class FuturesBot {
         direction: signal.direction,
         entryPrice: signal.price,
         quantity,
-        leverage: this.config.leverage,
+        leverage: finalLeverage,
         stopLoss,
         takeProfit1,
         takeProfit2,
