@@ -25,6 +25,12 @@
               <template #header>
                 <div class="card-header">
                   <span>控制面板</span>
+                  <el-button
+                    text
+                    type="primary"
+                  >
+                    {{ statusText }}
+                  </el-button>
                 </div>
               </template>
               
@@ -64,10 +70,6 @@
                       {{ formatPnL(botStore.state?.dailyPnL || 0) }}
                     </span>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">机器人状态</span>
-                    <span class="stat-value">{{ statusText }}</span>
-                  </div>
                 </div>
               </div>
             </el-card>
@@ -96,7 +98,7 @@
                     :xs="24" 
                     :sm="12" 
                     :md="8" 
-                    :lg="8"
+                    :lg="6"
                     style="margin-bottom: 12px"
                   >
                     <el-card shadow="never" class="balance-card">
@@ -109,13 +111,6 @@
                             size="small"
                           >
                             稳定币
-                          </el-tag>
-                          <el-tag 
-                            v-else 
-                            type="info" 
-                            size="small"
-                          >
-                            加密货币
                           </el-tag>
                         </div>
                         <div class="balance-amount">
@@ -300,6 +295,7 @@
       <el-form v-if="editConfig" :model="editConfig" label-width="150px">
         <el-form-item label="交易对">
           <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 100%">
+            <el-option label="BTC/USDT" value="BTC/USDT" />
             <el-option label="ETH/USDT" value="ETH/USDT" />
             <el-option label="BNB/USDT" value="BNB/USDT" />
             <el-option label="SOL/USDT" value="SOL/USDT" />
@@ -417,11 +413,11 @@ function formatBalance(value: number): string {
   
   // 根据数值大小格式化显示
   if (value < 0.001) {
-    return value.toFixed(8)
+    return value.toFixed(5)
   } else if (value < 1) {
-    return value.toFixed(6)
-  } else if (value < 1000) {
     return value.toFixed(4)
+  } else if (value < 1000) {
+    return value.toFixed(3)
   } else {
     return value.toFixed(2)
   }
@@ -622,7 +618,7 @@ onUnmounted(() => {
 }
 
 .balance-content {
-  padding: 12px;
+  padding: 5px;
 }
 
 .balance-header {

@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
       // 从balance实例中提取代币余额信息
       if (balance && typeof balance === 'object') {
         // 定义我们感兴趣的加密货币
-        const targetAssets = ['USDT', 'ETH', 'BNB', 'SOL', 'DOGE']
+        const targetAssets = ['USDT','BTC', 'ETH', 'BNB', 'SOL', 'DOGE']
         
         for (const asset of targetAssets) {
           const assetBalance = balance[asset]

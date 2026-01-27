@@ -12,6 +12,7 @@
   "dailyPnL": 0,
   "lastResetDate": "2026-01-27",
   "monitoringSymbols": [
+    "BTC/USDT",
     "ETH/USDT",
     "BNB/USDT",
     "SOL/USDT"
