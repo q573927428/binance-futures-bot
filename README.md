@@ -23,19 +23,34 @@ pnpm install
 
 ### 2. 配置环境变量
 
-`.env` 文件已经配置了币安模拟交易API密钥和DeepSeek API密钥。
+⚠️ **重要**：启动系统前必须先配置Binance API密钥！
 
-如需修改，请编辑 `.env` 文件：
+#### 第一次使用：
 
 ```bash
-# 币安API配置
-BINANCE_API_KEY=你的API密钥
-BINANCE_SECRET=你的API密钥
+# 1. 复制环境变量示例文件
+copy .env.example .env
 
-# DeepSeek API 配置
-DEEPSEEK_API_KEY=你的DeepSeek API密钥
+# 2. 编辑 .env 文件，填入你的API密钥
+```
+
+`.env` 文件配置：
+
+```bash
+# Binance API配置 (必填)
+BINANCE_API_KEY=你的币安API密钥
+BINANCE_SECRET=你的币安API密钥密文
+
+# DeepSeek AI 配置 (可选，不填则禁用AI分析)
+DEEPSEEK_API_KEY=你的DeepSeek_API密钥
 DEEPSEEK_API_URL=https://api.deepseek.com
 ```
+
+📖 **详细配置教程**：请查看 [API配置指南.md](./API配置指南.md)，包含：
+- 如何获取Binance API密钥
+- API权限设置说明
+- 安全建议
+- 常见问题解决方案
 
 ### 3. 启动开发服务器
 

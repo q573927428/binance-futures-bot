@@ -2,10 +2,22 @@ import * as ccxt from 'ccxt'
 import type { OHLCV, Order, AccountInfo, Position, CryptoBalance } from '../../types'
 
 export class BinanceService {
-  private exchange: ccxt.binance
+  private publicExchange: ccxt.binance  // 公共实例，用于查询公开数据
+  private privateExchange: ccxt.binance // 私有实例，用于交易操作
   private marketsLoaded: boolean = false
+  
   constructor(apiKey: string, apiSecret: string) {
-    this.exchange = new ccxt.binance({
+    // 公共实例：不需要API密钥，用于查询公开数据（K线、价格等）
+    this.publicExchange = new ccxt.binance({
+      options: {
+        defaultType: 'future', // USDT永续合约
+        adjustForTimeDifference: true,
+      },
+      enableRateLimit: true,
+    })
+
+    // 私有实例：需要API密钥，用于交易操作和账户查询
+    this.privateExchange = new ccxt.binance({
       apiKey,
       secret: apiSecret,
       options: {
@@ -18,17 +30,19 @@ export class BinanceService {
 
   async initialize(): Promise<void> {
     if (!this.marketsLoaded) {
-      await this.exchange.loadMarkets()
+      // 使用公共实例加载市场信息（不需要API密钥）
+      await this.publicExchange.loadMarkets()
       this.marketsLoaded = true
     }
   }
 
   /**
-   * 获取K线数据
+   * 获取K线数据（使用公共实例）
    */
   async fetchOHLCV(symbol: string, timeframe: string, limit = 100): Promise<OHLCV[]> {
     try {
-      const ohlcv = await this.exchange.fetchOHLCV(symbol, timeframe, undefined, limit)
+      // 使用公共实例查询K线数据
+      const ohlcv = await this.publicExchange.fetchOHLCV(symbol, timeframe, undefined, limit)
       return ohlcv.map(candle => ({
         timestamp: Number(Number(candle[0] || 0).toFixed(5)),
         open: Number(Number(candle[1] || 0).toFixed(5)),
@@ -43,11 +57,12 @@ export class BinanceService {
   }
 
   /**
-   * 获取当前价格
+   * 获取当前价格（使用公共实例）
    */
   async fetchPrice(symbol: string): Promise<number> {
     try {
-      const ticker = await this.exchange.fetchTicker(symbol)
+      // 使用公共实例查询价格
+      const ticker = await this.publicExchange.fetchTicker(symbol)
       return Number(Number(ticker.last || 0).toFixed(5))
     } catch (error: any) {
       throw new Error(`获取价格失败: ${error.message}`)
@@ -55,11 +70,12 @@ export class BinanceService {
   }
 
   /**
-   * 获取账户余额
+   * 获取账户余额（使用私有实例）
    */
   async fetchBalance(): Promise<AccountInfo> {
     try {
-      const balance = await this.exchange.fetchBalance()
+      // 使用私有实例查询余额
+      const balance = await this.privateExchange.fetchBalance()
       const usdt = balance['USDT'] || { free: 0, total: 0 }
       
       return {
@@ -74,12 +90,12 @@ export class BinanceService {
   }
 
   /**
-   * 获取加密货币余额（合约账户）
+   * 获取加密货币余额（合约账户）（使用私有实例）
    */
   async fetchCryptoBalances(): Promise<CryptoBalance[]> {
     try {
-      // 获取合约账户余额
-      const balance = await this.exchange.fetchBalance()
+      // 使用私有实例获取合约账户余额
+      const balance = await this.privateExchange.fetchBalance()
       
       // 定义我们感兴趣的加密货币
       const targetAssets = ['USDT', 'ETH', 'BNB', 'SOL', 'DOGE']
@@ -112,22 +128,22 @@ export class BinanceService {
   }
 
   /**
-   * 设置杠杆
+   * 设置杠杆（使用私有实例）
    */
   async setLeverage(symbol: string, leverage: number): Promise<void> {
     try {
-      await this.exchange.setLeverage(leverage, symbol)
+      await this.privateExchange.setLeverage(leverage, symbol)
     } catch (error: any) {
       throw new Error(`设置杠杆失败: ${error.message}`)
     }
   }
 
   /**
-   * 设置保证金模式（逐仓/全仓）
+   * 设置保证金模式（逐仓/全仓）（使用私有实例）
    */
   async setMarginMode(symbol: string, marginMode: 'isolated' | 'cross' = 'isolated'): Promise<void> {
     try {
-      await this.exchange.setMarginMode(marginMode, symbol)
+      await this.privateExchange.setMarginMode(marginMode, symbol)
     } catch (error: any) {
       // 如果已经是该模式，忽略错误
       if (!error.message.includes('No need to change')) {
@@ -137,13 +153,13 @@ export class BinanceService {
   }
 
   /**
-   * 设置持仓模式（单向/双向）
+   * 设置持仓模式（单向/双向）（使用私有实例）
    */
   async setPositionMode(symbol: string, hedgeMode: boolean = false): Promise<void> {
     try {
       // Binance API: 设置持仓模式
       // hedgeMode: true = 双向持仓模式, false = 单向持仓模式
-      await this.exchange.setPositionMode(hedgeMode, symbol)
+      await this.privateExchange.setPositionMode(hedgeMode, symbol)
     } catch (error: any) {
       // 如果已经是该模式，忽略错误
       if (!error.message.includes('No need to change')) {
@@ -170,7 +186,7 @@ export class BinanceService {
   }
 
   /**
-   * 市价开仓
+   * 市价开仓（使用私有实例）
    */
   async marketOrder(
     symbol: string,
@@ -180,7 +196,7 @@ export class BinanceService {
   ): Promise<Order> {
     try {
       const positionSide = this.getPositionSide(side, isEntry)
-      const order = await this.exchange.createOrder(
+      const order = await this.privateExchange.createOrder(
         symbol, 
         'market', 
         side, 
@@ -207,7 +223,7 @@ export class BinanceService {
   }
 
   /**
-   * 止损单
+   * 止损单（使用私有实例）
    */
   async stopLossOrder(
     symbol: string,
@@ -218,7 +234,7 @@ export class BinanceService {
   ): Promise<Order> {
     try {
       const positionSide = this.getPositionSide(side, isEntry)
-      const order = await this.exchange.createOrder(
+      const order = await this.privateExchange.createOrder(
         symbol,
         'stop_market',
         side,
@@ -246,7 +262,7 @@ export class BinanceService {
   }
 
   /**
-   * 止盈单
+   * 止盈单（使用私有实例）
    */
   async takeProfitOrder(
     symbol: string,
@@ -257,7 +273,7 @@ export class BinanceService {
   ): Promise<Order> {
     try {
       const positionSide = this.getPositionSide(side, isEntry)
-      const order = await this.exchange.createOrder(
+      const order = await this.privateExchange.createOrder(
         symbol,
         'take_profit_market',
         side,
@@ -285,33 +301,33 @@ export class BinanceService {
   }
 
   /**
-   * 取消订单
+   * 取消订单（使用私有实例）
    */
   async cancelOrder(symbol: string, orderId: string): Promise<void> {
     try {
-      await this.exchange.cancelOrder(orderId, symbol)
+      await this.privateExchange.cancelOrder(orderId, symbol)
     } catch (error: any) {
       throw new Error(`取消订单失败: ${error.message}`)
     }
   }
 
   /**
-   * 取消所有订单
+   * 取消所有订单（使用私有实例）
    */
   async cancelAllOrders(symbol: string): Promise<void> {
     try {
-      await this.exchange.cancelAllOrders(symbol)
+      await this.privateExchange.cancelAllOrders(symbol)
     } catch (error: any) {
       throw new Error(`取消所有订单失败: ${error.message}`)
     }
   }
 
   /**
-   * 获取当前持仓
+   * 获取当前持仓（使用私有实例）
    */
   async fetchPositions(symbol?: string): Promise<Position[]> {
     try {
-      const positions = await this.exchange.fetchPositions(symbol ? [symbol] : undefined)
+      const positions = await this.privateExchange.fetchPositions(symbol ? [symbol] : undefined)
       
       return positions
         .filter((p: any) => Number(Number(p.contracts || p.info?.positionAmt || 0).toFixed(5)) !== 0)
@@ -332,11 +348,11 @@ export class BinanceService {
   }
 
   /**
-   * 获取订单状态
+   * 获取订单状态（使用私有实例）
    */
   async fetchOrder(symbol: string, orderId: string): Promise<Order> {
     try {
-      const order = await this.exchange.fetchOrder(orderId, symbol)
+      const order = await this.privateExchange.fetchOrder(orderId, symbol)
       
       // 映射订单类型
       const mapOrderType = (ccxtType: string | undefined): Order['type'] => {
@@ -369,7 +385,7 @@ export class BinanceService {
   }
 
   /**
-   * 计算合适的下单数量（考虑精度）
+   * 计算合适的下单数量（考虑精度）（使用公共实例获取市场信息）
    */
   async calculateOrderAmount(symbol: string, usdtAmount: number, price: number): Promise<number> {
     try {
@@ -378,7 +394,8 @@ export class BinanceService {
         await this.initialize()
       }
       
-      const market = this.exchange.market(symbol)
+      // 使用公共实例获取市场信息（不需要API密钥）
+      const market = this.publicExchange.market(symbol)
       const amount = Number((usdtAmount / price).toFixed(8))
       
       // 获取精度信息
@@ -428,25 +445,4 @@ export class BinanceService {
     }
   }
 
-}
-
-// 单例模式
-let binanceInstance: BinanceService | null = null
-
-export function getBinanceService(
-  apiKey?: string,
-  apiSecret?: string
-): BinanceService {
-  if (!binanceInstance) {
-    const config = useRuntimeConfig()
-    binanceInstance = new BinanceService(
-      apiKey || config.binanceApiKey,
-      apiSecret || config.binanceSecret
-    )
-  }
-  return binanceInstance
-}
-
-export function resetBinanceService(): void {
-  binanceInstance = null
 }

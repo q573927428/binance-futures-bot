@@ -16,6 +16,7 @@ export class FuturesBot {
   private config: BotConfig
   private state: BotState
   private isRunning: boolean = false
+  private isInitialized: boolean = false
   private scanTimer: NodeJS.Timeout | null = null
   private previousADX15m: number = 0
 
@@ -29,6 +30,11 @@ export class FuturesBot {
    * 初始化机器人
    */
   async initialize(apiKey: string, apiSecret: string): Promise<void> {
+    // 如果已经初始化，直接返回
+    if (this.isInitialized) {
+      return
+    }
+
     try {
       logger.info('系统', '正在初始化交易机器人...')
 
@@ -60,6 +66,7 @@ export class FuturesBot {
         await this.resetDailyState()
       }
 
+      this.isInitialized = true
       logger.success('系统', '交易机器人初始化完成')
     } catch (error: any) {
       logger.error('系统', '初始化失败', error.message)
@@ -596,6 +603,13 @@ export class FuturesBot {
    */
   async getHistory(limit?: number): Promise<TradeHistory[]> {
     return getTodayTradeHistory()
+  }
+
+  /**
+   * 获取 Binance 服务实例
+   */
+  getBinanceService(): BinanceService {
+    return this.binance
   }
 }
 
