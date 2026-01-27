@@ -6,7 +6,9 @@ export class BinanceService {
   private privateExchange: ccxt.binance // 私有实例，用于交易操作
   private marketsLoaded: boolean = false
   
-  constructor(apiKey: string, apiSecret: string) {
+  constructor() {
+    const config = useRuntimeConfig()
+    
     // 公共实例：不需要API密钥，用于查询公开数据（K线、价格等）
     this.publicExchange = new ccxt.binance({
       options: {
@@ -18,8 +20,8 @@ export class BinanceService {
 
     // 私有实例：需要API密钥，用于交易操作和账户查询
     this.privateExchange = new ccxt.binance({
-      apiKey,
-      secret: apiSecret,
+      apiKey: config.binanceApiKey,
+      secret: config.binanceSecret,
       options: {
         defaultType: 'future', // USDT永续合约
         adjustForTimeDifference: true,

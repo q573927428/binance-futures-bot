@@ -2,10 +2,9 @@ import { getFuturesBot } from '../../modules/futures-bot'
 
 export default defineEventHandler(async (event) => {
   try {
-    const config = useRuntimeConfig()
     const bot = getFuturesBot()
     
-    await bot.initialize(config.binanceApiKey, config.binanceSecret)
+    await bot.initialize()
     await bot.start()
     
     return {

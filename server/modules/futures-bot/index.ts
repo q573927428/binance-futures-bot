@@ -22,13 +22,13 @@ export class FuturesBot {
   constructor() {
     this.config = getDefaultConfig()
     this.state = getDefaultState()
-    this.binance = new BinanceService('', '')
+    this.binance = new BinanceService()
   }
 
   /**
    * 初始化机器人
    */
-  async initialize(apiKey: string, apiSecret: string): Promise<void> {
+  async initialize(): Promise<void> {
     // 如果已经初始化，直接返回
     if (this.isInitialized) {
       return
@@ -56,9 +56,6 @@ export class FuturesBot {
         await saveBotState(this.state)
         logger.info('系统', '已创建默认状态')
       }
-
-      // 初始化币安客户端
-      this.binance = new BinanceService(apiKey, apiSecret)
 
       // 检查是否需要重置每日状态
       if (shouldResetDailyState(this.state.lastResetDate)) {

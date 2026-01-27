@@ -4,13 +4,12 @@ import type { CryptoBalance } from '../../../types'
 
 export default defineEventHandler(async (event) => {
   try {
-    const config = useRuntimeConfig()
     const bot = getFuturesBot()
     
     // 如果bot还没有初始化，先初始化（不启动）
     // 这样可以获取账户余额信息
     try {
-      await bot.initialize(config.binanceApiKey, config.binanceSecret)
+      await bot.initialize()
     } catch (error: any) {
       // 如果已经初始化过，会继续执行
     }
