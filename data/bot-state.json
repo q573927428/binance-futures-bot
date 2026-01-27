@@ -15,5 +15,6 @@
     "ETH/USDT",
     "BNB/USDT",
     "SOL/USDT"
-  ]
+  ],
+  "isRunning": true
 }

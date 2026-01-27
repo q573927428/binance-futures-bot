@@ -217,6 +217,7 @@ export interface BotState {
   dailyPnL: number
   lastResetDate: string
   monitoringSymbols: string[]
+  isRunning: boolean  // 是否正在运行（扫描循环）
 }
 
 // 加密货币余额

@@ -15,7 +15,6 @@ export class FuturesBot {
   private binance: BinanceService
   private config: BotConfig
   private state: BotState
-  private isRunning: boolean = false
   private isInitialized: boolean = false
   private scanTimer: NodeJS.Timeout | null = null
   private previousADX15m: number = 0
@@ -66,6 +65,14 @@ export class FuturesBot {
         await this.resetDailyState()
       }
 
+      // 如果保存的状态显示机器人正在运行，自动重启扫描循环
+      if (this.state.isRunning && this.state.status === PositionStatus.MONITORING) {
+        logger.info('系统', '检测到机器人之前正在运行，自动重启扫描循环')
+        // 注意：这里不调用 start() 避免重复初始化
+        // 直接开始扫描循环
+        await this.scanLoop()
+      }
+
       this.isInitialized = true
       logger.success('系统', '交易机器人初始化完成')
     } catch (error: any) {
@@ -78,14 +85,14 @@ export class FuturesBot {
    * 启动机器人
    */
   async start(): Promise<void> {
-    if (this.isRunning) {
+    if (this.state.isRunning) {
       logger.warn('系统', '机器人已在运行中')
       return
     }
 
     try {
       logger.info('系统', '启动交易机器人...')
-      this.isRunning = true
+      this.state.isRunning = true
       this.state.status = PositionStatus.MONITORING
       this.state.monitoringSymbols = this.config.symbols
       await saveBotState(this.state)
@@ -96,7 +103,8 @@ export class FuturesBot {
       logger.success('系统', '交易机器人已启动')
     } catch (error: any) {
       logger.error('系统', '启动失败', error.message)
-      this.isRunning = false
+      this.state.isRunning = false
+      await saveBotState(this.state)
       throw error
     }
   }
@@ -106,7 +114,7 @@ export class FuturesBot {
    */
   async stop(): Promise<void> {
     logger.info('系统', '正在停止交易机器人...')
-    this.isRunning = false
+    this.state.isRunning = false
 
     if (this.scanTimer) {
       clearTimeout(this.scanTimer)
@@ -123,7 +131,7 @@ export class FuturesBot {
    * 扫描循环
    */
   private async scanLoop(): Promise<void> {
-    if (!this.isRunning) return
+    if (!this.state.isRunning) return
 
     try {
       await this.scan()
@@ -150,6 +158,7 @@ export class FuturesBot {
     if (this.state.circuitBreaker.isTriggered) {
       logger.warn('熔断', '系统处于熔断状态，停止交易')
       this.state.status = PositionStatus.HALTED
+      this.state.isRunning = false
       await saveBotState(this.state)
       return
     }
@@ -540,6 +549,11 @@ export class FuturesBot {
       this.state.circuitBreaker = breaker
       this.state.currentPosition = null
       this.state.status = breaker.isTriggered ? PositionStatus.HALTED : PositionStatus.MONITORING
+      
+      // 如果触发熔断，停止运行
+      if (breaker.isTriggered) {
+        this.state.isRunning = false
+      }
 
       await saveBotState(this.state)
 

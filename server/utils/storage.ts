@@ -148,7 +148,7 @@ export function getDefaultConfig(): BotConfig {
     stopLossATRMultiplier: 1.2,      //止损ATR倍数
     maxStopLossPercentage: 1.5,      //最大止损比例
     positionTimeoutHours: 6,         //持仓超时时间
-    scanInterval: 60,                //扫描间隔
+    scanInterval: 120,                //扫描间隔
     aiConfig: { 
       enabled: true,                //启用AI分析
       analysisInterval: 10,          //分析间隔（分钟）
@@ -199,5 +199,6 @@ export function getDefaultState(): BotState {
     dailyPnL: 0,
     lastResetDate: dayjs().format('YYYY-MM-DD'),
     monitoringSymbols: [],
+    isRunning: false,
   }
 }
