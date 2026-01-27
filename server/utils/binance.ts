@@ -93,39 +93,17 @@ export class BinanceService {
 
   /**
    * 获取加密货币余额（合约账户）（使用私有实例）
+   * 返回完整的balance实例
    */
-  async fetchCryptoBalances(): Promise<CryptoBalance[]> {
+  async fetchCryptoBalances(): Promise<any> {
     try {
       // 使用私有实例获取合约账户余额
       const balance = await this.privateExchange.fetchBalance()
-      
-      // 定义我们感兴趣的加密货币
-      const targetAssets = ['USDT', 'ETH', 'BNB', 'SOL', 'DOGE']
-      const cryptoBalances: CryptoBalance[] = []
-      
-      for (const asset of targetAssets) {
-        const assetBalance = balance[asset]
-        if (assetBalance) {
-          const free = Number(Number(assetBalance.free || 0).toFixed(5))
-          const locked = Number(Number(assetBalance.used || 0).toFixed(5))
-          const total = Number((free + locked).toFixed(5))
-          
-          if (total > 0) {
-            cryptoBalances.push({
-              asset,
-              free,
-              locked,
-              total,
-            })
-          }
-        }
-      }
-      
-      return cryptoBalances
+      return balance
     } catch (error: any) {
-      // 如果获取现货余额失败，返回空数组
+      // 如果获取余额失败，返回空对象
       console.warn(`获取加密货币余额失败: ${error.message}`)
-      return []
+      return {}
     }
   }
 

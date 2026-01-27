@@ -22,7 +22,32 @@ export default defineEventHandler(async (event) => {
     let cryptoBalances: CryptoBalance[] = []
     try {
       const binance = bot.getBinanceService()
-      cryptoBalances = await binance.fetchCryptoBalances()
+      // 获取balance实例
+      const balance = await binance.fetchCryptoBalances()
+      
+      // 从balance实例中提取代币余额信息
+      if (balance && typeof balance === 'object') {
+        // 定义我们感兴趣的加密货币
+        const targetAssets = ['USDT', 'ETH', 'BNB', 'SOL', 'DOGE']
+        
+        for (const asset of targetAssets) {
+          const assetBalance = balance[asset]
+          if (assetBalance) {
+            const free = Number(Number(assetBalance.free || 0).toFixed(5))
+            const locked = Number(Number(assetBalance.used || 0).toFixed(5))
+            const total = Number((free + locked).toFixed(5))
+            
+            if (total > 0) {
+              cryptoBalances.push({
+                asset,
+                free,
+                locked,
+                total,
+              })
+            }
+          }
+        }
+      }
     } catch (error: any) {
       // 静默处理错误，返回空数组
     }
