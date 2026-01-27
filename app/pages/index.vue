@@ -427,19 +427,19 @@ function formatBalance(value: number): string {
   }
 }
 
-// 页面加载时获取状态
-onMounted(async () => {
-  await botStore.fetchStatus()
-  await botStore.fetchHistory()
+  // 页面加载时获取状态
+  onMounted(async () => {
+    await botStore.fetchStatus()
+    await botStore.fetchHistory()
 
-  // 开启轮询
-  stopPolling = botStore.startPolling(60000)
+    // 开启轮询，使用配置中的 scanInterval 值
+    stopPolling = botStore.startPolling()
 
-  // 编辑配置时复制一份
-  if (botStore.config) {
-    editConfig.value = JSON.parse(JSON.stringify(botStore.config))
-  }
-})
+    // 编辑配置时复制一份
+    if (botStore.config) {
+      editConfig.value = JSON.parse(JSON.stringify(botStore.config))
+    }
+  })
 
 // 页面卸载时停止轮询
 onUnmounted(() => {

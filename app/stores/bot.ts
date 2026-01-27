@@ -152,11 +152,15 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    startPolling(interval = 3000) {
+    startPolling(interval?: number) {
+      // 使用配置中的 scanInterval 值，如果没有传入 interval 参数
+      // 配置中的 scanInterval 是秒，需要转换为毫秒
+      const pollInterval = interval || (this.config?.scanInterval || 60) * 1000
+      
       // 定时轮询状态
       const timer = setInterval(() => {
         this.fetchStatus()
-      }, interval)
+      }, pollInterval)
 
       return () => clearInterval(timer)
     },
