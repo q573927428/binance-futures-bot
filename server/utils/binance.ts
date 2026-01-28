@@ -155,7 +155,6 @@ export class BinanceService {
     symbol: string,
     side: 'buy' | 'sell',
     amount: number,
-    isEntry: boolean = true
   ): Promise<Order> {
     try {
       const order = await this.privateExchange.createOrder(

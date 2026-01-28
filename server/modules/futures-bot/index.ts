@@ -703,7 +703,7 @@ export class FuturesBot {
 
       // 市价开仓 (开仓操作，isEntry=true)
       const side = getOrderSide(signal.direction, true)
-      const order = await this.binance.marketOrder(signal.symbol, side, quantity, true)
+      const order = await this.binance.marketOrder(signal.symbol, side, quantity)
 
       logger.success('开仓', `开仓成功`, order)
 
@@ -805,66 +805,42 @@ export class FuturesBot {
    * 检查持仓一致性（新增方法）
    * 验证本地持仓状态与交易所实际状态是否一致
    */
-  private async checkPositionConsistency(position: Position): Promise<void> {
-    try {
-      // 获取交易所实际持仓
-      const exchangePositions = await this.binance.fetchPositions(position.symbol)
-      
-      // 检查当前交易对是否有持仓
-      const hasPositionOnExchange = exchangePositions.some(p => 
-        p.symbol === position.symbol && 
-        Math.abs(p.quantity) > 0.0001 // 避免浮点数精度问题
+  private async checkPositionConsistency(position: Position): Promise<boolean> {
+    const exchangePositions = await this.binance.fetchPositions(position.symbol)
+  
+    const hasPositionOnExchange = exchangePositions.some(p => {
+      const exchangeSymbol = p.symbol.replace(':USDT', '')
+      const localSymbol = position.symbol.replace(':USDT', '')
+  
+      if (exchangeSymbol !== localSymbol) return false
+  
+      const size = Number(
+        (p as any).contracts ??
+        (p as any).quantity ??
+        (p as any).positionAmt ??
+        0
       )
-      
-      // 如果交易所没有持仓，但本地记录有持仓，说明持仓已经平仓
-      if (!hasPositionOnExchange) {
-        logger.warn('状态同步', `检测到状态不一致：交易所无${position.symbol}持仓，但本地记录有持仓`)
-        
-        // 尝试检查订单状态
-        try {
-          if (position.stopLossOrderId) {
-            const stopOrder = await this.binance.fetchOrder(position.symbol, position.stopLossOrderId)
-            if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
-              logger.info('状态同步', `止损单${position.stopLossOrderId}已触发，同步状态`)
-            }
-          }
-        } catch (orderError: any) {
-          // 订单可能不存在或已取消
-          logger.info('状态同步', `无法获取订单状态: ${orderError.message}`)
-        }
-        
-        // 同步状态：清除本地持仓记录
-        this.state.currentPosition = null
-        this.state.status = PositionStatus.MONITORING
-        await saveBotState(this.state)
-        
-        logger.info('状态同步', `已同步状态：清除本地持仓记录，切换到监控状态`)
-        throw new Error('持仓状态不一致，已同步')
-      }
-      
-      // 如果有持仓，检查订单状态
-      try {
-        if (position.stopLossOrderId) {
-          const stopOrder = await this.binance.fetchOrder(position.symbol, position.stopLossOrderId)
-          if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
-            logger.warn('状态同步', `检测到止损单${position.stopLossOrderId}已触发，但本地状态未更新`)
-            // 这里不自动平仓，因为交易所可能已经平仓
-            // 只是记录日志，让下一次检查处理
-          }
-        }
-      } catch (orderError: any) {
-        // 订单可能不存在或已取消，这是正常情况
-        if (!orderError.message.includes('Order not found')) {
-          logger.info('状态同步', `检查订单状态时出错: ${orderError.message}`)
-        }
-      }
-      
-    } catch (error: any) {
-      // 如果获取持仓失败，记录警告但不中断流程
-      logger.warn('状态同步', `检查持仓一致性失败: ${error.message}`)
-      // 不抛出错误，让监控继续
+  
+      return Math.abs(size) > 0
+    })
+  
+    // 🔥 核心判断
+    if (!hasPositionOnExchange) {
+      logger.warn(
+        '状态同步',
+        `检测到 ${position.symbol} 仓位已不存在（可能已止损/平仓），同步本地状态`
+      )
+  
+      this.state.currentPosition = null
+      this.state.status = PositionStatus.MONITORING
+      await saveBotState(this.state)
+  
+      return false 
     }
+  
+    return true  
   }
+  
 
   /**
    * 平仓
@@ -891,7 +867,7 @@ export class FuturesBot {
 
       // 市价平仓 (平仓操作，isEntry=false)
       const side = getOrderSide(position.direction, false)
-      const order = await this.binance.marketOrder(position.symbol, side, position.quantity, false)
+      const order = await this.binance.marketOrder(position.symbol, side, position.quantity)
 
       logger.success('平仓', `平仓成功`, order)
 
