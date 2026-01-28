@@ -5,7 +5,7 @@ import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, 
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../utils/ai-analysis'
 import { checkCircuitBreaker, shouldResetDailyState, shouldForceLiquidate, isPositionTimeout, checkTP1Condition, checkTP2Condition, calculatePnL, getOrderSide, checkDailyTradeLimit } from '../../utils/risk'
 import { logger } from '../../utils/logger'
-import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTodayTradeHistory } from '../../utils/storage'
+import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTradeHistory } from '../../utils/storage'
 import { 
   calculateDynamicLeverage, 
   determineMarketCondition, 
@@ -821,7 +821,7 @@ export class FuturesBot {
    * 获取交易历史
    */
   async getHistory(limit?: number): Promise<TradeHistory[]> {
-    return getTodayTradeHistory()
+    return getTradeHistory()
   }
 
   /**

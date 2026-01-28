@@ -86,16 +86,36 @@ export async function addTradeHistory(trade: TradeHistory): Promise<void> {
     let history: TradeHistory[] = []
     
     if (existsSync(HISTORY_FILE)) {
-      const data = await readFile(HISTORY_FILE, 'utf-8')
-      history = JSON.parse(data)
+      try {
+        const data = await readFile(HISTORY_FILE, 'utf-8')
+        // 检查文件是否为空或无效JSON
+        if (data.trim()) {
+          history = JSON.parse(data)
+        }
+      } catch (parseError: any) {
+        console.warn('解析交易历史文件失败，创建新文件:', parseError.message)
+        // 如果解析失败，从空数组开始
+        history = []
+      }
+    }
+    
+    // 确保交易有唯一的ID
+    if (!trade.id) {
+      trade.id = `${trade.closeTime}-${trade.symbol.replace('/', '-')}`
     }
     
     history.push(trade)
     
+    // 按关闭时间排序，最新的在前面
+    history.sort((a, b) => b.closeTime - a.closeTime)
+    
     await writeFile(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8')
+    console.log(`交易历史已保存: ${trade.symbol} ${trade.direction} PnL: ${trade.pnl.toFixed(2)} USDT`)
   } catch (error: any) {
     console.error('保存交易历史失败:', error.message)
-    throw error
+    console.error('错误堆栈:', error.stack)
+    // 不重新抛出错误，避免影响主流程
+    // 但记录详细错误信息以便调试
   }
 }
 
@@ -111,8 +131,11 @@ export async function getTradeHistory(limit?: number): Promise<TradeHistory[]> {
     const data = await readFile(HISTORY_FILE, 'utf-8')
     const history: TradeHistory[] = JSON.parse(data)
     
+    // 按关闭时间排序，最新的在前面
+    history.sort((a, b) => b.closeTime - a.closeTime)
+    
     if (limit) {
-      return history.slice(-limit)
+      return history.slice(0, limit)
     }
     
     return history

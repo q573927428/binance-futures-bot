@@ -1,0 +1,16 @@
+[
+  {
+    "id": "test-123",
+    "symbol": "BTC/USDT",
+    "direction": "LONG",
+    "entryPrice": 50000,
+    "exitPrice": 51000,
+    "quantity": 0.001,
+    "leverage": 10,
+    "pnl": 10,
+    "pnlPercentage": 2,
+    "openTime": 1769612409982,
+    "closeTime": 1769616009982,
+    "reason": "测试交易"
+  }
+]

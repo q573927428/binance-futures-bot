@@ -212,7 +212,7 @@
             <el-card class="card" shadow="hover" :style="{ marginTop: botStore.hasPosition ? '20px' : '0' }">
               <template #header>
                 <div class="card-header">
-                  <span>今日交易历史</span>
+                  <span>今易历史</span>
                   <el-button text type="primary" @click="handleRefreshHistory">
                     <el-icon><ElIconRefresh  /></el-icon>
                     刷新
