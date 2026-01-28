@@ -496,19 +496,20 @@ export class FuturesBot {
     }
 
     if (passed) {
-      logger.success('分析结果', `${symbol} 分析通过，生成交易信号`, logDetails)
+      logger.success('分析结果', `${symbol} 分析通过，生成交易信号`)
+      // logger.success('分析结果', `${symbol} 分析通过，生成交易信号`, logDetails)
     } else {
       // 找出失败的检查点
       const failedCheckpoints = checkpoints.filter(cp => !cp.passed)
       const failedNames = failedCheckpoints.map(cp => cp.name).join(', ')
-      
-      logger.info('分析结果', `${symbol} 分析未通过: ${summary}`, {
-        ...logDetails,失败检查点: failedNames,失败原因: failedCheckpoints.map(cp => `${cp.name}: ${cp.details}`).join('; '),
-      })
-    }
+      //显示详细分析结果，默认显示 需要时添加上
+      // logger.info('分析结果', `${symbol} 分析未通过: ${summary}`, {
+      //   ...logDetails,失败检查点: failedNames,失败原因: failedCheckpoints.map(cp => `${cp.name}: ${cp.details}`).join('; ') 
+      // })
 
-    // 也可以将分析结果保存到文件或数据库，以便后续分析
-    // this.saveAnalysisResult(analysisResult)
+      //显示简要分析结果
+      logger.info('分析结果', `${symbol} 分析未通过: ${summary}`)
+    }
   }
 
   /**
@@ -530,6 +531,12 @@ export class FuturesBot {
       // 获取账户余额
       const account = await this.binance.fetchBalance()
       logger.info('账户', `余额: ${account.availableBalance} USDT`)
+
+      //如果账户余额不足120，提示不够return
+      if (account.availableBalance < 120) {
+        logger.warn('余额不足', `账户余额（${account.availableBalance} USDT）,不足120 USDT，无法开仓`)
+        return
+      }
 
       // 计算止损价格
       const stopLoss = calculateStopLoss(
