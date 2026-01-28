@@ -4,13 +4,13 @@
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1769574853837,
+    "timestamp": 1769617404005,
     "dailyLoss": 0,
     "consecutiveLosses": 0
   },
-  "todayTrades": 3,
+  "todayTrades": 0,
   "dailyPnL": 0,
-  "lastResetDate": "2026-01-28",
+  "lastResetDate": "2026-01-29",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
