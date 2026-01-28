@@ -1,7 +1,7 @@
 import type { BotConfig, BotState, Position, TradeSignal, TradeHistory, AnalysisCheckpoint, AnalysisResult } from '../../../types'
 import { PositionStatus } from '../../../types'
 import { BinanceService } from '../../utils/binance'
-import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, calculateStopLoss, calculateTakeProfit, calculatePositionSize } from '../../utils/indicators'
+import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, calculateStopLoss, calculateTakeProfit, calculatePositionSize, calculateMaxUsdtAmount, checkMinNotional } from '../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../utils/ai-analysis'
 import { checkCircuitBreaker, shouldResetDailyState, shouldForceLiquidate, isPositionTimeout, checkTP1Condition, checkTP2Condition, calculatePnL, getOrderSide, checkDailyTradeLimit } from '../../utils/risk'
 import { logger } from '../../utils/logger'
@@ -540,14 +540,6 @@ export class FuturesBot {
         this.config.maxStopLossPercentage
       )
 
-      // 计算仓位大小
-      const positionSize = calculatePositionSize(
-        account.availableBalance,
-        signal.price,
-        stopLoss,
-        this.config.maxRiskPercentage
-      )
-
       // 计算动态杠杆（如果启用）
       let finalLeverage = this.config.leverage
       let leverageCalculationDetails = {}
@@ -578,10 +570,10 @@ export class FuturesBot {
             leverageConfig
           )
 
-          // 计算安全杠杆
+          // 计算安全杠杆（使用修正后的逻辑）
           const safeLeverage = calculateSafeLeverage(
             account.availableBalance,
-            positionSize,
+            account.availableBalance, // 使用账户余额作为仓位大小
             this.config.maxRiskPercentage,
             stopLoss,
             signal.price
@@ -623,20 +615,84 @@ export class FuturesBot {
         logger.warn('持仓模式', `设置持仓模式失败: ${error.message}`)
       }
 
-      // 计算实际下单数量（使用最终杠杆）
-      const quantity = await this.binance.calculateOrderAmount(
-        signal.symbol,
-        positionSize * finalLeverage,
-        signal.price
+      // 计算基于风险管理的仓位大小（USDT金额）
+      const riskAmount = calculatePositionSize(
+        account.availableBalance,
+        signal.price,
+        stopLoss,
+        this.config.maxRiskPercentage
       )
 
-      logger.info('开仓', `仓位参数`, {
-        数量: quantity,
-        杠杆: finalLeverage,
-        入场价: signal.price,
-        止损价: stopLoss,
-        ...leverageCalculationDetails,
-      })
+      // 计算最大可用USDT金额（考虑杠杆）
+      const maxUsdtAmount = calculateMaxUsdtAmount(
+        account.availableBalance,
+        finalLeverage,
+        this.config.maxRiskPercentage
+      )
+
+      // 使用较小的金额：风险金额或最大可用金额
+      const usdtAmount = Math.min(riskAmount, maxUsdtAmount)
+
+      // 检查最小名义价值
+      const minQuantity = 20 / signal.price // 计算满足20 USDT最小名义价值所需的最小数量
+      const estimatedQuantity = usdtAmount / signal.price
+      
+      let quantity: number
+      let finalUsdtAmount: number
+      let notional: number
+      
+      if (estimatedQuantity < minQuantity) {
+        logger.warn('风控', `预估数量${estimatedQuantity.toFixed(4)}小于最小名义价值要求，调整到最小数量`)
+        // 调整到最小数量，但确保不超过最大可用金额
+        finalUsdtAmount = Math.min(minQuantity * signal.price, maxUsdtAmount)
+        
+        // 重新计算数量
+        quantity = await this.binance.calculateOrderAmount(
+          signal.symbol,
+          finalUsdtAmount,
+          signal.price
+        )
+
+        // 再次检查最小名义价值
+        notional = quantity * signal.price
+        if (notional < 20) {
+          throw new Error(`订单名义价值${notional.toFixed(2)} USDT小于交易所最小要求20 USDT，账户余额可能不足`)
+        }
+
+        logger.info('开仓', `仓位参数（已调整）`, {
+          数量: quantity,
+          杠杆: finalLeverage,
+          入场价: signal.price,
+          止损价: stopLoss,
+          USDT金额: finalUsdtAmount,
+          名义价值: notional,
+          ...leverageCalculationDetails,
+        })
+      } else {
+        // 计算实际下单数量
+        finalUsdtAmount = usdtAmount
+        quantity = await this.binance.calculateOrderAmount(
+          signal.symbol,
+          finalUsdtAmount,
+          signal.price
+        )
+
+        // 检查最小名义价值
+        notional = quantity * signal.price
+        if (notional < 20) {
+          throw new Error(`订单名义价值${notional.toFixed(2)} USDT小于交易所最小要求20 USDT`)
+        }
+
+        logger.info('开仓', `仓位参数`, {
+          数量: quantity,
+          杠杆: finalLeverage,
+          入场价: signal.price,
+          止损价: stopLoss,
+          USDT金额: finalUsdtAmount,
+          名义价值: notional,
+          ...leverageCalculationDetails,
+        })
+      }
 
       // 市价开仓 (开仓操作，isEntry=true)
       const side = getOrderSide(signal.direction, true)

@@ -212,7 +212,7 @@ export function calculateTakeProfit(
 }
 
 /**
- * 计算仓位大小
+ * 计算基于风险管理的仓位大小（返回USDT金额）
  */
 export function calculatePositionSize(
   accountBalance: number,
@@ -225,5 +225,38 @@ export function calculatePositionSize(
 
   if (priceRisk === 0) return 0
 
-  return riskAmount / priceRisk
+  // 返回基于风险管理的USDT金额，而不是数量
+  // 这个金额已经考虑了风险，不应该再乘以杠杆
+  return riskAmount
+}
+
+/**
+ * 计算基于账户余额的最大可用USDT金额（考虑杠杆）
+ */
+export function calculateMaxUsdtAmount(
+  accountBalance: number,
+  leverage: number,
+  maxRiskPercent: number = 50
+): number {
+  // 最大可用金额 = 账户余额 * 杠杆 * (最大风险百分比/100)
+  // 但需要确保不超过账户实际承受能力
+  const maxAmount = accountBalance * leverage * (maxRiskPercent / 100)
+  
+  // 安全限制：不超过账户余额的10倍杠杆
+  const safeLimit = accountBalance * Math.min(leverage, 10)
+  
+  return Math.min(maxAmount, safeLimit)
+}
+
+/**
+ * 检查订单名义价值是否满足交易所最小要求
+ */
+export function checkMinNotional(
+  symbol: string,
+  quantity: number,
+  price: number,
+  minNotional: number = 20
+): boolean {
+  const notional = quantity * price
+  return notional >= minNotional
 }
