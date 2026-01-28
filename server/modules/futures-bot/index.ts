@@ -1,4 +1,4 @@
-import type { BotConfig, BotState, Position, TradeSignal, TradeHistory } from '../../../types'
+import type { BotConfig, BotState, Position, TradeSignal, TradeHistory, AnalysisCheckpoint, AnalysisResult } from '../../../types'
 import { PositionStatus } from '../../../types'
 import { BinanceService } from '../../utils/binance'
 import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, calculateStopLoss, calculateTakeProfit, calculatePositionSize } from '../../utils/indicators'
@@ -189,12 +189,20 @@ export class FuturesBot {
    */
   private async scanForOpportunities(): Promise<void> {
     // 检查每日交易次数限制
-    if (!checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)) {
-      logger.warn('风控', '已达到每日交易次数限制')
+    const dailyLimitPassed = checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)
+    
+    if (!dailyLimitPassed) {
+      logger.warn('风控', '已达到每日交易次数限制', {
+        今日交易次数: this.state.todayTrades,
+        限制次数: this.config.riskConfig.dailyTradeLimit,
+      })
       return
     }
 
-    logger.info('扫描', `开始扫描交易机会 [${this.config.symbols.join(', ')}]`)
+    logger.info('扫描', `开始扫描交易机会 [${this.config.symbols.join(', ')}]`, {
+      今日交易次数: this.state.todayTrades,
+      限制次数: this.config.riskConfig.dailyTradeLimit,
+    })
 
     for (const symbol of this.config.symbols) {
       try {
@@ -220,12 +228,29 @@ export class FuturesBot {
    * 分析交易对
    */
   private async analyzeSymbol(symbol: string): Promise<TradeSignal | null> {
+    const checkpoints: AnalysisCheckpoint[] = []
+    const timestamp = Date.now()
+    
     try {
       // 获取当前价格
       const price = await this.binance.fetchPrice(symbol)
+      
+      checkpoints.push({
+        name: '获取价格',
+        passed: true,
+        details: `成功获取价格: ${price}`,
+        data: { price }
+      })
 
       // 计算技术指标
       const indicators = await calculateIndicators(this.binance, symbol)
+      
+      checkpoints.push({
+        name: '计算技术指标',
+        passed: true,
+        details: `EMA20: ${indicators.ema20.toFixed(2)}, EMA60: ${indicators.ema60.toFixed(2)}, RSI: ${indicators.rsi.toFixed(2)}, ADX15m: ${indicators.adx15m.toFixed(2)}, ADX1h: ${indicators.adx1h.toFixed(2)}, ADX4h: ${indicators.adx4h.toFixed(2)}`,
+        data: indicators
+      })
 
       // 保存ADX15m用于后续比较
       if (this.previousADX15m === 0) {
@@ -233,13 +258,42 @@ export class FuturesBot {
       }
 
       // 检查ADX趋势条件（多周期）
-      if (!checkADXTrend(indicators)) {
+      const adxResult = checkADXTrend(indicators)
+
+      checkpoints.push({
+        name: 'ADX趋势条件',
+        passed: adxResult.passed,
+        details: adxResult.passed
+          ? `ADX条件满足: ${adxResult.reason}`
+          : `ADX条件不满足: ${adxResult.reason}`,
+        data: adxResult.data
+      })
+
+      if (!adxResult.passed) {
+        this.logAnalysisResult(
+          symbol,
+          timestamp,
+          checkpoints,
+          false,
+          'ADX趋势条件不满足'
+        )
         return null
       }
 
       // 判断趋势方向
       const direction = getTrendDirection(price, indicators)
-      if (direction === 'IDLE') {
+      const directionPassed = direction !== 'IDLE'
+      checkpoints.push({
+        name: '趋势方向判断',
+        passed: directionPassed,
+        details: directionPassed 
+          ? `趋势方向: ${direction}, 价格: ${price}, EMA20: ${indicators.ema20.toFixed(2)}, EMA60: ${indicators.ema60.toFixed(2)}`
+          : `无明确趋势方向, 价格: ${price}, EMA20: ${indicators.ema20.toFixed(2)}, EMA60: ${indicators.ema60.toFixed(2)}`,
+        data: { direction, price, ema20: indicators.ema20, ema60: indicators.ema60 }
+      })
+      
+      if (!directionPassed) {
+        this.logAnalysisResult(symbol, timestamp, checkpoints, false, '无明确趋势方向')
         return null
       }
 
@@ -250,7 +304,13 @@ export class FuturesBot {
         
         // 检查candles15m是否为空
         if (candles15m.length === 0) {
-          logger.warn('AI分析', `无法获取${symbol}的K线数据`)
+          checkpoints.push({
+            name: 'AI分析',
+            passed: false,
+            details: `无法获取${symbol}的K线数据`,
+            data: { error: 'K线数据为空' }
+          })
+          this.logAnalysisResult(symbol, timestamp, checkpoints, false, 'AI分析失败：K线数据为空')
           return null
         }
         
@@ -271,13 +331,37 @@ export class FuturesBot {
         )
 
         // 检查AI分析条件
-        if (!checkAIAnalysisConditions(aiAnalysis, this.config.aiConfig.minConfidence, this.config.aiConfig.maxRiskLevel)) {
-          logger.info('AI分析', `${symbol} AI条件不满足`, {
+        const aiConditionsPassed = checkAIAnalysisConditions(aiAnalysis, this.config.aiConfig.minConfidence, this.config.aiConfig.maxRiskLevel)
+        checkpoints.push({
+          name: 'AI分析条件',
+          passed: aiConditionsPassed,
+          details: aiConditionsPassed
+            ? `AI分析通过: 评分${aiAnalysis.score}, 置信度${aiAnalysis.confidence}, 风险等级${aiAnalysis.riskLevel}, 看涨${aiAnalysis.isBullish}`
+            : `AI分析不满足: 评分${aiAnalysis.score} < 60 或 置信度${aiAnalysis.confidence} < ${this.config.aiConfig.minConfidence} 或 风险等级${aiAnalysis.riskLevel} > ${this.config.aiConfig.maxRiskLevel} 或 不看涨`,
+          data: {
             score: aiAnalysis.score,
+            confidence: aiAnalysis.confidence,
+            riskLevel: aiAnalysis.riskLevel,
             isBullish: aiAnalysis.isBullish,
-          })
+            required: {
+              minScore: 60,
+              minConfidence: this.config.aiConfig.minConfidence,
+              maxRiskLevel: this.config.aiConfig.maxRiskLevel
+            }
+          }
+        })
+
+        if (!aiConditionsPassed) {
+          this.logAnalysisResult(symbol, timestamp, checkpoints, false, 'AI分析条件不满足')
           return null
         }
+      } else {
+        checkpoints.push({
+          name: 'AI分析',
+          passed: true,
+          details: 'AI分析未启用或未用于开仓决策',
+          data: { enabled: this.config.aiConfig.enabled, useForEntry: this.config.aiConfig.useForEntry }
+        })
       }
 
       // 获取最后一根K线
@@ -285,7 +369,13 @@ export class FuturesBot {
       
       // 检查candles是否为空
       if (candles.length === 0) {
-        logger.warn('分析', `无法获取${symbol}的K线数据`)
+        checkpoints.push({
+          name: 'K线数据',
+          passed: false,
+          details: `无法获取${symbol}的K线数据`,
+          data: { error: 'K线数据为空' }
+        })
+        this.logAnalysisResult(symbol, timestamp, checkpoints, false, 'K线数据为空')
         return null
       }
       
@@ -299,17 +389,52 @@ export class FuturesBot {
       if (direction === 'LONG') {
         entryOk = checkLongEntry(price, indicators, lastCandle)
         reason = '多头趋势，价格回踩EMA，RSI适中'
+        checkpoints.push({
+          name: '多头入场条件',
+          passed: entryOk,
+          details: entryOk 
+            ? `多头入场条件满足: 价格${price}接近EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)}), RSI(${indicators.rsi.toFixed(2)})在38-55区间, K线确认信号`
+            : `多头入场条件不满足: 价格${price}与EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)})距离过远 或 RSI(${indicators.rsi.toFixed(2)})不在38-55区间 或 K线无确认信号`,
+          data: {
+            price,
+            ema20: indicators.ema20,
+            ema30: indicators.ema30,
+            rsi: indicators.rsi,
+            nearEMA20: Math.abs(price - indicators.ema20) / indicators.ema20 <= 0.002,
+            nearEMA30: Math.abs(price - indicators.ema30) / indicators.ema30 <= 0.002,
+            rsiInRange: indicators.rsi >= 40 && indicators.rsi <= 60,
+            lastCandle
+          }
+        })
       } else if (direction === 'SHORT') {
         entryOk = checkShortEntry(price, indicators, lastCandle)
         reason = '空头趋势，价格反弹EMA，RSI适中'
+        checkpoints.push({
+          name: '空头入场条件',
+          passed: entryOk,
+          details: entryOk 
+            ? `空头入场条件满足: 价格${price}接近EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)}), RSI(${indicators.rsi.toFixed(2)})在45-62区间, K线确认信号`
+            : `空头入场条件不满足: 价格${price}与EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)})距离过远 或 RSI(${indicators.rsi.toFixed(2)})不在45-62区间 或 K线无确认信号`,
+          data: {
+            price,
+            ema20: indicators.ema20,
+            ema30: indicators.ema30,
+            rsi: indicators.rsi,
+            nearEMA20: Math.abs(price - indicators.ema20) / indicators.ema20 <= 0.002,
+            nearEMA30: Math.abs(price - indicators.ema30) / indicators.ema30 <= 0.002,
+            rsiInRange: indicators.rsi >= 40 && indicators.rsi <= 60,
+            lastCandle
+          }
+        })
       }
 
       if (!entryOk) {
+        this.logAnalysisResult(symbol, timestamp, checkpoints, false, '入场条件不满足')
         return null
       }
 
       // 构建交易信号
-      return {
+      const signal: TradeSignal = {
         symbol,
         direction,
         price,
@@ -319,10 +444,71 @@ export class FuturesBot {
         timestamp: Date.now(),
         reason,
       }
+
+      // 记录最终分析结果
+      this.logAnalysisResult(symbol, timestamp, checkpoints, true, '所有条件满足，生成交易信号', signal)
+      
+      return signal
     } catch (error: any) {
+      checkpoints.push({
+        name: '异常处理',
+        passed: false,
+        details: `分析过程中发生异常: ${error.message}`,
+        data: { error: error.message }
+      })
+      this.logAnalysisResult(symbol, timestamp, checkpoints, false, `分析失败: ${error.message}`)
       logger.error('分析', `分析${symbol}失败`, error.message)
       return null
     }
+  }
+
+  /**
+   * 记录分析结果
+   */
+  private logAnalysisResult(
+    symbol: string,
+    timestamp: number,
+    checkpoints: AnalysisCheckpoint[],
+    passed: boolean,
+    summary: string,
+    finalSignal?: TradeSignal
+  ): void {
+    const analysisResult: AnalysisResult = {
+      symbol,
+      timestamp,
+      passed,
+      checkpoints,
+      finalSignal,
+      summary,
+    }
+
+    // 统计通过和失败的检查点
+    const passedCount = checkpoints.filter(cp => cp.passed).length
+    const failedCount = checkpoints.filter(cp => !cp.passed).length
+    const totalCount = checkpoints.length
+
+    // 构建详细的日志信息
+    const logDetails = {
+      总检查点: totalCount,通过: passedCount,失败: failedCount,总结: summary,
+      检查点详情: checkpoints.map(cp => ({
+        名称: cp.name,状态: cp.passed ? '✅' : '❌',详情: cp.details,
+      })),
+    }
+
+    if (passed) {
+      logger.success('分析结果', `${symbol} 分析通过，生成交易信号`, logDetails)
+    } else {
+      // 找出失败的检查点
+      const failedCheckpoints = checkpoints.filter(cp => !cp.passed)
+      const failedNames = failedCheckpoints.map(cp => cp.name).join(', ')
+      
+      logger.info('分析结果', `${symbol} 分析未通过: ${summary}`, {
+        ...logDetails,失败检查点: failedNames,失败原因: failedCheckpoints.map(cp => `${cp.name}: ${cp.details}`).join('; '),
+      })
+    }
+
+    // 也可以将分析结果保存到文件或数据库，以便后续分析
+    // this.saveAnalysisResult(analysisResult)
   }
 
   /**
@@ -430,7 +616,7 @@ export class FuturesBot {
       
       // 设置持仓模式为单向（因为我们一次只持有一个方向的仓位）
       try {
-        await this.binance.setPositionMode(signal.symbol, false) // false = 单向持仓模式
+        await this.binance.setPositionMode(false) // false = 单向持仓模式
         logger.info('持仓模式', '已设置为单向持仓模式')
       } catch (error: any) {
         // 如果设置失败，记录警告但继续执行

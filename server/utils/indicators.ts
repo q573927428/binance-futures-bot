@@ -75,12 +75,26 @@ export async function calculateIndicators(
 /**
  * 检查ADX趋势条件（多周期确认）
  */
-export function checkADXTrend(indicators: TechnicalIndicators): boolean {
-  return (
-    indicators.adx15m >= 20 &&
-    indicators.adx1h >= 22 &&
-    indicators.adx4h >= 25
-  )
+export function checkADXTrend(indicators: TechnicalIndicators) {
+  const pass1h = indicators.adx1h >= 25
+  const pass4h = indicators.adx4h >= 28
+
+  return {
+    passed: pass1h || pass4h,
+    reason: pass1h
+      ? '1h ADX >= 25（趋势明确）'
+      : pass4h
+        ? '4h ADX >= 28（大周期趋势明确）'
+        : '1h 与 4h ADX 均不足',
+    data: {
+      adx1h: indicators.adx1h,
+      adx4h: indicators.adx4h,
+      required: {
+        adx1h: 25,
+        adx4h: 28
+      }
+    }
+  }
 }
 
 /**
@@ -120,7 +134,7 @@ export function checkLongEntry(
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
 
   // RSI在[40,60]区间
-  const rsiInRange = rsi >= 40 && rsi <= 60
+  const rsiInRange = rsi >= 38 && rsi <= 55
 
   // 最近K线为确认阳线或明显下影线
   const isConfirmCandle =
@@ -145,7 +159,7 @@ export function checkShortEntry(
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
 
   // RSI在[40,60]区间
-  const rsiInRange = rsi >= 40 && rsi <= 60
+  const rsiInRange = rsi >= 45 && rsi <= 62
 
   // 最近K线为确认阴线或明显上影线
   const isConfirmCandle =

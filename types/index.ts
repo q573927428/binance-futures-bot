@@ -159,6 +159,24 @@ export interface AIAnalysis {
   }
 }
 
+// 分析检查点结果
+export interface AnalysisCheckpoint {
+  name: string
+  passed: boolean
+  details: string
+  data?: any
+}
+
+// 分析结果
+export interface AnalysisResult {
+  symbol: string
+  timestamp: number
+  passed: boolean
+  checkpoints: AnalysisCheckpoint[]
+  finalSignal?: TradeSignal
+  summary: string
+}
+
 // 交易信号
 export interface TradeSignal {
   symbol: string

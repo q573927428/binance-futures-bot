@@ -135,11 +135,11 @@ export class BinanceService {
   /**
    * 设置持仓模式（单向/双向）（使用私有实例）
    */
-  async setPositionMode(symbol: string, hedgeMode: boolean = false): Promise<void> {
+  async setPositionMode(hedgeMode: boolean = false): Promise<void> {
     try {
       // Binance API: 设置持仓模式
       // hedgeMode: true = 双向持仓模式, false = 单向持仓模式
-      await this.privateExchange.setPositionMode(hedgeMode, symbol)
+      await this.privateExchange.setPositionMode(hedgeMode)
     } catch (error: any) {
       // 如果已经是该模式，忽略错误
       if (!error.message.includes('No need to change')) {
