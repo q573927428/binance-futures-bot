@@ -1,18 +1,6 @@
 {
-  "status": "POSITION",
-  "currentPosition": {
-    "symbol": "SOL/USDT",
-    "direction": "LONG",
-    "entryPrice": 127.09,
-    "quantity": 2.81,
-    "leverage": 10,
-    "stopLoss": 126.62698099895356,
-    "takeProfit1": 127.55301900104645,
-    "takeProfit2": 128.0160380020929,
-    "openTime": 1769587296832,
-    "orderId": "192877605045",
-    "stopLossOrderId": "3000000441857263"
-  },
+  "status": "MONITORING",
+  "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
