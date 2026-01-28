@@ -176,8 +176,8 @@ export function calculateStopLoss(
   entryPrice: number,
   direction: 'LONG' | 'SHORT',
   atr: number,
-  atrMultiplier: number = 1.2,
-  maxStopLossPercent: number = 1.5
+  atrMultiplier: number = 1.5,
+  maxStopLossPercent: number = 2
 ): number {
   const stopLossDistance = atr * atrMultiplier
   const maxStopLossDistance = entryPrice * (maxStopLossPercent / 100)
@@ -225,9 +225,16 @@ export function calculatePositionSize(
 
   if (priceRisk === 0) return 0
 
-  // 返回基于风险管理的USDT金额，而不是数量
-  // 这个金额已经考虑了风险，不应该再乘以杠杆
-  return riskAmount
+  // 计算止损距离百分比
+  const stopLossDistance = priceRisk / entryPrice
+  
+  if (stopLossDistance === 0) return 0
+
+  // 返回基于风险管理和止损距离的实际仓位大小（USDT金额）
+  // 公式：仓位大小 = 风险金额 / 止损距离百分比
+  const positionSize = riskAmount / stopLossDistance
+  
+  return positionSize
 }
 
 /**
@@ -236,16 +243,17 @@ export function calculatePositionSize(
 export function calculateMaxUsdtAmount(
   accountBalance: number,
   leverage: number,
-  maxRiskPercent: number = 50
+  maxRiskPercent: number = 100
 ): number {
-  // 最大可用金额 = 账户余额 * 杠杆 * (最大风险百分比/100)
-  // 但需要确保不超过账户实际承受能力
-  const maxAmount = accountBalance * leverage * (maxRiskPercent / 100)
+  // 最大可用金额 = 账户余额 * 杠杆
+  // 在期货交易中，可以使用全部账户余额作为保证金
+  const maxAmount = accountBalance * leverage
   
-  // 安全限制：不超过账户余额的10倍杠杆
-  const safeLimit = accountBalance * Math.min(leverage, 10)
+  // 但为了安全，可以限制最大仓位为账户余额的某个倍数
+  // 这里使用 maxRiskPercent 作为限制，默认100%表示可以使用全部杠杆
+  const safeAmount = accountBalance * leverage * (maxRiskPercent / 100)
   
-  return Math.min(maxAmount, safeLimit)
+  return Math.min(maxAmount, safeAmount)
 }
 
 /**

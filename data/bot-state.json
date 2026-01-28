@@ -1,18 +1,6 @@
 {
-  "status": "POSITION",
-  "currentPosition": {
-    "symbol": "BNB/USDT",
-    "direction": "LONG",
-    "entryPrice": 904.99,
-    "quantity": 0.03,
-    "leverage": 13,
-    "stopLoss": 902.7313153479853,
-    "takeProfit1": 907.2486846520147,
-    "takeProfit2": 909.5073693040295,
-    "openTime": 1769599176732,
-    "orderId": "84925200335",
-    "stopLossOrderId": "3000000443412769"
-  },
+  "status": "MONITORING",
+  "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
@@ -20,7 +8,7 @@
     "dailyLoss": 0,
     "consecutiveLosses": 0
   },
-  "todayTrades": 1,
+  "todayTrades": 3,
   "dailyPnL": 0,
   "lastResetDate": "2026-01-28",
   "monitoringSymbols": [

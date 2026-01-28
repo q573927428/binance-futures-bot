@@ -7,9 +7,9 @@
   ],
   "leverage": 10,
   "maxRiskPercentage": 20,
-  "stopLossATRMultiplier": 1.2,
-  "maxStopLossPercentage": 1.5,
-  "positionTimeoutHours": 6,
+  "stopLossATRMultiplier": 1.5,
+  "maxStopLossPercentage": 2,
+  "positionTimeoutHours": 24,
   "scanInterval": 120,
   "aiConfig": {
     "enabled": true,

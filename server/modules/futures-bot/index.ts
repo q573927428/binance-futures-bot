@@ -580,7 +580,6 @@ export class FuturesBot {
           // 计算安全杠杆（使用修正后的逻辑）
           const safeLeverage = calculateSafeLeverage(
             account.availableBalance,
-            account.availableBalance, // 使用账户余额作为仓位大小
             this.config.maxRiskPercentage,
             stopLoss,
             signal.price
@@ -785,11 +784,9 @@ export class FuturesBot {
         return
       }
 
-      // 检查TP1条件
+      // 检查TP1条件 目前 直接全部平仓（简化策略）
       if (checkTP1Condition(price, position)) {
-        logger.success('止盈', '达到TP1条件，平仓50%，止损移至成本')
-        // TODO: 实现部分平仓逻辑
-        // 这里简化处理，直接全部平仓
+        logger.success('止盈', '达到TP1条件，直接全部平仓（简化策略）')
         await this.closePosition('TP1止盈')
         return
       }
@@ -863,7 +860,11 @@ export class FuturesBot {
       }
 
       // 取消所有未成交订单
-      await this.binance.cancelAllOrders(position.symbol)
+      try {
+        await this.binance.cancelAllOrders(position.symbol)
+      } catch (err) {
+        logger.warn('平仓', '取消挂单失败，继续强制平仓')
+      }
 
       // 市价平仓 (平仓操作，isEntry=false)
       const side = getOrderSide(position.direction, false)

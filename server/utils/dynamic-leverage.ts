@@ -193,7 +193,6 @@ export function determineMarketCondition(
 /**
  * 计算安全杠杆倍数（考虑账户风险）
  * @param accountBalance 账户余额
- * @param positionSize 仓位大小
  * @param maxRiskPercentage 最大风险百分比
  * @param stopLossPrice 止损价格
  * @param entryPrice 入场价格
@@ -201,21 +200,24 @@ export function determineMarketCondition(
  */
 export function calculateSafeLeverage(
   accountBalance: number,
-  positionSize: number,
   maxRiskPercentage: number,
   stopLossPrice: number,
   entryPrice: number
 ): number {
-  if (accountBalance <= 0 || positionSize <= 0) return 1
-  
-  // 计算单笔交易最大风险金额
-  const maxRiskAmount = accountBalance * (maxRiskPercentage / 100)
+  if (accountBalance <= 0) return 1
   
   // 计算止损距离（价格百分比）
   const stopLossDistance = Math.abs(entryPrice - stopLossPrice) / entryPrice
   
-  // 计算安全杠杆 = 最大风险金额 / (仓位大小 * 止损距离)
-  const safeLeverage = maxRiskAmount / (positionSize * stopLossDistance)
+  if (stopLossDistance === 0) return 1
+  
+  // 计算安全杠杆 = (最大风险百分比/100) / 止损距离
+  // 这个公式基于：风险金额 = 账户余额 × 风险百分比
+  // 仓位大小 = 风险金额 / 止损距离
+  // 安全杠杆 = 仓位大小 / 账户余额 = (风险金额 / 止损距离) / 账户余额
+  //          = (账户余额 × 风险百分比/100) / (止损距离 × 账户余额)
+  //          = (风险百分比/100) / 止损距离
+  const safeLeverage = (maxRiskPercentage / 100) / stopLossDistance
   
   // 确保杠杆为正数且合理
   return Math.max(1, Math.min(20, Math.round(safeLeverage)))
