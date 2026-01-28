@@ -113,7 +113,7 @@ export class Logger {
     this.log(entry)
   }
 
-  getRecentLogs(limit: number = 100): LogEntry[] {
+  getRecentLogs(limit: number = 300): LogEntry[] {
     return logBuffer.slice(-limit)
   }
 
