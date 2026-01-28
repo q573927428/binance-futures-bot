@@ -71,7 +71,7 @@ export class FuturesBot {
       }
 
       // 如果保存的状态显示机器人正在运行，自动重启扫描循环
-      if (this.state.isRunning && this.state.status === PositionStatus.MONITORING) {
+      if (this.state.isRunning && (this.state.status === PositionStatus.MONITORING || this.state.status === PositionStatus.POSITION)) {
         logger.info('系统', '检测到机器人之前正在运行，自动重启扫描循环')
         // 注意：这里不调用 start() 避免重复初始化
         // 直接开始扫描循环
@@ -752,11 +752,10 @@ export class FuturesBot {
       // 计算当前盈亏
       const { pnl, pnlPercentage } = calculatePnL(price, position)
 
-      logger.info('持仓监控', `${position.symbol} ${position.direction}`, {
-        入场价: position.entryPrice,
-        当前价: price,
-        盈亏: `${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)`,
-      })
+      logger.info(
+        '持仓监控',
+        `${position.symbol} ${position.direction} 入场价: ${position.entryPrice} 当前价: ${price} 盈亏: ${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)`
+      )
 
       // 重新计算指标
       const indicators = await calculateIndicators(this.binance, position.symbol)

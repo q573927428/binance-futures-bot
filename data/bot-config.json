@@ -10,7 +10,7 @@
   "stopLossATRMultiplier": 1.2,
   "maxStopLossPercentage": 1.5,
   "positionTimeoutHours": 6,
-  "scanInterval": 120,
+  "scanInterval": 60,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 10,
