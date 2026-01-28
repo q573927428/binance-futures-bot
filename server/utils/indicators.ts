@@ -12,8 +12,8 @@ export async function calculateIndicators(
   try {
     // 获取不同周期的K线数据
     const candles15m = await binance.fetchOHLCV(symbol, '15m', 96)
-    const candles1h = await binance.fetchOHLCV(symbol, '1h', 48)
-    const candles4h = await binance.fetchOHLCV(symbol, '4h', 24)
+    const candles1h = await binance.fetchOHLCV(symbol, '1h', 96)
+    const candles4h = await binance.fetchOHLCV(symbol, '4h', 96)
 
     const closes15m = candles15m.map(c => c.close)
     const highs15m = candles15m.map(c => c.high)

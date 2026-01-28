@@ -199,7 +199,7 @@ export class FuturesBot {
     for (const symbol of this.config.symbols) {
       try {
         const signal = await this.analyzeSymbol(symbol)
-
+        
         if (signal && signal.direction !== 'IDLE') {
           logger.success('信号', `发现交易信号: ${symbol} ${signal.direction}`, {
             price: signal.price,
