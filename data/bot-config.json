@@ -6,7 +6,7 @@
     "SOL/USDT"
   ],
   "leverage": 10,
-  "maxRiskPercentage": 50,
+  "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 1.2,
   "maxStopLossPercentage": 1.5,
   "positionTimeoutHours": 6,

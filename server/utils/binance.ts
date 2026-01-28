@@ -149,23 +149,6 @@ export class BinanceService {
   }
 
   /**
-   * 根据交易方向获取持仓方向
-   */
-  private getPositionSide(side: 'buy' | 'sell', isEntry: boolean): 'LONG' | 'SHORT' {
-    // 对于单向持仓模式：
-    // - 开多仓: side='buy', positionSide='LONG'
-    // - 开空仓: side='sell', positionSide='SHORT'
-    // - 平多仓: side='sell', positionSide='LONG'
-    // - 平空仓: side='buy', positionSide='SHORT'
-    
-    if (side === 'buy') {
-      return isEntry ? 'LONG' : 'SHORT'
-    } else {
-      return isEntry ? 'SHORT' : 'LONG'
-    }
-  }
-
-  /**
    * 市价开仓（使用私有实例）
    */
   async marketOrder(
@@ -175,16 +158,12 @@ export class BinanceService {
     isEntry: boolean = true
   ): Promise<Order> {
     try {
-      const positionSide = this.getPositionSide(side, isEntry)
       const order = await this.privateExchange.createOrder(
         symbol, 
         'market', 
         side, 
         amount,
         undefined, // price
-        {
-          positionSide: positionSide
-        }
       )
       
       return {
@@ -213,7 +192,6 @@ export class BinanceService {
     isEntry: boolean = false
   ): Promise<Order> {
     try {
-      const positionSide = this.getPositionSide(side, isEntry)
       const order = await this.privateExchange.createOrder(
         symbol,
         'stop_market',
@@ -222,7 +200,7 @@ export class BinanceService {
         undefined,
         { 
           stopPrice,
-          positionSide: positionSide
+          reduceOnly: true
         }
       )
       
@@ -252,7 +230,6 @@ export class BinanceService {
     isEntry: boolean = false
   ): Promise<Order> {
     try {
-      const positionSide = this.getPositionSide(side, isEntry)
       const order = await this.privateExchange.createOrder(
         symbol,
         'take_profit_market',
@@ -261,7 +238,7 @@ export class BinanceService {
         undefined,
         { 
           stopPrice,
-          positionSide: positionSide
+          reduceOnly: true
         }
       )
       

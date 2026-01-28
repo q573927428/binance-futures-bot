@@ -393,8 +393,8 @@ export class FuturesBot {
           name: '多头入场条件',
           passed: entryOk,
           details: entryOk 
-            ? `多头入场条件满足: 价格${price}接近EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)}), RSI(${indicators.rsi.toFixed(2)})在38-55区间, K线确认信号`
-            : `多头入场条件不满足: 价格${price}与EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)})距离过远 或 RSI(${indicators.rsi.toFixed(2)})不在38-55区间 或 K线无确认信号`,
+            ? `多头入场条件满足: 价格${price}接近EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)}), RSI(${indicators.rsi.toFixed(2)})在38-60区间, K线确认信号`
+            : `多头入场条件不满足: 价格${price}与EMA20(${indicators.ema20.toFixed(2)})/EMA30(${indicators.ema30.toFixed(2)})距离过远 或 RSI(${indicators.rsi.toFixed(2)})不在38-60区间 或 K线无确认信号`,
           data: {
             price,
             ema20: indicators.ema20,

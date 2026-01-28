@@ -134,7 +134,7 @@ export function checkLongEntry(
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
 
   // RSI在[40,60]区间
-  const rsiInRange = rsi >= 38 && rsi <= 55
+  const rsiInRange = rsi >= 38 && rsi <= 60
 
   // 最近K线为确认阳线或明显下影线
   const isConfirmCandle =
