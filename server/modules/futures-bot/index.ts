@@ -287,19 +287,18 @@ export class FuturesBot {
       }
 
       // 检查入场条件
-      let entryOk = false
-      let reason = ''
+      let entryResult: any = null
 
       if (trendResult.direction === 'LONG') {
-        entryOk = checkLongEntry(price, indicators, lastCandle)
-        reason = '多头趋势，价格回踩EMA，RSI适中'
+        entryResult = checkLongEntry(price, indicators, lastCandle)
       } else if (trendResult.direction === 'SHORT') {
-        entryOk = checkShortEntry(price, indicators, lastCandle)
-        reason = '空头趋势，价格反弹EMA，RSI适中'
+        entryResult = checkShortEntry(price, indicators, lastCandle)
       }
 
+      const entryOk = entryResult?.passed || false
+
       if (!entryOk) {
-        this.logAnalysisResult(symbol, false, '入场条件不满足')
+        this.logAnalysisResult(symbol, false, `入场条件不满足：${entryResult?.reason || '未知原因'}`)
         return null
       }
 
@@ -312,7 +311,7 @@ export class FuturesBot {
         indicators,
         aiAnalysis,
         timestamp: Date.now(),
-        reason,
+        reason: entryResult?.reason || '入场条件满足', 
       }
 
       // 记录最终分析结果

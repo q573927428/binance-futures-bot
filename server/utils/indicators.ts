@@ -163,22 +163,85 @@ export function checkLongEntry(
   price: number,
   indicators: TechnicalIndicators,
   lastCandle: OHLCV
-): boolean {
+) {
   const { ema20, ema30, rsi } = indicators
 
   // 价格回踩 EMA20/EMA30（±0.2%）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.002
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
+  
+  const nearEMA = nearEMA20 || nearEMA30
+  const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
   // RSI在[40,60]区间
   const rsiInRange = rsi >= 38 && rsi <= 60
+  const rsiValue = rsi
 
   // 最近K线为确认阳线或明显下影线
   const isConfirmCandle =
     lastCandle.close > lastCandle.open ||
     (lastCandle.open - lastCandle.low) / lastCandle.open >= 0.003
+  
+  const candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
 
-  return (nearEMA20 || nearEMA30) && rsiInRange && isConfirmCandle
+  const passed = nearEMA && rsiInRange && isConfirmCandle
+
+  let reason = ''
+  if (passed) {
+    reason = `价格回踩${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+  } else {
+    const reasons: string[] = []
+    if (!nearEMA) {
+      reasons.push(`价格未回踩EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，距离EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+    }
+    if (!rsiInRange) {
+      reasons.push(`RSI(${rsi.toFixed(1)})不在[38,60]区间`)
+    }
+    if (!isConfirmCandle) {
+      reasons.push('K线未确认（非阳线且无明显下影线）')
+    }
+    reason = reasons.join('；')
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      price,
+      ema20,
+      ema30,
+      rsi,
+      nearEMA20,
+      nearEMA30,
+      nearEMA,
+      nearEMAType,
+      rsiInRange,
+      rsiValue,
+      isConfirmCandle,
+      candleType,
+      lastCandle: {
+        open: lastCandle.open,
+        high: lastCandle.high,
+        low: lastCandle.low,
+        close: lastCandle.close,
+        volume: lastCandle.volume,
+      },
+      conditions: {
+        required: {
+          nearEMA: true,
+          rsiMin: 38,
+          rsiMax: 60,
+          confirmCandle: true,
+        },
+        actual: {
+          nearEMA,
+          rsiValue,
+          rsiInRange,
+          isConfirmCandle,
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -188,22 +251,85 @@ export function checkShortEntry(
   price: number,
   indicators: TechnicalIndicators,
   lastCandle: OHLCV
-): boolean {
+) {
   const { ema20, ema30, rsi } = indicators
 
   // 价格反弹至 EMA20/EMA30（±0.2%）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.002
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
+  
+  const nearEMA = nearEMA20 || nearEMA30
+  const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
-  // RSI在[40,60]区间
+  // RSI在[45,62]区间
   const rsiInRange = rsi >= 45 && rsi <= 62
+  const rsiValue = rsi
 
   // 最近K线为确认阴线或明显上影线
   const isConfirmCandle =
     lastCandle.close < lastCandle.open ||
     (lastCandle.high - lastCandle.open) / lastCandle.open >= 0.003
+  
+  const candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
 
-  return (nearEMA20 || nearEMA30) && rsiInRange && isConfirmCandle
+  const passed = nearEMA && rsiInRange && isConfirmCandle
+
+  let reason = ''
+  if (passed) {
+    reason = `价格反弹${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+  } else {
+    const reasons: string[] = []
+    if (!nearEMA) {
+      reasons.push(`价格未反弹EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，距离EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+    }
+    if (!rsiInRange) {
+      reasons.push(`RSI(${rsi.toFixed(1)})不在[45,62]区间`)
+    }
+    if (!isConfirmCandle) {
+      reasons.push('K线未确认（非阴线且无明显上影线）')
+    }
+    reason = reasons.join('；')
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      price,
+      ema20,
+      ema30,
+      rsi,
+      nearEMA20,
+      nearEMA30,
+      nearEMA,
+      nearEMAType,
+      rsiInRange,
+      rsiValue,
+      isConfirmCandle,
+      candleType,
+      lastCandle: {
+        open: lastCandle.open,
+        high: lastCandle.high,
+        low: lastCandle.low,
+        close: lastCandle.close,
+        volume: lastCandle.volume,
+      },
+      conditions: {
+        required: {
+          nearEMA: true,
+          rsiMin: 45,
+          rsiMax: 62,
+          confirmCandle: true,
+        },
+        actual: {
+          nearEMA,
+          rsiValue,
+          rsiInRange,
+          isConfirmCandle,
+        }
+      }
+    }
+  }
 }
 
 /**
