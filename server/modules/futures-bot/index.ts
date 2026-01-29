@@ -240,14 +240,14 @@ export class FuturesBot {
       // 检查ADX趋势条件（多周期）
       const adxResult = checkADXTrend(indicators)
       if (!adxResult.passed) {
-        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：adx1h${adxResult.data.adx1h}、adx4h${adxResult.data.adx4h}`)
+        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：adx1h ${Math.round(adxResult.data.adx1h)}、adx4h ${Math.round(adxResult.data.adx4h)}`)
         return null
       }
 
       // 判断趋势方向
-      const direction = getTrendDirection(price, indicators)
-      if (direction === 'IDLE') {
-        this.logAnalysisResult(symbol, false, `无明确趋势方向：${direction}`)
+      const trendResult = getTrendDirection(price, indicators)
+      if (trendResult.direction === 'IDLE') {
+        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`)
         return null
       }
 
@@ -281,7 +281,7 @@ export class FuturesBot {
         // 检查AI分析条件
         const aiConditionsPassed = checkAIAnalysisConditions(aiAnalysis, this.config.aiConfig.minConfidence, this.config.aiConfig.maxRiskLevel)
         if (!aiConditionsPassed) {
-          this.logAnalysisResult(symbol, false, 'AI分析条件不满足')
+          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.confidence}、风险${aiAnalysis.riskLevel}`)
           return null
         }
       }
@@ -290,10 +290,10 @@ export class FuturesBot {
       let entryOk = false
       let reason = ''
 
-      if (direction === 'LONG') {
+      if (trendResult.direction === 'LONG') {
         entryOk = checkLongEntry(price, indicators, lastCandle)
         reason = '多头趋势，价格回踩EMA，RSI适中'
-      } else if (direction === 'SHORT') {
+      } else if (trendResult.direction === 'SHORT') {
         entryOk = checkShortEntry(price, indicators, lastCandle)
         reason = '空头趋势，价格反弹EMA，RSI适中'
       }
@@ -306,7 +306,7 @@ export class FuturesBot {
       // 构建交易信号
       const signal: TradeSignal = {
         symbol,
-        direction,
+        direction: trendResult.direction,
         price,
         confidence: 75,
         indicators,

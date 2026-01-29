@@ -103,21 +103,58 @@ export function checkADXTrend(indicators: TechnicalIndicators) {
 export function getTrendDirection(
   price: number,
   indicators: TechnicalIndicators
-): 'LONG' | 'SHORT' | 'IDLE' {
+) {
   const { ema20, ema60 } = indicators
 
+  const ema20AboveEma60 = ema20 > ema60
+  const priceAboveEma20 = price > ema20
+  const priceBelowEma20 = price < ema20
+
   // 做多条件：EMA20 > EMA60 且 价格 > EMA20
-  if (ema20 > ema60 && price > ema20) {
-    return 'LONG'
-  }
-
+  const isLong = ema20AboveEma60 && priceAboveEma20
+  
   // 做空条件：EMA20 < EMA60 且 价格 < EMA20
-  if (ema20 < ema60 && price < ema20) {
-    return 'SHORT'
+  const isShort = !ema20AboveEma60 && priceBelowEma20
+
+  let direction: 'LONG' | 'SHORT' | 'IDLE' = 'IDLE'
+  let reason = ''
+
+  if (isLong) {
+    direction = 'LONG'
+    reason = `EMA20(${ema20.toFixed(2)}) > EMA60(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) > EMA20`
+  } else if (isShort) {
+    direction = 'SHORT'
+    reason = `EMA20(${ema20.toFixed(2)}) < EMA60(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) < EMA20`
+  } else {
+    reason = '趋势条件不满足'
+    
+    if (ema20AboveEma60 && !priceAboveEma20) {
+      reason = `EMA20(${ema20.toFixed(2)}) > EMA60(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≤ EMA20`
+    } else if (!ema20AboveEma60 && !priceBelowEma20) {
+      reason = `EMA20(${ema20.toFixed(2)}) < EMA60(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≥ EMA20`
+    } else {
+      reason = `EMA20(${ema20.toFixed(2)}) ≈ EMA60(${ema60.toFixed(2)}) 或 价格(${price.toFixed(2)}) ≈ EMA20`
+    }
   }
 
-  return 'IDLE'
+  return {
+    direction,
+    reason,
+    data: {
+      price,
+      ema20,
+      ema60,
+      conditions: {
+        ema20AboveEma60,
+        priceAboveEma20,
+        priceBelowEma20,
+        isLong,
+        isShort
+      }
+    }
+  }
 }
+
 
 /**
  * 检查做多入场条件
