@@ -1,16 +1,16 @@
 [
   {
-    "id": "test-123",
-    "symbol": "BTC/USDT",
+    "id": "1769650097241-BNB/USDT",
+    "symbol": "BNB/USDT",
     "direction": "LONG",
-    "entryPrice": 50000,
-    "exitPrice": 51000,
-    "quantity": 0.001,
+    "entryPrice": 903.46,
+    "exitPrice": 900.34,
+    "quantity": 0.29,
     "leverage": 10,
-    "pnl": 10,
-    "pnlPercentage": 2,
-    "openTime": 1769612409982,
-    "closeTime": 1769616009982,
-    "reason": "测试交易"
+    "pnl": -0.9048000000000013,
+    "pnlPercentage": -3.453390299515202,
+    "openTime": 1769622059832,
+    "closeTime": 1769650097241,
+    "reason": "止损触发"
   }
 ]
