@@ -9,7 +9,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 1.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 24,
+  "positionTimeoutHours": 4,
   "scanInterval": 120,
   "aiConfig": {
     "enabled": true,
@@ -31,7 +31,7 @@
     },
     "takeProfit": {
       "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 2,
+      "tp2RiskRewardRatio": 3,
       "rsiExtreme": {
         "long": 70,
         "short": 30

@@ -170,7 +170,7 @@ export function getDefaultConfig(): BotConfig {
     maxRiskPercentage: 20,           //单笔最大风险比例
     stopLossATRMultiplier: 1.5,      //止损ATR倍数
     maxStopLossPercentage: 2,      //最大止损比例
-    positionTimeoutHours: 24,         //持仓超时时间
+    positionTimeoutHours: 4,         //持仓超时时间
     scanInterval: 120,                //扫描间隔
     aiConfig: { 
       enabled: true,                //启用AI分析
@@ -192,7 +192,7 @@ export function getDefaultConfig(): BotConfig {
       },
       takeProfit: {
         tp1RiskRewardRatio: 2,      // TP1盈亏比（1:1）
-        tp2RiskRewardRatio: 2,      // TP2盈亏比（1:2）
+        tp2RiskRewardRatio: 3,      // TP2盈亏比（1:2）
         rsiExtreme: {
           long: 70,   // 多头RSI极值
           short: 30,  // 空头RSI极值
