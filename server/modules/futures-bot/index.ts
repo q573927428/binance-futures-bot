@@ -264,6 +264,22 @@ export class FuturesBot {
       const lastCandle = candles15m[candles15m.length - 1]!
       const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
 
+      // 检查入场条件
+      let entryResult: any = null
+
+      if (trendResult.direction === 'LONG') {
+        entryResult = checkLongEntry(price, indicators, lastCandle)
+      } else if (trendResult.direction === 'SHORT') {
+        entryResult = checkShortEntry(price, indicators, lastCandle)
+      }
+
+      const entryOk = entryResult?.passed || false
+
+      if (!entryOk) {
+        this.logAnalysisResult(symbol, false, `入场条件不满足：${entryResult?.reason || '未知原因'}`)
+        return null
+      }
+
       // AI分析（如果启用）
       let aiAnalysis = undefined
       if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry) {
@@ -284,22 +300,6 @@ export class FuturesBot {
           this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`)
           return null
         }
-      }
-
-      // 检查入场条件
-      let entryResult: any = null
-
-      if (trendResult.direction === 'LONG') {
-        entryResult = checkLongEntry(price, indicators, lastCandle)
-      } else if (trendResult.direction === 'SHORT') {
-        entryResult = checkShortEntry(price, indicators, lastCandle)
-      }
-
-      const entryOk = entryResult?.passed || false
-
-      if (!entryOk) {
-        this.logAnalysisResult(symbol, false, `入场条件不满足：${entryResult?.reason || '未知原因'}`)
-        return null
       }
 
       // 构建交易信号
