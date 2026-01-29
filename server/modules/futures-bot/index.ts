@@ -240,39 +240,40 @@ export class FuturesBot {
       // 检查ADX趋势条件（多周期）
       const adxResult = checkADXTrend(indicators)
       if (!adxResult.passed) {
-        this.logAnalysisResult(symbol, false, 'ADX趋势条件不满足')
+        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：adx1h${adxResult.data.adx1h}、adx4h${adxResult.data.adx4h}`)
         return null
       }
 
       // 判断趋势方向
       const direction = getTrendDirection(price, indicators)
       if (direction === 'IDLE') {
-        this.logAnalysisResult(symbol, false, '无明确趋势方向')
+        this.logAnalysisResult(symbol, false, `无明确趋势方向：${direction}`)
         return null
       }
+
+      // 获取15分钟K线数据（用于AI分析、价格变化计算和入场条件检查）
+      const candles15m = await this.binance.fetchOHLCV(symbol, '15m', 2)
+      
+      // 检查candles15m是否为空
+      if (candles15m.length === 0) {
+        this.logAnalysisResult(symbol, false, 'K线数据为空')
+        return null
+      }
+      
+      const firstCandle = candles15m[0]!
+      const lastCandle = candles15m[candles15m.length - 1]!
+      const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
 
       // AI分析（如果启用）
       let aiAnalysis = undefined
       if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry) {
-        const candles15m = await this.binance.fetchOHLCV(symbol, '15m', 2)
-        
-        // 检查candles15m是否为空
-        if (candles15m.length === 0) {
-          this.logAnalysisResult(symbol, false, 'AI分析失败：K线数据为空')
-          return null
-        }
-        
-        const firstCandle = candles15m[0]!
-        const lastCandle15m = candles15m[candles15m.length - 1]!
-        const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
-
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
           price,
           indicators.ema20,
           indicators.ema60,
           indicators.rsi,
-          lastCandle15m.volume,
+          lastCandle.volume,
           priceChange24h,
           indicators
         )
@@ -284,17 +285,6 @@ export class FuturesBot {
           return null
         }
       }
-
-      // 获取最后一根K线
-      const candles = await this.binance.fetchOHLCV(symbol, '15m', 1)
-      
-      // 检查candles是否为空
-      if (candles.length === 0) {
-        this.logAnalysisResult(symbol, false, 'K线数据为空')
-        return null
-      }
-      
-      const lastCandle = candles[0]!
 
       // 检查入场条件
       let entryOk = false
