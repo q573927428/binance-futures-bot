@@ -185,21 +185,21 @@ export function checkLongEntry(
 ) {
   const { ema20, ema30, rsi } = indicators
 
-  // 价格回踩 EMA20/EMA30（±0.2%）
-  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.002
-  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
+  // 价格回踩 EMA20/EMA30（±0.5%）
+  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.005
+  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.005
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
   // RSI在[40,60]区间
-  const rsiInRange = rsi >= 38 && rsi <= 60
+  const rsiInRange = rsi >= 40 && rsi <= 60
   const rsiValue = rsi
 
   // 最近K线为确认阳线或明显下影线
   const isConfirmCandle =
     lastCandle.close > lastCandle.open ||
-    (lastCandle.open - lastCandle.low) / lastCandle.open >= 0.003
+    (lastCandle.open - lastCandle.low) / lastCandle.open >= 0.005
   
   const candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
 
@@ -211,13 +211,13 @@ export function checkLongEntry(
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
-      reasons.push(`价格未回踩EMA（EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+      reasons.push(`价格未回踩EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
     }
     if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})[38,60]`)
+      reasons.push(`RSI(${rsi.toFixed(1)})[38 - 60]`)
     }
     if (!isConfirmCandle) {
-      reasons.push('K线未确认')
+      reasons.push('K线未确认（非阳线且无明显下影线）')
     }
     reason = reasons.join('；')
   }
@@ -273,21 +273,21 @@ export function checkShortEntry(
 ) {
   const { ema20, ema30, rsi } = indicators
 
-  // 价格反弹至 EMA20/EMA30（±0.2%）
-  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.002
-  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.002
+  // 价格反弹至 EMA20/EMA30（±0.5%）
+  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.005
+  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.005
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
-  // RSI在[45,62]区间
-  const rsiInRange = rsi >= 45 && rsi <= 62
+  // RSI在[40,55]区间
+  const rsiInRange = rsi >= 40 && rsi <= 55
   const rsiValue = rsi
 
   // 最近K线为确认阴线或明显上影线
   const isConfirmCandle =
     lastCandle.close < lastCandle.open ||
-    (lastCandle.high - lastCandle.open) / lastCandle.open >= 0.003
+    (lastCandle.high - lastCandle.open) / lastCandle.open >= 0.005
   
   const candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
 
@@ -299,10 +299,10 @@ export function checkShortEntry(
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
-      reasons.push(`价格未反弹EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，距离EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+      reasons.push(`价格未反弹EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
     }
     if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})不在[45,62]区间`)
+      reasons.push(`RSI(${rsi.toFixed(1)})[45 - 62]`)
     }
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阴线且无明显上影线）')
