@@ -187,7 +187,6 @@ RSI(14): ${rsi.toFixed(2)}
   "direction": "LONG/SHORT/IDLE",
   "confidence": 0-100之间的数字,
   "score": 0-100之间的综合评分,
-  "isBullish": true/false,
   "riskLevel": "LOW/MEDIUM/HIGH",
   "reasoning": "详细的分析理由",
   "support": 支撑位价格(可选),
@@ -197,7 +196,7 @@ RSI(14): ${rsi.toFixed(2)}
 注意：
 1. confidence表示对方向判断的置信度
 2. score表示交易机会的综合评分（考虑风险和回报）
-3. 当RSI>70或<30时应特别注意
+3. 当RSI>70时考虑SHORT信号，RSI<30时考虑LONG信号
 4. 只有在趋势明确且风险可控时才给出LONG/SHORT建议
 5. 确保返回的是有效的JSON格式`
 
@@ -241,6 +240,7 @@ RSI(14): ${rsi.toFixed(2)}
 
     const aiResult = JSON.parse(jsonContent)
 
+    const direction = (aiResult.direction || 'IDLE') as Direction
     const analysis: AIAnalysis = {
       symbol,
       timestamp: Date.now(),
@@ -248,7 +248,7 @@ RSI(14): ${rsi.toFixed(2)}
       confidence: Math.min(100, Math.max(0, aiResult.confidence || 0)),
       score: Math.min(100, Math.max(0, aiResult.score || 0)),
       riskLevel: (aiResult.riskLevel || 'MEDIUM') as RiskLevel,
-      isBullish: aiResult.isBullish !== false,
+      isBullish:  direction === 'LONG',
       reasoning: aiResult.reasoning || '无分析理由',
       technicalData: {
         price,
@@ -303,10 +303,10 @@ RSI(14): ${rsi.toFixed(2)}
  */
 export function checkAIAnalysisConditions(aiAnalysis: AIAnalysis, minConfidence: number, maxRiskLevel: RiskLevel): boolean {
   // 评分必须>=60
-  if (aiAnalysis.score < 60) return false
-  
-  // 必须看涨
-  if (!aiAnalysis.isBullish) return false
+  if (aiAnalysis.score < minConfidence) return false
+
+  // 方向不能是IDLE ✅ 修改为检查方向
+  if (aiAnalysis.direction === 'IDLE') return false
   
   // 置信度检查
   if (aiAnalysis.confidence < minConfidence) return false
