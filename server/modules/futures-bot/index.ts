@@ -7,12 +7,9 @@ import { checkCircuitBreaker, shouldResetDailyState, shouldForceLiquidate, isPos
 import { logger } from '../../utils/logger'
 import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTradeHistory } from '../../utils/storage'
 import { 
-  calculateDynamicLeverage, 
-  determineMarketCondition, 
-  adjustLeverageConfigForMarketCondition,
+  calculateQuickLeverage,
   calculateSafeLeverage,
-  calculateFinalLeverage,
-  defaultDynamicLeverageConfig 
+  calculateFinalLeverage
 } from '../../utils/dynamic-leverage'
 import dayjs from 'dayjs'
 
@@ -395,21 +392,9 @@ export class FuturesBot {
 
       if (this.config.dynamicLeverageConfig.enabled && signal.aiAnalysis) {
         try {
-          // 获取24小时价格变化用于市场条件判断
-          const candles24h = await this.binance.fetchOHLCV(signal.symbol, '1d', 2)
-          let priceChange24h = 0
-          if (candles24h.length >= 2 && candles24h[0]) {
-            priceChange24h = ((signal.price - candles24h[0].close) / candles24h[0].close) * 100
-          }
-
-          // 判断市场条件（仅用于日志记录）
-          const marketCondition = determineMarketCondition(signal.indicators, priceChange24h)
-          
           // 使用简化版动态杠杆计算
-          const dynamicLeverage = calculateDynamicLeverage(
+          const dynamicLeverage = calculateQuickLeverage(
             signal.aiAnalysis,
-            signal.indicators,
-            signal.price,
             this.config.dynamicLeverageConfig
           )
 
@@ -425,15 +410,12 @@ export class FuturesBot {
           finalLeverage = calculateFinalLeverage(dynamicLeverage, safeLeverage, this.config.dynamicLeverageConfig)
 
           leverageCalculationDetails = {
-            marketCondition,
             dynamicLeverage,
             safeLeverage,
             finalLeverage,
             aiConfidence: signal.aiAnalysis.confidence,
             aiScore: signal.aiAnalysis.score,
             riskLevel: signal.aiAnalysis.riskLevel,
-            trendStrength: (signal.indicators.adx15m + signal.indicators.adx1h + signal.indicators.adx4h) / 3,
-            volatility: signal.indicators.atr / signal.price,
           }
 
           logger.info('动态杠杆', `杠杆计算完成 ${finalLeverage} X`, leverageCalculationDetails)

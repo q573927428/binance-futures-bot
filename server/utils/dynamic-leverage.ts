@@ -12,40 +12,12 @@ export interface DynamicLeverageConfig {
 }
 
 /**
- * 默认动态杠杆配置（极简版）
- */
-export const defaultDynamicLeverageConfig: DynamicLeverageConfig = {
-  enabled: true,
-  minLeverage: 2,
-  maxLeverage: 20,
-  baseLeverage: 5,
-  riskLevelMultipliers: {
-    LOW: 1.5,
-    MEDIUM: 1.0,
-    HIGH: 0.5,
-  },
-}
-
-/**
- * 计算动态杠杆倍数（极简版）
- * 只基于AI置信度和风险等级
- */
-export function calculateDynamicLeverage(
-  aiAnalysis: AIAnalysis,
-  indicators: TechnicalIndicators,
-  currentPrice: number,
-  config: DynamicLeverageConfig = defaultDynamicLeverageConfig
-): number {
-  return calculateQuickLeverage(aiAnalysis, config)
-}
-
-/**
  * 快速杠杆计算（极简模式）
  * 只基于AI置信度和风险等级
  */
 export function calculateQuickLeverage(
   aiAnalysis: AIAnalysis,
-  config: DynamicLeverageConfig = defaultDynamicLeverageConfig
+  config: DynamicLeverageConfig
 ): number {
   // 基础杠杆
   let leverage = config.baseLeverage
@@ -95,71 +67,11 @@ export function calculateSafeLeverage(
 export function calculateFinalLeverage(
   dynamicLeverage: number,
   safeLeverage: number,
-  config: DynamicLeverageConfig = defaultDynamicLeverageConfig
+  config: DynamicLeverageConfig
 ): number {
   // 取动态杠杆和安全杠杆中的较小值
   const finalLeverage = Math.min(dynamicLeverage, safeLeverage)
   
   // 确保在配置范围内
   return Math.max(config.minLeverage, Math.min(config.maxLeverage, finalLeverage))
-}
-
-/**
- * 判断市场条件（简化版）
- * 用于日志记录
- */
-export function determineMarketCondition(
-  indicators: TechnicalIndicators,
-  priceChange24h: number
-): 'bullish' | 'bearish' | 'volatile' | 'stable' {
-  // 判断趋势
-  const isBullish = priceChange24h > 1
-  const isBearish = priceChange24h < -1
-  
-  // 判断波动性
-  const atrPercentage = indicators.atr / indicators.ema20
-  const isVolatile = atrPercentage > 0.02
-  const isStable = atrPercentage < 0.01
-  
-  if (isVolatile) return 'volatile'
-  if (isStable) return 'stable'
-  if (isBullish) return 'bullish'
-  if (isBearish) return 'bearish'
-  
-  return 'stable'
-}
-
-/**
- * 根据市场条件调整动态杠杆配置
- * 简化版：只调整最大杠杆
- */
-export function adjustLeverageConfigForMarketCondition(
-  marketCondition: 'bullish' | 'bearish' | 'volatile' | 'stable',
-  baseConfig: DynamicLeverageConfig = defaultDynamicLeverageConfig
-): DynamicLeverageConfig {
-  const config = { ...baseConfig }
-  
-  switch (marketCondition) {
-    case 'bullish':
-      // 牛市：提高最大杠杆
-      config.maxLeverage = Math.min(25, config.maxLeverage + 3)
-      break
-      
-    case 'bearish':
-      // 熊市：降低最大杠杆
-      config.maxLeverage = Math.max(15, config.maxLeverage - 3)
-      break
-      
-    case 'volatile':
-      // 高波动市场：大幅降低最大杠杆
-      config.maxLeverage = Math.max(10, config.maxLeverage - 5)
-      break
-      
-    case 'stable':
-      // 稳定市场：稍微提高最大杠杆
-      config.maxLeverage = Math.min(22, config.maxLeverage + 2)
-      break
-  }
-  
-  return config
 }
