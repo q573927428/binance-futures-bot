@@ -240,7 +240,7 @@ export class FuturesBot {
       // 检查ADX趋势条件（多周期）
       const adxResult = checkADXTrend(indicators)
       if (!adxResult.passed) {
-        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：adx1h ${Math.round(adxResult.data.adx1h)}、adx4h ${Math.round(adxResult.data.adx4h)}`)
+        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`)
         return null
       }
 

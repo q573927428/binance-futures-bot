@@ -76,22 +76,41 @@ export async function calculateIndicators(
  * 检查ADX趋势条件（多周期确认）
  */
 export function checkADXTrend(indicators: TechnicalIndicators) {
-  const pass1h = indicators.adx1h >= 25
-  const pass4h = indicators.adx4h >= 28
+  const adx1h = indicators.adx1h
+  const adx4h = indicators.adx4h
+  
+  const pass1h = adx1h >= 25
+  const pass4h = adx4h >= 28
+
+  const passed = pass1h || pass4h
+
+  // 提供更详细的调试信息
+  let reason = ''
+  if (passed) {
+    if (pass1h) {
+      reason = `1h ADX(${adx1h.toFixed(2)}) >= 25（趋势明确）`
+    } else {
+      reason = `4h ADX(${adx4h.toFixed(2)}) >= 28（大周期趋势明确）`
+    }
+  } else {
+    reason = `1h ADX(${adx1h.toFixed(2)}) < 25 且 4h ADX(${adx4h.toFixed(2)}) < 28`
+  }
 
   return {
-    passed: pass1h || pass4h,
-    reason: pass1h
-      ? '1h ADX >= 25（趋势明确）'
-      : pass4h
-        ? '4h ADX >= 28（大周期趋势明确）'
-        : '1h 与 4h ADX 均不足',
+    passed,
+    reason,
     data: {
-      adx1h: indicators.adx1h,
-      adx4h: indicators.adx4h,
+      adx1h,
+      adx4h,
       required: {
         adx1h: 25,
         adx4h: 28
+      },
+      actual: {
+        adx1h,
+        adx4h,
+        pass1h,
+        pass4h
       }
     }
   }
