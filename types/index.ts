@@ -248,6 +248,9 @@ export interface BotState {
   lastResetDate: string
   monitoringSymbols: string[]
   isRunning: boolean  // 是否正在运行（扫描循环）
+  currentPrice?: number  // 当前价格（仅当有持仓时有效）
+  currentPnL?: number    // 当前盈亏金额（仅当有持仓时有效）
+  currentPnLPercentage?: number  // 当前盈亏百分比（仅当有持仓时有效）
 }
 
 // 加密货币余额

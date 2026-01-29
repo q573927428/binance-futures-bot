@@ -187,7 +187,7 @@
                     </el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item label="入场价">
-                    {{ botStore.state.currentPosition.entryPrice.toFixed(2) }}
+                    {{ botStore.state.currentPosition.entryPrice.toFixed(2) }} ({{ botStore.state.currentPrice?.toFixed(2) || '--' }})
                   </el-descriptions-item>
                   <el-descriptions-item label="数量">
                     {{ botStore.state.currentPosition.quantity }}
@@ -198,11 +198,16 @@
                   <el-descriptions-item label="止损价">
                     {{ botStore.state.currentPosition.stopLoss.toFixed(2) }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="止盈1">
-                    {{ botStore.state.currentPosition.takeProfit1.toFixed(2) }}
+                  <el-descriptions-item label="当前盈亏">
+                    <span :class="botStore.state.currentPnL && botStore.state.currentPnL >= 0 ? 'text-success' : 'text-danger'">
+                      {{ botStore.state.currentPnL ? botStore.state.currentPnL.toFixed(2) + ' USDT' : '--' }}
+                    </span>
+                    (<span :class="botStore.state.currentPnLPercentage && botStore.state.currentPnLPercentage >= 0 ? 'text-success' : 'text-danger'">
+                      {{ botStore.state.currentPnLPercentage ? botStore.state.currentPnLPercentage.toFixed(2) + '%' : '--' }}
+                    </span>)
                   </el-descriptions-item>
-                  <el-descriptions-item label="止盈2">
-                    {{ botStore.state.currentPosition.takeProfit2.toFixed(2) }}
+                  <el-descriptions-item label="止盈价">
+                    {{ botStore.state.currentPosition.takeProfit1.toFixed(2) }}
                   </el-descriptions-item>
                 </el-descriptions>
               </div>

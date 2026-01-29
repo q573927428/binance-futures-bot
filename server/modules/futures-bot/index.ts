@@ -576,6 +576,12 @@ export class FuturesBot {
         `${position.symbol} ${position.direction} 入场价: ${position.entryPrice} 当前价: ${price} 盈亏: ${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)`
       )
 
+      // 保存当前价格和盈亏到state中，供前端显示
+      this.state.currentPrice = price
+      this.state.currentPnL = pnl
+      this.state.currentPnLPercentage = pnlPercentage
+      await saveBotState(this.state)
+
       // 重新计算指标
       const indicators = await calculateIndicators(this.binance, position.symbol)
 
