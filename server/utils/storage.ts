@@ -174,7 +174,7 @@ export function getDefaultConfig(): BotConfig {
     scanInterval: 120,                //扫描间隔
     aiConfig: { 
       enabled: true,                //启用AI分析
-      analysisInterval: 10,          //分析间隔（分钟）
+      analysisInterval: 1440,          //分析间隔（分钟）
       minConfidence: 60,             //最小置信度（0-100）
       maxRiskLevel: 'MEDIUM',        //最大风险等级
       useForEntry: true,             //用于开仓决策
@@ -191,7 +191,7 @@ export function getDefaultConfig(): BotConfig {
         minute: 30,  // 分钟（0-59）
       },
       takeProfit: {
-        tp1RiskRewardRatio: 1,      // TP1盈亏比（1:1）
+        tp1RiskRewardRatio: 2,      // TP1盈亏比（1:1）
         tp2RiskRewardRatio: 2,      // TP2盈亏比（1:2）
         rsiExtreme: {
           long: 70,   // 多头RSI极值

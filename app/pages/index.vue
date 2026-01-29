@@ -332,8 +332,8 @@
           <el-switch v-model="editConfig.aiConfig.enabled" />
         </el-form-item>
 
-        <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析间隔(分钟)">
-          <el-input-number v-model="editConfig.aiConfig.analysisInterval" :min="1" :max="60" />
+        <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析间隔(分钟  1440 等于1天)">
+          <el-input-number v-model="editConfig.aiConfig.analysisInterval" :min="1" :max="1500" />
         </el-form-item>
 
         <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
