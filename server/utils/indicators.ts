@@ -211,13 +211,13 @@ export function checkLongEntry(
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
-      reasons.push(`价格未回踩EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，距离EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+      reasons.push(`价格未回踩EMA（EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
     }
     if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})不在[38,60]区间`)
+      reasons.push(`RSI(${rsi.toFixed(1)})[38,60]`)
     }
     if (!isConfirmCandle) {
-      reasons.push('K线未确认（非阳线且无明显下影线）')
+      reasons.push('K线未确认')
     }
     reason = reasons.join('；')
   }

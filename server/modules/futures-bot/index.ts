@@ -276,7 +276,7 @@ export class FuturesBot {
       const entryOk = entryResult?.passed || false
 
       if (!entryOk) {
-        this.logAnalysisResult(symbol, false, `入场条件不满足：${entryResult?.reason || '未知原因'}`)
+        this.logAnalysisResult(symbol, false, `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`)
         return null
       }
 
