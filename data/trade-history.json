@@ -1,5 +1,19 @@
 [
   {
+    "id": "1769697176584-SOL/USDT",
+    "symbol": "SOL/USDT",
+    "direction": "SHORT",
+    "entryPrice": 122.9,
+    "exitPrice": 121.86,
+    "quantity": 2.09,
+    "leverage": 10,
+    "pnl": 2.173600000000013,
+    "pnlPercentage": 8.462164361269375,
+    "openTime": 1769685578606,
+    "closeTime": 1769697176584,
+    "reason": "TP2止盈"
+  },
+  {
     "id": "1769650097241-BNB/USDT",
     "symbol": "BNB/USDT",
     "direction": "LONG",
