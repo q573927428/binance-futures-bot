@@ -205,17 +205,12 @@ export function getDefaultConfig(): BotConfig {
       enabled: true,                 // 启用动态杠杆
       minLeverage: 2,                // 最小杠杆倍数
       maxLeverage: 20,               // 最大杠杆倍数
-      baseLeverage: 2,               // 基础杠杆倍数
-      aiConfidenceWeight: 0.3,       // AI置信度权重
-      aiScoreWeight: 0.4,            // AI评分权重
-      riskLevelWeights: {            // 风险等级权重
-        LOW: 1.0,
-        MEDIUM: 0.7,
-        HIGH: 0.4,
+      baseLeverage: 5,               // 基础杠杆倍数
+      riskLevelMultipliers: {        // 风险等级乘数
+        LOW: 1.5,
+        MEDIUM: 1.0,
+        HIGH: 0.5,
       },
-      volatilityPenaltyFactor: 0.5,  // 波动性惩罚因子
-      maxVolatilityThreshold: 0.03,  // 最大波动性阈值 (3%)
-      useMarketConditionAdjustment: true, // 使用市场条件调整
     },
   }
 }

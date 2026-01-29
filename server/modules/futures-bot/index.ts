@@ -389,7 +389,7 @@ export class FuturesBot {
         this.config.maxStopLossPercentage
       )
 
-      // 计算动态杠杆（如果启用）
+      // 计算动态杠杆（如果启用）- 使用简化版
       let finalLeverage = this.config.leverage
       let leverageCalculationDetails = {}
 
@@ -402,24 +402,18 @@ export class FuturesBot {
             priceChange24h = ((signal.price - candles24h[0].close) / candles24h[0].close) * 100
           }
 
-          // 判断市场条件
+          // 判断市场条件（仅用于日志记录）
           const marketCondition = determineMarketCondition(signal.indicators, priceChange24h)
           
-          // 根据市场条件调整配置
-          let leverageConfig = { ...this.config.dynamicLeverageConfig }
-          if (leverageConfig.useMarketConditionAdjustment) {
-            leverageConfig = adjustLeverageConfigForMarketCondition(marketCondition, leverageConfig)
-          }
-
-          // 计算动态杠杆
+          // 使用简化版动态杠杆计算
           const dynamicLeverage = calculateDynamicLeverage(
             signal.aiAnalysis,
             signal.indicators,
             signal.price,
-            leverageConfig
+            this.config.dynamicLeverageConfig
           )
 
-          // 计算安全杠杆（使用修正后的逻辑）
+          // 计算安全杠杆（基于账户风险）
           const safeLeverage = calculateSafeLeverage(
             account.availableBalance,
             this.config.maxRiskPercentage,
@@ -427,8 +421,8 @@ export class FuturesBot {
             signal.price
           )
 
-          // 计算最终杠杆
-          finalLeverage = calculateFinalLeverage(dynamicLeverage, safeLeverage, leverageConfig)
+          // 计算最终杠杆（取两者中的较小值）
+          finalLeverage = calculateFinalLeverage(dynamicLeverage, safeLeverage, this.config.dynamicLeverageConfig)
 
           leverageCalculationDetails = {
             marketCondition,
@@ -438,9 +432,11 @@ export class FuturesBot {
             aiConfidence: signal.aiAnalysis.confidence,
             aiScore: signal.aiAnalysis.score,
             riskLevel: signal.aiAnalysis.riskLevel,
+            trendStrength: (signal.indicators.adx15m + signal.indicators.adx1h + signal.indicators.adx4h) / 3,
+            volatility: signal.indicators.atr / signal.price,
           }
 
-          logger.info('动态杠杆', `杠杆计算完成 ${finalLeverage} X`)
+          logger.info('动态杠杆', `杠杆计算完成 ${finalLeverage} X`, leverageCalculationDetails)
         } catch (error: any) {
           logger.warn('动态杠杆', `动态杠杆计算失败，使用静态杠杆: ${error.message}`)
           // 如果动态杠杆计算失败，使用静态杠杆
