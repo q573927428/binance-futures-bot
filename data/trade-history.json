@@ -1,5 +1,33 @@
 [
   {
+    "id": "1769771408126-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "SHORT",
+    "entryPrice": 838.77,
+    "exitPrice": 838.85,
+    "quantity": 0.35,
+    "leverage": 11,
+    "pnl": -0.028000000000014322,
+    "pnlPercentage": -0.10491553107531865,
+    "openTime": 1769771167633,
+    "closeTime": 1769771408126,
+    "reason": "止损触发"
+  },
+  {
+    "id": "1769750658020-ETH/USDT",
+    "symbol": "ETH/USDT",
+    "direction": "SHORT",
+    "entryPrice": 2754.58,
+    "exitPrice": 2753.11,
+    "quantity": 0.029,
+    "leverage": 3,
+    "pnl": 0.0426299999999942,
+    "pnlPercentage": 0.16009700208378047,
+    "openTime": 1769746484261,
+    "closeTime": 1769750658020,
+    "reason": "止损触发"
+  },
+  {
     "id": "1769737192840-BNB/USDT",
     "symbol": "BNB/USDT",
     "direction": "SHORT",
