@@ -178,6 +178,9 @@
 
               <div v-if="botStore.state?.currentPosition" class="position-info">
                 <el-descriptions :column="2" border>
+                  <el-descriptions-item label="开仓时间">
+                    {{ dayjs(botStore.state.currentPosition.openTime).format('YYYY-MM-DD HH:mm:ss') }}
+                  </el-descriptions-item>
                   <el-descriptions-item label="交易对">
                     {{ botStore.state.currentPosition.symbol }}
                   </el-descriptions-item>
@@ -187,7 +190,10 @@
                     </el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item label="入场价">
-                    {{ botStore.state.currentPosition.entryPrice.toFixed(2) }} ({{ botStore.state.currentPrice?.toFixed(2) || '--' }})
+                    {{ botStore.state.currentPosition.entryPrice.toFixed(2) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="当前价">
+                    ({{ botStore.state.currentPrice?.toFixed(2) || '--' }})
                   </el-descriptions-item>
                   <el-descriptions-item label="数量">
                     {{ botStore.state.currentPosition.quantity }}
@@ -234,6 +240,10 @@
                     </el-tag>
                   </template>
                 </el-table-column>
+                <el-table-column prop="quantity" label="数量" width="100"> 
+                </el-table-column>
+                <el-table-column prop="leverage" label="杠杆" width="80"> 
+                </el-table-column>
                 <el-table-column prop="entryPrice" label="入场价" width="100">
                   <template #default="scope">
                     {{ scope.row.entryPrice.toFixed(2) }}
@@ -244,7 +254,7 @@
                     {{ scope.row.exitPrice.toFixed(2) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="pnl" label="盈亏(USDT)" width="120">
+                <el-table-column prop="pnl" label="盈亏(U)" width="100">
                   <template #default="scope">
                     <span :class="scope.row.pnl >= 0 ? 'text-success' : 'text-danger'">
                       {{ scope.row.pnl.toFixed(2) }}
@@ -259,6 +269,16 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="reason" label="原因" min-width="120" />
+                <el-table-column prop="openTime" label="开仓时间" width="160"> 
+                  <template #default="scope">
+                    {{ dayjs(scope.row.openTime).format('YYYY-MM-DD HH:mm') }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="closeTime" label="平仓时间" width="160"> 
+                  <template #default="scope">
+                    {{ dayjs(scope.row.closeTime).format('YYYY-MM-DD HH:mm') }}
+                  </template>
+                </el-table-column>
               </el-table>
 
               <el-empty v-if="botStore.history.length === 0" description="暂无交易记录" />
