@@ -1,27 +1,15 @@
 {
   "status": "MONITORING",
-  "currentPosition": {
-    "symbol": "ETH/USDT",
-    "direction": "SHORT",
-    "entryPrice": 2754.58,
-    "quantity": 0.029,
-    "leverage": 3,
-    "stopLoss": 2786.754571658109,
-    "takeProfit1": 2722.405428341891,
-    "takeProfit2": 2690.230856683782,
-    "openTime": 1769746484261,
-    "orderId": "8389766086534055735",
-    "stopLossOrderId": "3000000464269255"
-  },
+  "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1769737193053,
-    "dailyLoss": 1.687307812396871,
-    "consecutiveLosses": 0
+    "timestamp": 1769771408323,
+    "dailyLoss": 1.6550333600693146,
+    "consecutiveLosses": 1
   },
-  "todayTrades": 2,
-  "dailyPnL": 2.203759999999993,
+  "todayTrades": 3,
+  "dailyPnL": 2.2183899999999728,
   "lastResetDate": "2026-01-30",
   "monitoringSymbols": [
     "BTC/USDT",
@@ -30,7 +18,10 @@
     "SOL/USDT"
   ],
   "isRunning": true,
-  "currentPrice": 2755.64,
-  "currentPnL": -0.030739999999998418,
-  "currentPnLPercentage": -0.11544409674069502
+  "currentPrice": 838.62,
+  "currentPnL": 0.05249999999999204,
+  "currentPnLPercentage": 0.19671662076609203,
+  "totalTrades": 7,
+  "totalPnL": 3.4871899999999845,
+  "winRate": 71.43
 }

@@ -70,7 +70,6 @@
                       {{ formatPnL(botStore.state?.dailyPnL || 0) }}
                     </span>
                   </div>
-                  <el-divider />
                   <div class="stat-item">
                     <span class="stat-label">总交易次数</span>
                     <span class="stat-value">{{ botStore.state?.totalTrades || 0 }}</span>
