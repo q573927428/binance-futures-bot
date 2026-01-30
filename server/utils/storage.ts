@@ -227,7 +227,7 @@ export function getDefaultConfig(): BotConfig {
     riskConfig: {
       circuitBreaker: {
         dailyLossThreshold: 2,       // 当日亏损阈值（%）
-        consecutiveLossesThreshold: 2, // 连续止损阈值（次）
+        consecutiveLossesThreshold: 3, // 连续止损阈值（次）
       },
       forceLiquidateTime: {
         hour: 23,    // 小时（0-23）
