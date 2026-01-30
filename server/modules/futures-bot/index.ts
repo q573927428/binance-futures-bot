@@ -542,6 +542,14 @@ export class FuturesBot {
         openTime: Date.now(),
         orderId: order.orderId,
         stopLossOrderId: stopOrder.orderId,
+        //添加一个止损订单symbol
+        stopLossOrderSymbol: stopOrder.symbol,
+        stopLossOrderSide: stopOrder.side,
+        stopLossOrderType: stopOrder.type,
+        stopLossOrderQuantity: stopOrder.quantity,
+        stopLossOrderStopPrice: stopOrder.stopPrice,
+        stopLossOrderStatus: stopOrder.status,
+        stopLossOrderTimestamp: stopOrder.timestamp,
       }
 
       this.state.currentPosition = position

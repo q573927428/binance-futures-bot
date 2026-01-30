@@ -192,7 +192,7 @@ export function getDefaultConfig(): BotConfig {
       },
       takeProfit: {
         tp1RiskRewardRatio: 2,      // TP1盈亏比（1:1）
-        tp2RiskRewardRatio: 3,      // TP2盈亏比（1:2）
+        tp2RiskRewardRatio: 2,      // TP2盈亏比（1:2）
         rsiExtreme: {
           long: 70,   // 多头RSI极值
           short: 30,  // 空头RSI极值

@@ -198,6 +198,13 @@ export interface Position {
   orderId?: string
   stopLossOrderId?: string
   takeProfitOrderId?: string
+  stopLossOrderSymbol?: string
+  stopLossOrderSide?: 'BUY' | 'SELL'
+  stopLossOrderType?: 'STOP_MARKET' | 'STOP_LIMIT' | 'TAKE_PROFIT_MARKET'  | 'MARKET' | 'LIMIT'
+  stopLossOrderQuantity?: number
+  stopLossOrderStopPrice?: number
+  stopLossOrderStatus?: string
+  stopLossOrderTimestamp?: number
 }
 
 // 订单信息

@@ -192,7 +192,7 @@ export class BinanceService {
     try {
       const order = await this.privateExchange.createOrder(
         symbol,
-        'stop_market',
+        'stop_limit',
         side,
         amount,
         stopPrice,
