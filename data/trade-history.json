@@ -1,5 +1,47 @@
 [
   {
+    "id": "1769737192840-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "SHORT",
+    "entryPrice": 863.74,
+    "exitPrice": 851,
+    "quantity": 0.09,
+    "leverage": 3,
+    "pnl": 1.1466000000000007,
+    "pnlPercentage": 4.424942691087598,
+    "openTime": 1769720828116,
+    "closeTime": 1769737192840,
+    "reason": "TP2止盈"
+  },
+  {
+    "id": "1769720085472-ETH/USDT",
+    "symbol": "ETH/USDT",
+    "direction": "SHORT",
+    "entryPrice": 2804.75,
+    "exitPrice": 2802.28,
+    "quantity": 0.028,
+    "leverage": 3,
+    "pnl": 0.06915999999999439,
+    "pnlPercentage": 0.2641946697566414,
+    "openTime": 1769719964970,
+    "closeTime": 1769720085472,
+    "reason": "TP2止盈"
+  },
+  {
+    "id": "1769708920161-SOL/USDT",
+    "symbol": "SOL/USDT",
+    "direction": "SHORT",
+    "entryPrice": 119.71,
+    "exitPrice": 118.19,
+    "quantity": 0.65,
+    "leverage": 3,
+    "pnl": 0.9879999999999974,
+    "pnlPercentage": 3.8092055801520237,
+    "openTime": 1769707235311,
+    "closeTime": 1769708920161,
+    "reason": "TP1止盈"
+  },
+  {
     "id": "1769697176584-SOL/USDT",
     "symbol": "SOL/USDT",
     "direction": "SHORT",

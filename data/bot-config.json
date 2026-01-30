@@ -13,7 +13,7 @@
   "scanInterval": 120,
   "aiConfig": {
     "enabled": true,
-    "analysisInterval": 1440,
+    "analysisInterval": 10,
     "minConfidence": 60,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
@@ -31,7 +31,7 @@
     },
     "takeProfit": {
       "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 3,
+      "tp2RiskRewardRatio": 2,
       "rsiExtreme": {
         "long": 70,
         "short": 30
@@ -48,7 +48,7 @@
     "aiConfidenceWeight": 0.3,
     "aiScoreWeight": 0.4,
     "riskLevelMultipliers": {
-      "LOW": 1.0,
+      "LOW": 1,
       "MEDIUM": 0.7,
       "HIGH": 0.4
     },
