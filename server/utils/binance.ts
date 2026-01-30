@@ -259,7 +259,7 @@ export class BinanceService {
   /**
    * 取消订单（使用私有实例）
    */
-  async cancelOrder(symbol: string, orderId: string,params?: { trigger?: boolean }): Promise<void> {
+  async cancelOrder(orderId: string, symbol: string, params?: { trigger?: boolean }): Promise<void> {
     try {
       await this.privateExchange.cancelOrder(orderId, symbol, params)
     } catch (error: any) {
@@ -306,9 +306,9 @@ export class BinanceService {
   /**
    * 获取订单状态（使用私有实例）
    */
-  async fetchOrder(symbol: string, orderId: string): Promise<Order> {
+  async fetchOrder(orderId: string, symbol: string,  params?: { trigger?: boolean }): Promise<Order> {
     try {
-      const order = await this.privateExchange.fetchOrder(orderId, symbol)
+      const order = await this.privateExchange.fetchOrder(orderId, symbol, params )
       
       // 映射订单类型
       const mapOrderType = (ccxtType: string | undefined): Order['type'] => {

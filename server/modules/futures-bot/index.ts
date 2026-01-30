@@ -693,16 +693,24 @@ export class FuturesBot {
       // 尝试查询止损订单状态
       if (position.stopLossOrderId) {
         try {
-          const stopOrder = await this.binance.fetchOrder(position.symbol, position.stopLossOrderId)
+          //ccxt 最新 trigger: true 可以查询 条件委托 止损单 
+          const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
           
           // 如果订单已成交，获取成交价格
           if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
             exitPrice = stopOrder.price || position.stopLoss
             logger.info('补偿平仓', `止损订单已成交，成交价: ${exitPrice}`)
           } else {
-            // 如果订单未成交，使用当前价格
-            exitPrice = await this.binance.fetchPrice(position.symbol)
-            logger.info('补偿平仓', `止损订单状态: ${stopOrder.status}，使用当前价格: ${exitPrice}`)
+            //如果订单未成交 尝试取消止损单
+            try {
+              await this.binance.cancelOrder(position.stopLossOrderId, position.symbol, { trigger: true })
+              logger.info('补偿平仓', `成功取消止损订单: ${position.stopLossOrderId}`)
+              exitPrice = stopOrder.price || position.stopLoss
+            } catch (error: any) {
+              // 如果订单未成交，使用当前价格
+              exitPrice = await this.binance.fetchPrice(position.symbol)
+              logger.info('补偿平仓', `止损订单状态: ${stopOrder.status}，使用当前价格: ${exitPrice}`)
+            }
           }
         } catch (error: any) {
           // 如果查询订单失败，使用当前价格
@@ -793,11 +801,7 @@ export class FuturesBot {
       // 取消止损单（条件单）
       if (position.stopLossOrderId) {
         try {
-          await this.binance.cancelOrder(
-            position.stopLossOrderId,
-            position.symbol,
-            { trigger: true }
-          )
+          await this.binance.cancelOrder(position.stopLossOrderId, position.symbol, { trigger: true })
           logger.info('平仓', '止损单已取消')
         } catch (e: any) {
           logger.warn('平仓', `取消止损单失败: ${e.message}`)
