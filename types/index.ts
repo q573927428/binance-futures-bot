@@ -205,7 +205,7 @@ export interface Order {
   orderId: string
   symbol: string
   side: 'BUY' | 'SELL'
-  type: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET'
+  type: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' | 'TAKE_PROFIT_MARKET'
   quantity: number
   price?: number
   stopPrice?: number

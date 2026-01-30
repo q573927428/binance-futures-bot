@@ -188,7 +188,6 @@ export class BinanceService {
     side: 'buy' | 'sell',
     amount: number,
     stopPrice: number,
-    isEntry: boolean = false
   ): Promise<Order> {
     try {
       const order = await this.privateExchange.createOrder(
@@ -196,7 +195,7 @@ export class BinanceService {
         'stop_market',
         side,
         amount,
-        undefined,
+        stopPrice,
         { 
           stopPrice,
           reduceOnly: true
@@ -207,7 +206,7 @@ export class BinanceService {
         orderId: order.id,
         symbol: order.symbol,
         side: side.toUpperCase() as 'BUY' | 'SELL',
-        type: 'STOP_MARKET',
+        type: 'STOP_LIMIT',
         quantity: order.amount,
         stopPrice,
         status: order.status || 'unknown',
@@ -261,9 +260,15 @@ export class BinanceService {
    */
   async cancelOrder(symbol: string, orderId: string): Promise<void> {
     try {
+      // 1. 先按普通订单取消
       await this.privateExchange.cancelOrder(orderId, symbol)
-    } catch (error: any) {
-      throw new Error(`取消订单失败: ${error.message}`)
+    } catch (e1: any) {
+      try {
+        // 2. 再按条件单取消
+        await this.privateExchange.cancelOrder(orderId, symbol, { stop: true })
+      } catch (e2: any) {
+        throw new Error(`取消订单失败: ${e2.message}`)
+      }
     }
   }
 

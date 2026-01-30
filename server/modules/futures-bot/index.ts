@@ -525,7 +525,7 @@ export class FuturesBot {
 
       // 设置止损单 (平仓操作，isEntry=false)
       const stopSide = getOrderSide(signal.direction, false)
-      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, quantity, stopLoss, false)
+      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, quantity, stopLoss)
 
       logger.success('止损', `止损单已设置`, stopOrder)
 
@@ -777,8 +777,8 @@ export class FuturesBot {
       if (position.stopLossOrderId) {
         try {
           await this.binance.cancelOrder(
-            position.stopLossOrderId,
-            position.symbol
+            position.symbol,
+            position.stopLossOrderId
           )
           logger.info('平仓', '止损单已取消')
         } catch (e: any) {
