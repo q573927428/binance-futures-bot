@@ -44,16 +44,11 @@
     "enabled": true,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 2,
-    "aiConfidenceWeight": 0.3,
-    "aiScoreWeight": 0.4,
+    "baseLeverage": 5,
     "riskLevelMultipliers": {
-      "LOW": 1,
-      "MEDIUM": 0.7,
-      "HIGH": 0.4
-    },
-    "volatilityPenaltyFactor": 0.5,
-    "maxVolatilityThreshold": 0.03,
-    "useMarketConditionAdjustment": true
+      "LOW": 1.5,
+      "MEDIUM": 1,
+      "HIGH": 0.5
+    }
   }
 }
