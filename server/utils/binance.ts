@@ -259,17 +259,11 @@ export class BinanceService {
   /**
    * 取消订单（使用私有实例）
    */
-  async cancelOrder(symbol: string, orderId: string): Promise<void> {
+  async cancelOrder(symbol: string, orderId: string,params?: { trigger?: boolean }): Promise<void> {
     try {
-      // 1. 先按普通订单取消
-      await this.privateExchange.cancelOrder(orderId, symbol)
-    } catch (e1: any) {
-      try {
-        // 2. 再按条件单取消
-        await this.privateExchange.cancelOrder(orderId, symbol, { stop: true })
-      } catch (e2: any) {
-        throw new Error(`取消订单失败: ${e2.message}`)
-      }
+      await this.privateExchange.cancelOrder(orderId, symbol, params)
+    } catch (error: any) {
+      throw new Error(`取消订单失败: ${error.message}`)
     }
   }
 

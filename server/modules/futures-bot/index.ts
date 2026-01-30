@@ -784,23 +784,24 @@ export class FuturesBot {
 
       const position = this.state.currentPosition
 
+      // 确保方向是LONG或SHORT
+      if (position.direction === 'IDLE') {
+        logger.error('平仓', '持仓方向为IDLE，无法平仓')
+        return
+      }
+
       // 取消止损单（条件单）
       if (position.stopLossOrderId) {
         try {
           await this.binance.cancelOrder(
+            position.stopLossOrderId,
             position.symbol,
-            position.stopLossOrderId
+            { trigger: true }
           )
           logger.info('平仓', '止损单已取消')
         } catch (e: any) {
           logger.warn('平仓', `取消止损单失败: ${e.message}`)
         }
-      }
-
-      // 确保方向是LONG或SHORT
-      if (position.direction === 'IDLE') {
-        logger.error('平仓', '持仓方向为IDLE，无法平仓')
-        return
       }
 
       // 取消所有未成交订单
