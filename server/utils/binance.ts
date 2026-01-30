@@ -192,13 +192,14 @@ export class BinanceService {
     try {
       const order = await this.privateExchange.createOrder(
         symbol,
-        'stop_limit',
+        'STOP_MARKET',
         side,
         amount,
-        stopPrice,
+        undefined,
         { 
           stopPrice,
-          reduceOnly: true
+          reduceOnly: true,
+          workingType: 'MARK_PRICE',
         }
       )
       
@@ -206,7 +207,7 @@ export class BinanceService {
         orderId: order.id,
         symbol: order.symbol,
         side: side.toUpperCase() as 'BUY' | 'SELL',
-        type: 'STOP_LIMIT',
+        type: 'STOP_MARKET',
         quantity: order.amount,
         stopPrice,
         status: order.status || 'unknown',
