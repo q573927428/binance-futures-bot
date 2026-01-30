@@ -77,7 +77,43 @@ export async function loadBotConfig(): Promise<BotConfig | null> {
 }
 
 /**
- * 添加交易历史记录
+ * 计算总统计数据
+ */
+function calculateTotalStats(history: TradeHistory[]): { totalTrades: number; totalPnL: number; winRate: number } {
+  const totalTrades = history.length
+  const totalPnL = history.reduce((sum, trade) => sum + trade.pnl, 0)
+  const winningTrades = history.filter(trade => trade.pnl > 0).length
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0
+  
+  return {
+    totalTrades,
+    totalPnL,
+    winRate: parseFloat(winRate.toFixed(2))
+  }
+}
+
+/**
+ * 更新总统计数据到状态
+ */
+export async function updateTotalStatsInState(): Promise<void> {
+  try {
+    const history = await getTradeHistory()
+    const stats = calculateTotalStats(history)
+    
+    const currentState = await loadBotState()
+    if (currentState) {
+      currentState.totalTrades = stats.totalTrades
+      currentState.totalPnL = stats.totalPnL
+      currentState.winRate = stats.winRate
+      await saveBotState(currentState)
+    }
+  } catch (error: any) {
+    console.error('更新总统计数据失败:', error.message)
+  }
+}
+
+/**
+ * 添加交易历史记录并更新总统计数据
  */
 export async function addTradeHistory(trade: TradeHistory): Promise<void> {
   try {
@@ -111,6 +147,9 @@ export async function addTradeHistory(trade: TradeHistory): Promise<void> {
     
     await writeFile(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8')
     console.log(`交易历史已保存: ${trade.symbol} ${trade.direction} PnL: ${trade.pnl.toFixed(2)} USDT`)
+    
+    // 更新总统计数据
+    await updateTotalStatsInState()
   } catch (error: any) {
     console.error('保存交易历史失败:', error.message)
     console.error('错误堆栈:', error.stack)
@@ -234,5 +273,9 @@ export function getDefaultState(): BotState {
     lastResetDate: dayjs().format('YYYY-MM-DD'),
     monitoringSymbols: [],
     isRunning: false,
+    // 总统计数据默认值
+    totalTrades: 0,
+    totalPnL: 0,
+    winRate: 0,
   }
 }

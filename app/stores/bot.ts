@@ -8,7 +8,8 @@ import type {
   StatusResponse,
   StartStopResponse,
   ConfigResponse,
-  HistoryResponse
+  HistoryResponse,
+  HistoryStats
 } from '../../types'
 
 export const useBotStore = defineStore('bot', {
@@ -18,6 +19,7 @@ export const useBotStore = defineStore('bot', {
     history: [] as TradeHistory[],
     logs: [] as LogEntry[],
     cryptoBalances: [] as CryptoBalance[],
+    historyStats: null as HistoryStats | null,
     isLoading: false,
     error: null as string | null,
   }),
@@ -142,6 +144,7 @@ export const useBotStore = defineStore('bot', {
 
         if (response.success) {
           this.history = response.data!
+          this.historyStats = response.stats || null
         } else {
           this.error = response.message || '获取历史失败'
         }

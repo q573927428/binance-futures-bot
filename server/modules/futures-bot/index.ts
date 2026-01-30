@@ -5,7 +5,7 @@ import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, 
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../utils/ai-analysis'
 import { checkCircuitBreaker, shouldResetDailyState, shouldForceLiquidate, isPositionTimeout, checkTP1Condition, checkTP2Condition, calculatePnL, getOrderSide, checkDailyTradeLimit } from '../../utils/risk'
 import { logger } from '../../utils/logger'
-import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTradeHistory } from '../../utils/storage'
+import { saveBotState, loadBotState, saveBotConfig, loadBotConfig, getDefaultConfig, getDefaultState, addTradeHistory, getTradeHistory, updateTotalStatsInState } from '../../utils/storage'
 import { 
   calculateQuickLeverage,
   calculateSafeLeverage,
@@ -74,6 +74,9 @@ export class FuturesBot {
         // 直接开始扫描循环
         await this.scanLoop()
       }
+
+      // 初始化总统计数据
+      await updateTotalStatsInState()
 
       this.isInitialized = true
       logger.success('系统', '交易机器人初始化完成')

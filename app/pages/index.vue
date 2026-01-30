@@ -70,6 +70,21 @@
                       {{ formatPnL(botStore.state?.dailyPnL || 0) }}
                     </span>
                   </div>
+                  <el-divider />
+                  <div class="stat-item">
+                    <span class="stat-label">总交易次数</span>
+                    <span class="stat-value">{{ botStore.state?.totalTrades || 0 }}</span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">总盈亏</span>
+                    <span :class="['stat-value', totalPnLClass]">
+                      {{ formatTotalPnL(botStore.state?.totalPnL || 0) }}
+                    </span>
+                  </div>
+                  <div class="stat-item">
+                    <span class="stat-label">总胜率</span>
+                    <span class="stat-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</span>
+                  </div>
                 </div>
               </div>
             </el-card>
@@ -485,8 +500,21 @@ const pnlClass = computed(() => {
   return pnl >= 0 ? 'text-success' : 'text-danger'
 })
 
+const totalPnLClass = computed(() => {
+  const totalPnL = botStore.state?.totalPnL || 0
+  return totalPnL >= 0 ? 'text-success' : 'text-danger'
+})
+
 function formatPnL(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)} USDT`
+}
+
+function formatTotalPnL(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)} USDT`
+}
+
+function formatWinRate(value: number): string {
+  return `${value.toFixed(2)}%`
 }
 
 function formatTime(timestamp: number): string {

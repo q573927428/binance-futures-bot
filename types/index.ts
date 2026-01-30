@@ -258,6 +258,10 @@ export interface BotState {
   currentPrice?: number  // 当前价格（仅当有持仓时有效）
   currentPnL?: number    // 当前盈亏金额（仅当有持仓时有效）
   currentPnLPercentage?: number  // 当前盈亏百分比（仅当有持仓时有效）
+  // 总统计数据
+  totalTrades?: number
+  totalPnL?: number
+  winRate?: number
 }
 
 // 加密货币余额
@@ -304,6 +308,13 @@ export interface StatusResponseData {
   cryptoBalances?: CryptoBalance[]
 }
 
+// 历史统计数据
+export interface HistoryStats {
+  totalTrades: number
+  totalPnL: number
+  winRate: number
+}
+
 // 历史响应数据
 export interface HistoryResponseData extends Array<TradeHistory> {}
 
@@ -311,7 +322,12 @@ export interface HistoryResponseData extends Array<TradeHistory> {}
 export type StatusResponse = ApiResponse<StatusResponseData>
 
 // 历史响应
-export type HistoryResponse = ApiResponse<HistoryResponseData>
+export interface HistoryResponse {
+  success: boolean
+  message?: string
+  data?: HistoryResponseData
+  stats?: HistoryStats
+}
 
 // 启动/停止响应
 export interface StartStopResponse {
