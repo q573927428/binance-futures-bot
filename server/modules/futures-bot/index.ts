@@ -189,10 +189,14 @@ export class FuturesBot {
     const dailyLimitPassed = checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)
     
     if (!dailyLimitPassed) {
-      logger.warn('风控', '已达到每日交易次数限制', {
+      logger.warn('风控', '已达到每日交易次数限制，停止扫描', {
         今日交易次数: this.state.todayTrades,
         限制次数: this.config.riskConfig.dailyTradeLimit,
       })
+      // 停止机器人运行，避免不必要的API调用
+      this.state.isRunning = false
+      this.state.status = PositionStatus.IDLE
+      await saveBotState(this.state)
       return
     }
 
