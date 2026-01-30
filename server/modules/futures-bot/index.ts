@@ -75,8 +75,11 @@ export class FuturesBot {
         await this.scanLoop()
       }
 
-      // 初始化总统计数据
-      await updateTotalStatsInState()
+      // 初始化总统计数据并更新当前状态
+      const updatedState = await updateTotalStatsInState()
+      if (updatedState) {
+        this.state = updatedState
+      }
 
       this.isInitialized = true
       logger.success('系统', '交易机器人初始化完成')
@@ -742,7 +745,11 @@ export class FuturesBot {
         reason,
       }
 
-      await addTradeHistory(trade)
+      // 添加交易历史并更新状态
+      const updatedState = await addTradeHistory(trade)
+      if (updatedState) {
+        this.state = updatedState
+      }
 
       // 更新每日盈亏
       this.state.dailyPnL += pnl
@@ -841,7 +848,11 @@ export class FuturesBot {
         reason,
       }
 
-      await addTradeHistory(trade)
+      // 添加交易历史并更新状态
+      const updatedState = await addTradeHistory(trade)
+      if (updatedState) {
+        this.state = updatedState
+      }
 
       // 更新每日盈亏
       this.state.dailyPnL += pnl

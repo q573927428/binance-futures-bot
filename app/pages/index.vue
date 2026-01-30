@@ -61,18 +61,14 @@
 
                 <div class="stats">
                   <div class="stat-item">
-                    <span class="stat-label">今日交易次数</span>
-                    <span class="stat-value">{{ botStore.state?.todayTrades || 0 }}</span>
+                    <span class="stat-label">总交易次数</span>
+                    <span class="stat-value">{{ botStore.state?.totalTrades || 0 }}（今日：{{ botStore.state?.todayTrades || 0 }}）</span>
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">今日盈亏</span>
                     <span :class="['stat-value', pnlClass]">
                       {{ formatPnL(botStore.state?.dailyPnL || 0) }}
                     </span>
-                  </div>
-                  <div class="stat-item">
-                    <span class="stat-label">总交易次数</span>
-                    <span class="stat-value">{{ botStore.state?.totalTrades || 0 }}</span>
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">总盈亏</span>

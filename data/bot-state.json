@@ -1,5 +1,5 @@
 {
-  "status": "MONITORING",
+  "status": "IDLE",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
@@ -17,7 +17,7 @@
     "BNB/USDT",
     "SOL/USDT"
   ],
-  "isRunning": true,
+  "isRunning": false,
   "currentPrice": 838.62,
   "currentPnL": 0.05249999999999204,
   "currentPnLPercentage": 0.19671662076609203,

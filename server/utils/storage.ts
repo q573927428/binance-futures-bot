@@ -93,9 +93,9 @@ function calculateTotalStats(history: TradeHistory[]): { totalTrades: number; to
 }
 
 /**
- * 更新总统计数据到状态
+ * 更新总统计数据到状态并返回更新后的状态
  */
-export async function updateTotalStatsInState(): Promise<void> {
+export async function updateTotalStatsInState(): Promise<BotState | null> {
   try {
     const history = await getTradeHistory()
     const stats = calculateTotalStats(history)
@@ -106,16 +106,19 @@ export async function updateTotalStatsInState(): Promise<void> {
       currentState.totalPnL = stats.totalPnL
       currentState.winRate = stats.winRate
       await saveBotState(currentState)
+      return currentState
     }
+    return null
   } catch (error: any) {
     console.error('更新总统计数据失败:', error.message)
+    return null
   }
 }
 
 /**
  * 添加交易历史记录并更新总统计数据
  */
-export async function addTradeHistory(trade: TradeHistory): Promise<void> {
+export async function addTradeHistory(trade: TradeHistory): Promise<BotState | null> {
   try {
     await ensureDataDir()
     
@@ -148,13 +151,14 @@ export async function addTradeHistory(trade: TradeHistory): Promise<void> {
     await writeFile(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf-8')
     console.log(`交易历史已保存: ${trade.symbol} ${trade.direction} PnL: ${trade.pnl.toFixed(2)} USDT`)
     
-    // 更新总统计数据
-    await updateTotalStatsInState()
+    // 更新总统计数据并返回更新后的状态
+    return await updateTotalStatsInState()
   } catch (error: any) {
     console.error('保存交易历史失败:', error.message)
     console.error('错误堆栈:', error.stack)
     // 不重新抛出错误，避免影响主流程
     // 但记录详细错误信息以便调试
+    return null
   }
 }
 
