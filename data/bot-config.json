@@ -44,7 +44,7 @@
     "enabled": true,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 5,
+    "baseLeverage": 8,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,

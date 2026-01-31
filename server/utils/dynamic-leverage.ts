@@ -12,8 +12,8 @@ export interface DynamicLeverageConfig {
 }
 
 /**
- * 快速杠杆计算（极简模式）
- * 只基于AI置信度和风险等级
+ * 快速杠杆计算（增强版）
+ * 基于AI置信度、AI评分和风险等级
  */
 export function calculateQuickLeverage(
   aiAnalysis: AIAnalysis,
@@ -23,9 +23,14 @@ export function calculateQuickLeverage(
   let leverage = config.baseLeverage
   
   // AI置信度调整：置信度越高，杠杆越高
-  // 置信度0-100 -> 乘数0.5-1.5
-  const confidenceFactor = 0.5 + (aiAnalysis.confidence / 100) * 1.0
+  // 置信度60-100 -> 乘数0.7-1.5（扩大范围以获得更分散的杠杆）
+  const confidenceFactor = 0.7 + ((aiAnalysis.confidence - 60) / 40) * 0.8
   leverage *= confidenceFactor
+  
+  // AI评分调整：评分越高，杠杆越高
+  // 评分60-100 -> 乘数0.6-1.4（扩大范围以获得更分散的杠杆）
+  const scoreFactor = 0.6 + ((aiAnalysis.score - 60) / 40) * 0.8
+  leverage *= scoreFactor
   
   // 风险等级调整：风险越低，杠杆越高
   const riskFactor = config.riskLevelMultipliers[aiAnalysis.riskLevel] || 1.0

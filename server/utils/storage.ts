@@ -248,8 +248,8 @@ export function getDefaultConfig(): BotConfig {
       enabled: true,                 // 启用动态杠杆
       minLeverage: 2,                // 最小杠杆倍数
       maxLeverage: 20,               // 最大杠杆倍数
-      baseLeverage: 5,               // 基础杠杆倍数
-      riskLevelMultipliers: {        // 风险等级乘数
+      baseLeverage: 8,               // 基础杠杆倍数（从5提高到8以获得更分散的杠杆）
+      riskLevelMultipliers: {        // 风险等级乘数（进一步调整以获得更分散的杠杆）
         LOW: 1.5,
         MEDIUM: 1.0,
         HIGH: 0.5,
