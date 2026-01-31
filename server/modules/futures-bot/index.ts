@@ -105,10 +105,10 @@ export class FuturesBot {
       this.state.monitoringSymbols = this.config.symbols
       await saveBotState(this.state)
 
+      logger.success('系统', '交易机器人已启动')
       // 开始扫描循环
       await this.scanLoop()
 
-      logger.success('系统', '交易机器人已启动')
     } catch (error: any) {
       logger.error('系统', '启动失败', error.message)
       this.state.isRunning = false
@@ -896,7 +896,10 @@ export class FuturesBot {
    */
   private async resetDailyState(): Promise<void> {
     logger.info('系统', '重置每日状态')
-
+    
+    // 保存重置前的运行状态，用于判断是否需要自动重启
+    const wasRunning = this.state.isRunning
+    
     this.state.todayTrades = 0
     this.state.dailyPnL = 0
     this.state.lastResetDate = dayjs().format('YYYY-MM-DD')
@@ -909,6 +912,19 @@ export class FuturesBot {
     }
 
     await saveBotState(this.state)
+    
+    // 简单实用的自动重启逻辑：
+    // 如果重置前机器人是停止状态（可能是因为达到每日交易限制），
+    // 重置后自动启动机器人
+    if (!wasRunning) {
+      logger.info('系统', '每日状态重置完成，自动启动机器人')
+      this.state.isRunning = true
+      this.state.status = PositionStatus.MONITORING
+      await saveBotState(this.state)
+      
+      // 开始扫描循环
+      await this.scanLoop()
+    }
   }
 
   /**
