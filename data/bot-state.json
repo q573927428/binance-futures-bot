@@ -1,27 +1,46 @@
 {
-  "status": "IDLE",
-  "currentPosition": null,
+  "status": "POSITION",
+  "currentPosition": {
+    "symbol": "ETH/USDT",
+    "direction": "SHORT",
+    "entryPrice": 2703.15,
+    "quantity": 0.108,
+    "leverage": 11,
+    "stopLoss": 2739.6485666697495,
+    "takeProfit1": 2666.6514333302507,
+    "takeProfit2": 2630.1528666605013,
+    "openTime": 1769810475473,
+    "orderId": "8389766087177299977",
+    "stopLossOrderId": "3000000473155739",
+    "stopLossOrderSymbol": "ETH/USDT:USDT",
+    "stopLossOrderSide": "BUY",
+    "stopLossOrderType": "STOP_MARKET",
+    "stopLossOrderQuantity": 0.108,
+    "stopLossOrderStopPrice": 2739.6485666697495,
+    "stopLossOrderStatus": "open",
+    "stopLossOrderTimestamp": 1769810475463
+  },
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1769771408323,
-    "dailyLoss": 1.6550333600693146,
-    "consecutiveLosses": 1
+    "timestamp": 1769810347220,
+    "dailyLoss": 1.0031603192262417,
+    "consecutiveLosses": 0
   },
-  "todayTrades": 3,
-  "dailyPnL": 2.2183899999999728,
-  "lastResetDate": "2026-01-30",
+  "todayTrades": 4,
+  "dailyPnL": 1.325531605823414,
+  "lastResetDate": "2026-01-31",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
     "BNB/USDT",
     "SOL/USDT"
   ],
-  "isRunning": false,
-  "currentPrice": 838.62,
-  "currentPnL": 0.05249999999999204,
-  "currentPnLPercentage": 0.19671662076609203,
-  "totalTrades": 7,
-  "totalPnL": 3.4871899999999845,
-  "winRate": 71.43
+  "isRunning": true,
+  "currentPrice": 2690.35,
+  "currentPnL": 1.3824000000000196,
+  "currentPnLPercentage": 5.208737953868709,
+  "totalTrades": 12,
+  "totalPnL": 0.9292294862150089,
+  "winRate": 58.33
 }

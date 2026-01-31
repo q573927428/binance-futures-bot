@@ -242,7 +242,7 @@
               </template>
 
               <el-table :data="botStore.history" style="width: 100%" max-height="400">
-                <el-table-column prop="symbol" label="交易对" width="120" />
+                <el-table-column prop="symbol" label="交易对" width="100" />
                 <el-table-column prop="direction" label="方向" width="80">
                   <template #default="scope">
                     <el-tag :type="scope.row.direction === 'LONG' ? 'success' : 'danger'" size="small">
@@ -250,7 +250,7 @@
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column prop="quantity" label="数量" width="100"> 
+                <el-table-column prop="quantity" label="数量" width="80"> 
                 </el-table-column>
                 <el-table-column prop="leverage" label="杠杆" width="80"> 
                 </el-table-column>
