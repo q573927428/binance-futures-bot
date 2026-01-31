@@ -317,7 +317,7 @@ export class FuturesBot {
         symbol,
         direction: trendResult.direction,
         price,
-        confidence: 75,
+        confidence: aiAnalysis?.confidence || 60,
         indicators,
         aiAnalysis,
         timestamp: Date.now(),
