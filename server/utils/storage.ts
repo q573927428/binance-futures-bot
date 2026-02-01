@@ -235,7 +235,7 @@ export function getDefaultConfig(): BotConfig {
       },
       takeProfit: {
         tp1RiskRewardRatio: 2,      // TP1盈亏比（1:2）
-        tp2RiskRewardRatio: 3,      // TP2盈亏比（1:3）
+        tp2RiskRewardRatio: 2,      // TP2盈亏比（1:3）
         rsiExtreme: {
           long: 70,   // 多头RSI极值
           short: 30,  // 空头RSI极值
@@ -248,7 +248,7 @@ export function getDefaultConfig(): BotConfig {
       enabled: true,                 // 启用动态杠杆
       minLeverage: 2,                // 最小杠杆倍数
       maxLeverage: 20,               // 最大杠杆倍数
-      baseLeverage: 8,               // 基础杠杆倍数（从5提高到8以获得更分散的杠杆）
+      baseLeverage: 6,               // 基础杠杆倍数（从5提高到8以获得更分散的杠杆）
       riskLevelMultipliers: {        // 风险等级乘数（进一步调整以获得更分散的杠杆）
         LOW: 1.5,
         MEDIUM: 1.0,
