@@ -83,16 +83,40 @@ export function isPositionTimeout(
 export function checkTP1Condition(
   currentPrice: number,
   position: Position
-): boolean {
+): { triggered: boolean; reason: string; data: any } {
   const { entryPrice, stopLoss, direction } = position
   const risk = Math.abs(entryPrice - stopLoss)
   
+  let profit = 0
   if (direction === 'LONG') {
-    const profit = currentPrice - entryPrice
-    return profit >= risk
+    profit = currentPrice - entryPrice
   } else {
-    const profit = entryPrice - currentPrice
-    return profit >= risk
+    profit = entryPrice - currentPrice
+  }
+  
+  const triggered = profit >= risk
+  const riskRewardRatio = risk > 0 ? profit / risk : 0
+  
+  let reason = ''
+  if (triggered) {
+    reason = `达到TP1条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求2:1）`
+  } else {
+    reason = `未达到TP1条件：当前盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求2:1）`
+  }
+  
+  return {
+    triggered,
+    reason,
+    data: {
+      currentPrice,
+      entryPrice,
+      stopLoss,
+      risk,
+      profit,
+      riskRewardRatio,
+      requiredRatio: 1,
+      direction
+    }
   }
 }
 
@@ -106,27 +130,78 @@ export function checkTP2Condition(
   adx15m: number,
   previousADX15m: number,
   riskConfig: BotConfig['riskConfig']
-): boolean {
+): { triggered: boolean; reason: string; data: any } {
   const { entryPrice, stopLoss, direction } = position
   const risk = Math.abs(entryPrice - stopLoss)
   
-  // 盈亏比配置
+  let profit = 0
   if (direction === 'LONG') {
-    const profit = currentPrice - entryPrice
-    if (profit >= risk * riskConfig.takeProfit.tp2RiskRewardRatio) return true
+    profit = currentPrice - entryPrice
   } else {
-    const profit = entryPrice - currentPrice
-    if (profit >= risk * riskConfig.takeProfit.tp2RiskRewardRatio) return true
+    profit = entryPrice - currentPrice
   }
   
-  // RSI极值配置
-  if (direction === 'LONG' && rsi >= riskConfig.takeProfit.rsiExtreme.long) return true
-  if (direction === 'SHORT' && rsi <= riskConfig.takeProfit.rsiExtreme.short) return true
+  const riskRewardRatio = risk > 0 ? profit / risk : 0
+  const requiredRiskRewardRatio = riskConfig.takeProfit.tp2RiskRewardRatio
+  const adxChange = previousADX15m - adx15m
   
-  // ADX走弱配置
-  if (previousADX15m - adx15m >= riskConfig.takeProfit.adxDecreaseThreshold) return true
+  // 检查各个条件
+  const riskRewardTriggered = profit >= risk * requiredRiskRewardRatio
+  const rsiTriggered = (direction === 'LONG' && rsi >= riskConfig.takeProfit.rsiExtreme.long) ||
+                      (direction === 'SHORT' && rsi <= riskConfig.takeProfit.rsiExtreme.short)
+  const adxTriggered = adxChange >= riskConfig.takeProfit.adxDecreaseThreshold
   
-  return false
+  const triggered = riskRewardTriggered || rsiTriggered || adxTriggered
+  
+  // 构建原因说明
+  let reason = ''
+  if (triggered) {
+    const reasons: string[] = []
+    if (riskRewardTriggered) {
+      reasons.push(`盈亏比 ${riskRewardRatio.toFixed(2)}:1 ≥ ${requiredRiskRewardRatio}:1`)
+    }
+    if (rsiTriggered) {
+      const requiredRsi = direction === 'LONG' 
+        ? riskConfig.takeProfit.rsiExtreme.long 
+        : riskConfig.takeProfit.rsiExtreme.short
+      reasons.push(`RSI ${rsi.toFixed(1)} ${direction === 'LONG' ? '≥' : '≤'} ${requiredRsi}`)
+    }
+    if (adxTriggered) {
+      reasons.push(`ADX下降 ${adxChange.toFixed(2)} ≥ ${riskConfig.takeProfit.adxDecreaseThreshold}`)
+    }
+    reason = `达到TP2条件：${reasons.join('，')}`
+  } else {
+    reason = `未达到TP2条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1），RSI ${rsi.toFixed(1)}，ADX变化 ${adxChange.toFixed(2)}`
+  }
+  
+  return {
+    triggered,
+    reason,
+    data: {
+      currentPrice,
+      entryPrice,
+      stopLoss,
+      risk,
+      profit,
+      riskRewardRatio,
+      requiredRiskRewardRatio,
+      rsi,
+      adx15m,
+      previousADX15m,
+      adxChange,
+      direction,
+      conditionTriggers: {
+        riskReward: riskRewardTriggered,
+        rsiExtreme: rsiTriggered,
+        adxDecrease: adxTriggered
+      },
+      thresholds: {
+        rsiLongExtreme: riskConfig.takeProfit.rsiExtreme.long,
+        rsiShortExtreme: riskConfig.takeProfit.rsiExtreme.short,
+        adxDecreaseThreshold: riskConfig.takeProfit.adxDecreaseThreshold
+      }
+    }
+  }
 }
 
 /**

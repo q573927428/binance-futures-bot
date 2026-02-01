@@ -23,6 +23,7 @@ export class FuturesBot {
   private isInitialized: boolean = false
   private scanTimer: NodeJS.Timeout | null = null
   private previousADX15m: number = 0
+  private isScanning = false
 
   constructor() {
     this.config = getDefaultConfig()
@@ -159,17 +160,21 @@ export class FuturesBot {
    */
   private async scanLoop(): Promise<void> {
     if (!this.state.isRunning) return
+    if (this.isScanning) return
 
+    this.isScanning = true
     try {
       await this.scan()
-    } catch (error: any) {
-      logger.error('扫描', '扫描失败', error.message)
+    } catch (e: any) {
+      logger.error('扫描', '扫描失败', e.message)
+    } finally {
+      this.isScanning = false
     }
 
-    // 下一次扫描
-    this.scanTimer = setTimeout(() => {
-      this.scanLoop()
-    }, this.config.scanInterval * 1000)
+    this.scanTimer = setTimeout(
+      () => this.scanLoop(),
+      this.config.scanInterval * 1000
+    )
   }
 
   /**
@@ -630,15 +635,17 @@ export class FuturesBot {
       }
 
       // 检查TP2条件
-      if (checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, this.previousADX15m, this.config.riskConfig)) {
-        logger.success('止盈', '达到TP2条件，全部平仓')
+      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, this.previousADX15m, this.config.riskConfig)
+      if (tp2Result.triggered) {
+        logger.success('止盈', tp2Result.reason, tp2Result.data)
         await this.closePosition('TP2止盈')
         return
       }
 
       // 检查TP1条件 目前 直接全部平仓（简化策略）
-      if (checkTP1Condition(price, position)) {
-        logger.success('止盈', '达到TP1条件，直接全部平仓（简化策略）')
+      const tp1Result = checkTP1Condition(price, position)
+      if (tp1Result.triggered) {
+        logger.success('止盈', tp1Result.reason, tp1Result.data)
         await this.closePosition('TP1止盈')
         return
       }
