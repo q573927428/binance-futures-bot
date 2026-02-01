@@ -277,6 +277,7 @@ export function getDefaultState(): BotState {
     lastResetDate: dayjs().format('YYYY-MM-DD'),
     monitoringSymbols: [],
     isRunning: false,
+    allowNewTrades: true,  // 默认允许新交易
     // 总统计数据默认值
     totalTrades: 0,
     totalPnL: 0,

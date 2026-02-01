@@ -68,12 +68,12 @@ export class FuturesBot {
         await this.resetDailyState()
       }
 
-      // 如果保存的状态显示机器人正在运行，自动重启扫描循环
+      // 如果保存的状态显示机器人正在运行，但扫描循环未启动，需要手动启动
+      // 注意：scanLoop() 只应在 start() 方法中调用
+      // 这里只更新状态，不启动扫描循环
       if (this.state.isRunning && (this.state.status === PositionStatus.MONITORING || this.state.status === PositionStatus.POSITION)) {
-        logger.info('系统', '检测到机器人之前正在运行，自动重启扫描循环')
-        // 注意：这里不调用 start() 避免重复初始化
-        // 直接开始扫描循环
-        await this.scanLoop()
+        logger.info('系统', '检测到机器人之前正在运行，状态已恢复')
+        // 不启动扫描循环，等待 start() 方法调用
       }
 
       // 初始化总统计数据并更新当前状态
@@ -127,7 +127,7 @@ export class FuturesBot {
 
       logger.success('系统', '交易机器人已启动')
       // 开始扫描循环
-      await this.scanLoop()
+      this.scanLoop()
 
     } catch (error: any) {
       logger.error('系统', '启动失败', error.message)
@@ -171,10 +171,13 @@ export class FuturesBot {
       this.isScanning = false
     }
 
-    this.scanTimer = setTimeout(
-      () => this.scanLoop(),
-      this.config.scanInterval * 1000
-    )
+    // 只有在机器人仍在运行时才设置下一次扫描
+    if (this.state.isRunning) {
+      this.scanTimer = setTimeout(
+        () => this.scanLoop(),
+        this.config.scanInterval * 1000
+      )
+    }
   }
 
   /**
@@ -215,17 +218,25 @@ export class FuturesBot {
    * 扫描交易机会
    */
   private async scanForOpportunities(): Promise<void> {
+    // 检查是否允许新交易
+    if (!this.state.allowNewTrades) {
+      logger.info('风控', '已达到每日交易次数限制，暂停扫描新机会', {
+        今日交易次数: this.state.todayTrades,
+        限制次数: this.config.riskConfig.dailyTradeLimit,
+      })
+      return
+    }
+
     // 检查每日交易次数限制
     const dailyLimitPassed = checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)
     
     if (!dailyLimitPassed) {
-      logger.warn('风控', '已达到每日交易次数限制，停止扫描', {
+      logger.warn('风控', '已达到每日交易次数限制，禁止新交易', {
         今日交易次数: this.state.todayTrades,
         限制次数: this.config.riskConfig.dailyTradeLimit,
       })
-      // 停止机器人运行，避免不必要的API调用
-      this.state.isRunning = false
-      this.state.status = PositionStatus.IDLE
+      // 设置不允许新交易，但保持机器人运行（用于监控持仓）
+      this.state.allowNewTrades = false
       await saveBotState(this.state)
       return
     }
@@ -994,12 +1005,16 @@ export class FuturesBot {
   private async resetDailyState(): Promise<void> {
     logger.info('系统', '重置每日状态')
     
-    // 保存重置前的运行状态，用于判断是否需要自动重启
+    // 保存重置前的运行状态
     const wasRunning = this.state.isRunning
     
+    // 重置每日交易相关状态
     this.state.todayTrades = 0
     this.state.dailyPnL = 0
     this.state.lastResetDate = dayjs().format('YYYY-MM-DD')
+    this.state.allowNewTrades = true  // 重置后允许新交易
+    
+    // 重置熔断状态
     this.state.circuitBreaker = {
       isTriggered: false,
       reason: '',
@@ -1008,20 +1023,16 @@ export class FuturesBot {
       consecutiveLosses: 0,
     }
 
-    await saveBotState(this.state)
-    
-    // 简单实用的自动重启逻辑：
-    // 如果重置前机器人是停止状态（可能是因为达到每日交易限制），
-    // 重置后自动启动机器人
+    // 如果重置前机器人是停止状态（可能是因为熔断或达到每日交易限制），
+    // 重置后自动恢复运行状态
     if (!wasRunning) {
-      logger.info('系统', '每日状态重置完成，自动启动机器人')
+      logger.info('系统', '检测到机器人之前已停止，重置后恢复运行状态')
       this.state.isRunning = true
       this.state.status = PositionStatus.MONITORING
-      await saveBotState(this.state)
-      
-      // 开始扫描循环
-      await this.scanLoop()
     }
+
+    await saveBotState(this.state)
+    logger.success('系统', '每日状态重置完成')
   }
 
   /**
