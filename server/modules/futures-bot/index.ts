@@ -93,13 +93,32 @@ export class FuturesBot {
    * 启动机器人
    */
   async start(): Promise<void> {
-    if (this.state.isRunning) {
+    if (this.state.isRunning && !this.state.circuitBreaker.isTriggered) {
       logger.warn('系统', '机器人已在运行中')
       return
     }
 
+    // 情况2：机器人处于熔断状态
+    if (this.state.circuitBreaker.isTriggered) {
+      logger.info('系统', '机器人处于熔断状态，尝试重置并启动...')
+    }
+
     try {
       logger.info('系统', '启动交易机器人...')
+
+      // 重置熔断状态（如果处于熔断状态）
+      if (this.state.circuitBreaker.isTriggered) {
+        logger.info('熔断', '检测到熔断状态，正在重置...')
+        this.state.circuitBreaker = {
+          isTriggered: false,
+          reason: '',
+          timestamp: Date.now(),
+          dailyLoss: 0,
+          consecutiveLosses: 0,
+        }
+        logger.success('熔断', '熔断状态已重置')
+      }
+
       this.state.isRunning = true
       this.state.status = PositionStatus.MONITORING
       this.state.monitoringSymbols = this.config.symbols
