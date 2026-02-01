@@ -215,6 +215,7 @@ export interface Order {
   type: 'MARKET' | 'LIMIT' | 'STOP_MARKET' | 'STOP_LIMIT' | 'TAKE_PROFIT_MARKET'
   quantity: number
   price?: number
+  average?: number  // 平均成交价（对于已成交的订单）
   stopPrice?: number
   status: string
   timestamp: number

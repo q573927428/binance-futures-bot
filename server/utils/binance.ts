@@ -325,6 +325,9 @@ export class BinanceService {
       const side = order.side ? order.side.toUpperCase() as 'BUY' | 'SELL' : 'BUY'
       const orderType = mapOrderType(order.type)
       
+      // 获取平均成交价（如果存在）
+      const average = order.average || order.price
+      
       return {
         orderId: order.id,
         symbol: order.symbol,
@@ -332,6 +335,7 @@ export class BinanceService {
         type: orderType,
         quantity: order.amount,
         price: order.price,
+        average,  // 添加平均成交价
         status: order.status || 'unknown',
         timestamp: order.timestamp || Date.now(),
       }
