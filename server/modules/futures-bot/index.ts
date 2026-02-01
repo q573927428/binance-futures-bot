@@ -69,11 +69,12 @@ export class FuturesBot {
       }
 
       // 如果保存的状态显示机器人正在运行，但扫描循环未启动，需要手动启动
-      // 注意：scanLoop() 只应在 start() 方法中调用
-      // 这里只更新状态，不启动扫描循环
+      // 注意：虽然 scanLoop() 主要应在 start() 方法中调用，
+      // 但为了支持系统重启后自动恢复运行，这里也需要启动扫描循环
       if (this.state.isRunning && (this.state.status === PositionStatus.MONITORING || this.state.status === PositionStatus.POSITION)) {
-        logger.info('系统', '检测到机器人之前正在运行，状态已恢复')
-        // 不启动扫描循环，等待 start() 方法调用
+        logger.info('系统', '检测到机器人之前正在运行，自动恢复扫描循环')
+        // 启动扫描循环以恢复运行
+        this.scanLoop()
       }
 
       // 初始化总统计数据并更新当前状态
