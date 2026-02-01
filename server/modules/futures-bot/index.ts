@@ -22,7 +22,7 @@ export class FuturesBot {
   private state: BotState
   private isInitialized: boolean = false
   private scanTimer: NodeJS.Timeout | null = null
-  private previousADX15m: number = 0
+  private previousADXMap: Record<string, number> = {}
   private isScanning = false
 
   constructor() {
@@ -266,10 +266,9 @@ export class FuturesBot {
       // 计算技术指标
       const indicators = await calculateIndicators(this.binance, symbol)
 
-      // 保存ADX15m用于后续比较
-      if (this.previousADX15m === 0) {
-        this.previousADX15m = indicators.adx15m
-      }
+      // 保存ADX15m用于后续比较（按symbol记录）
+      // 更新当前symbol的ADX值
+      this.previousADXMap[symbol] = indicators.adx15m
 
       // 检查ADX趋势条件（多周期）
       const adxResult = checkADXTrend(indicators)
@@ -627,15 +626,18 @@ export class FuturesBot {
       // 重新计算指标
       const indicators = await calculateIndicators(this.binance, position.symbol)
 
+      // 获取当前symbol的previous ADX值
+      const prevADX = this.previousADXMap[position.symbol] ?? indicators.adx15m
+      
       // 检查持仓超时
-      if (isPositionTimeout(position, this.config.positionTimeoutHours, this.previousADX15m > indicators.adx15m)) {
+      if (isPositionTimeout(position, this.config.positionTimeoutHours, prevADX > indicators.adx15m)) {
         logger.warn('风控', '持仓超时且ADX走弱')
         await this.closePosition('持仓超时')
         return
       }
 
       // 检查TP2条件
-      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, this.previousADX15m, this.config.riskConfig)
+      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
       if (tp2Result.triggered) {
         logger.success('止盈', tp2Result.reason, tp2Result.data)
         await this.closePosition('TP2止盈')
@@ -650,8 +652,8 @@ export class FuturesBot {
         return
       }
 
-      // 更新previousADX15m
-      this.previousADX15m = indicators.adx15m
+      // 更新当前symbol的ADX值
+      this.previousADXMap[position.symbol] = indicators.adx15m
     } catch (error: any) {
       logger.error('持仓监控', '监控失败', error.message)
     }
