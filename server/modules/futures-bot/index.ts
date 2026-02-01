@@ -374,6 +374,51 @@ export class FuturesBot {
   }
 
   /**
+   * 等待并确认持仓建立
+   */
+  private async waitAndConfirmPosition(symbol: string, maxRetries: number = 3, delayMs: number = 500): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        logger.info('持仓确认', `第${attempt}次尝试确认持仓...`)
+        
+        // 等待一段时间让订单成交
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+        
+        // 查询交易所实际持仓
+        const positions = await this.binance.fetchPositions(symbol)
+        const realPosition = positions.find(p => Math.abs(Number(p.quantity || 0)) > 0)
+        
+        if (realPosition) {
+          logger.success('持仓确认', `检测到实际持仓建立`, {
+            symbol: realPosition.symbol,
+            direction: realPosition.direction,
+            quantity: realPosition.quantity,
+            entryPrice: realPosition.entryPrice,
+          })
+          return true
+        } else {
+          logger.warn('持仓确认', `第${attempt}次尝试未检测到持仓`)
+          
+          // 如果是最后一次尝试，返回false
+          if (attempt === maxRetries) {
+            logger.error('持仓确认', `经过${maxRetries}次尝试仍未检测到持仓`)
+            return false
+          }
+        }
+      } catch (error: any) {
+        logger.warn('持仓确认', `第${attempt}次尝试查询持仓失败: ${error.message}`)
+        
+        // 如果是最后一次尝试，抛出错误
+        if (attempt === maxRetries) {
+          throw new Error(`持仓确认失败: ${error.message}`)
+        }
+      }
+    }
+    
+    return false
+  }
+
+  /**
    * 开仓
    */
   private async openPosition(signal: TradeSignal): Promise<void> {
@@ -546,7 +591,27 @@ export class FuturesBot {
       const side = getOrderSide(signal.direction, true)
       const order = await this.binance.marketOrder(signal.symbol, side, quantity)
 
-      logger.success('开仓', `开仓成功`, order)
+      logger.success('开仓', `开仓订单已提交`, order)
+
+      // 二次确认持仓建立（关键优化）
+      logger.info('持仓确认', '开始二次确认持仓建立...')
+      const positionConfirmed = await this.waitAndConfirmPosition(signal.symbol)
+      
+      if (!positionConfirmed) {
+        throw new Error('开仓后未检测到实际持仓，可能存在网络异常或订单未成交')
+      }
+
+      // 获取实际持仓信息
+      const positions = await this.binance.fetchPositions(signal.symbol)
+      const realPosition = positions.find(p => Math.abs(Number(p.quantity || 0)) > 0)
+      
+      if (!realPosition) {
+        throw new Error('开仓后未检测到实际持仓')
+      }
+
+      // 使用实际持仓信息更新数量（防止部分成交）
+      const actualQuantity = realPosition.quantity
+      logger.info('持仓确认', `实际成交数量: ${actualQuantity} (下单数量: ${quantity})`)
 
       // 计算止盈价格
       const takeProfit1 = calculateTakeProfit(signal.price, stopLoss, signal.direction, 1)
@@ -554,7 +619,7 @@ export class FuturesBot {
 
       // 设置止损单 (平仓操作，isEntry=false)
       const stopSide = getOrderSide(signal.direction, false)
-      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, quantity, stopLoss)
+      const stopOrder = await this.binance.stopLossOrder(signal.symbol, stopSide, actualQuantity, stopLoss)
 
       logger.success('止损', `止损单已设置`, stopOrder)
 
@@ -563,7 +628,7 @@ export class FuturesBot {
         symbol: signal.symbol,
         direction: signal.direction,
         entryPrice: signal.price,
-        quantity,
+        quantity: actualQuantity,
         leverage: finalLeverage,
         stopLoss,
         takeProfit1,
@@ -672,12 +737,7 @@ export class FuturesBot {
   
       if (exchangeSymbol !== localSymbol) return false
   
-      const size = Number(
-        (p as any).contracts ??
-        (p as any).quantity ??
-        (p as any).positionAmt ??
-        0
-      )
+      const size = Number(p.quantity || 0)
   
       return Math.abs(size) > 0
     })
