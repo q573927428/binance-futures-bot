@@ -31,7 +31,7 @@
     },
     "takeProfit": {
       "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 2,
+      "tp2RiskRewardRatio": 3,
       "rsiExtreme": {
         "long": 70,
         "short": 30
