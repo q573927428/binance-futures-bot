@@ -11,7 +11,7 @@ async function main() {
     },
   })
 
-  const symbol = 'BNB/USDT'
+  const symbol = 'BTC/USDT'
 
   const openOrders = await exchange.fetchOpenOrders(
     symbol,
@@ -32,10 +32,10 @@ async function main() {
       status: o.status,
     })
   }
-  const symbolUSDT = 'BNB/USDT'
-  const stopLossOrderId = '3000000467016208'
+  const symbolUSDT = 'BTC/USDT'
+  const stopLossOrderId = '3000000497353720'
   const stopOrder = await exchange.fetchOrder(stopLossOrderId, symbolUSDT, { trigger: true })
-  console.log(stopOrder.id);
+  console.log(stopOrder);
   
 }
 

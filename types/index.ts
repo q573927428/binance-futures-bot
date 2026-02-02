@@ -219,6 +219,7 @@ export interface Order {
   stopPrice?: number
   status: string
   timestamp: number
+  info?: any
 }
 
 // 交易记录

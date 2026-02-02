@@ -802,8 +802,8 @@ export class FuturesBot {
           // 如果订单已成交，获取成交价格
           if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
             // 优化：优先使用average（平均成交价），然后是price，最后是position.stopLoss
-            exitPrice = stopOrder.average || stopOrder.price || position.stopLoss
-            logger.info('补偿平仓', `止损订单已成交，成交价: ${exitPrice}`)
+            exitPrice = Number(stopOrder.info?.actualPrice) || stopOrder.average || stopOrder.price || position.stopLoss
+            logger.info('补偿平仓', `止损订单已成交: ${stopOrder.status}，成交价: ${exitPrice}`)
           } else {
             //如果订单未成交 尝试取消止损单
             try {

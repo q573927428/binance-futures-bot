@@ -338,6 +338,7 @@ export class BinanceService {
         average,  // 添加平均成交价
         status: order.status || 'unknown',
         timestamp: order.timestamp || Date.now(),
+        info: order.info,
       }
     } catch (error: any) {
       throw new Error(`获取订单状态失败: ${error.message}`)
