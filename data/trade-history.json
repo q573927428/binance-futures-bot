@@ -1,5 +1,19 @@
 [
   {
+    "id": "1770042982550-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "LONG",
+    "entryPrice": 77751.4,
+    "exitPrice": 78568.1,
+    "quantity": 0.006,
+    "leverage": 18,
+    "pnl": 4.90020000000007,
+    "pnlPercentage": 18.907183664860323,
+    "openTime": 1770041538458,
+    "closeTime": 1770042982550,
+    "reason": "TP1止盈"
+  },
+  {
     "id": "1769987199029-SOL/USDT",
     "symbol": "SOL/USDT",
     "direction": "SHORT",
