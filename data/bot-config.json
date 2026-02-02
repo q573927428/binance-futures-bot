@@ -13,7 +13,7 @@
   "scanInterval": 120,
   "aiConfig": {
     "enabled": true,
-    "analysisInterval": 1440,
+    "analysisInterval": 10,
     "minConfidence": 60,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
@@ -22,7 +22,7 @@
   },
   "riskConfig": {
     "circuitBreaker": {
-      "dailyLossThreshold": 2,
+      "dailyLossThreshold": 5,
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {
@@ -38,7 +38,7 @@
       },
       "adxDecreaseThreshold": 5
     },
-    "dailyTradeLimit": 3
+    "dailyTradeLimit": 5
   },
   "dynamicLeverageConfig": {
     "enabled": true,
