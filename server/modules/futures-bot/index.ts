@@ -1042,6 +1042,11 @@ export class FuturesBot {
   async updateConfig(newConfig: Partial<BotConfig>): Promise<void> {
     this.config = { ...this.config, ...newConfig }
     await saveBotConfig(this.config)
+    
+    // 重新评估 allowNewTrades 状态
+    const dailyLimitPassed = checkDailyTradeLimit(this.state.todayTrades, this.config.riskConfig)
+    this.state.allowNewTrades = dailyLimitPassed
+    await saveBotState(this.state)
 
     logger.success('配置', '配置已更新')
   }
