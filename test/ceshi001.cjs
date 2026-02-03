@@ -17,7 +17,7 @@ async function main() {
     symbol,
     undefined,
     undefined,
-    { trigger: true }
+    { trigger: true } //查询取消条件委托单 需要加上{ trigger: true }
   )
 
   console.log('当前未成交订单数量:', openOrders.length)
@@ -33,8 +33,8 @@ async function main() {
     })
   }
   const symbolUSDT = 'BTC/USDT'
-  const stopLossOrderId = '3000000497353720'
-  const stopOrder = await exchange.fetchOrder(stopLossOrderId, symbolUSDT, { trigger: true })
+  const stopLossOrderId = '898743527688'
+  const stopOrder = await exchange.fetchOrder(stopLossOrderId, symbolUSDT , { trigger: true }) //查询取消条件委托单 需要加上{ trigger: true }
   console.log(stopOrder);
   
 }
