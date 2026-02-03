@@ -23,6 +23,14 @@ export interface DynamicLeverageConfig {
   riskLevelMultipliers: Record<RiskLevel, number> // 风险等级乘数
 }
 
+// 移动止损配置（简化版）
+export interface TrailingStopConfig {
+  enabled: boolean                // 是否启用移动止损
+  activationRatio: number         // 激活盈亏比（默认 0.5，即盈利达到风险的50%时启用）
+  trailingDistance: number        // 跟踪距离（ATR倍数，默认 1.5）
+  updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
+}
+
 // 系统配置
 export interface BotConfig {
   // 交易对
@@ -54,6 +62,9 @@ export interface BotConfig {
   
   // 动态杠杆配置
   dynamicLeverageConfig: DynamicLeverageConfig
+  
+  // 移动止损配置
+  trailingStopConfig: TrailingStopConfig
 }
 
 // 风险配置
@@ -205,6 +216,7 @@ export interface Position {
   stopLossOrderStopPrice?: number
   stopLossOrderStatus?: string
   stopLossOrderTimestamp?: number
+  lastStopLossUpdate?: number  // 上次止损更新时间（用于移动止损）
 }
 
 // 订单信息

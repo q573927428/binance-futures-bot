@@ -255,6 +255,12 @@ export function getDefaultConfig(): BotConfig {
         HIGH: 0.5,
       },
     },
+    trailingStopConfig: {
+      enabled: true,                 // 启用移动止损
+      activationRatio: 0.5,          // 激活盈亏比：盈利达到风险的50%时启用
+      trailingDistance: 1.5,         // 跟踪距离：ATR的1.5倍
+      updateIntervalSeconds: 60,     // 更新间隔：60秒检查一次
+    },
   }
 }
 

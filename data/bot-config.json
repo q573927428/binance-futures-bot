@@ -22,7 +22,7 @@
   },
   "riskConfig": {
     "circuitBreaker": {
-      "dailyLossThreshold": 5,
+      "dailyLossThreshold": 10,
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {
@@ -38,7 +38,7 @@
       },
       "adxDecreaseThreshold": 5
     },
-    "dailyTradeLimit": 3
+    "dailyTradeLimit": 8
   },
   "dynamicLeverageConfig": {
     "enabled": true,
@@ -50,5 +50,11 @@
       "MEDIUM": 1,
       "HIGH": 0.5
     }
+  },
+  "trailingStopConfig": { 
+    "enabled": true,
+    "activationRatio": 0.5,
+    "trailingDistance": 1.5,
+    "updateIntervalSeconds": 60
   }
 }

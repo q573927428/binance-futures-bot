@@ -1,16 +1,35 @@
 {
   "status": "MONITORING",
-  "currentPosition": null,
+  "currentPosition": {
+    "symbol": "BTC/USDT",
+    "direction": "LONG",
+    "entryPrice": 78839.5,
+    "quantity": 0.003,
+    "leverage": 8,
+    "stopLoss": 78381.00282851905,
+    "takeProfit1": 79297.99717148095,
+    "takeProfit2": 79756.4943429619,
+    "openTime": 1770105754660,
+    "orderId": "899583415612",
+    "stopLossOrderId": "3000000520712659",
+    "stopLossOrderSymbol": "BTC/USDT:USDT",
+    "stopLossOrderSide": "SELL",
+    "stopLossOrderType": "STOP_MARKET",
+    "stopLossOrderQuantity": 0.003,
+    "stopLossOrderStopPrice": 78381.00282851905,
+    "stopLossOrderStatus": "open",
+    "stopLossOrderTimestamp": 1770105754650
+  },
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1770042982761,
-    "dailyLoss": 8.900755542215363,
+    "timestamp": 1770105482751,
+    "dailyLoss": 0,
     "consecutiveLosses": 0
   },
-  "todayTrades": 4,
-  "dailyPnL": 12.64528737746539,
-  "lastResetDate": "2026-02-02",
+  "todayTrades": 6,
+  "dailyPnL": -6.965920000000006,
+  "lastResetDate": "2026-02-03",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -18,11 +37,11 @@
     "SOL/USDT"
   ],
   "isRunning": true,
-  "currentPrice": 78568.1,
-  "currentPnL": 4.90020000000007,
-  "currentPnLPercentage": 18.907183664860323,
-  "totalTrades": 26,
-  "totalPnL": 14.33004582522662,
-  "winRate": 61.54,
-  "allowNewTrades": false
+  "currentPrice": 78675.9,
+  "currentPnL": -0.4908000000000175,
+  "currentPnLPercentage": -1.6600815581022794,
+  "totalTrades": 31,
+  "totalPnL": 7.364125825226617,
+  "winRate": 54.84,
+  "allowNewTrades": true
 }
