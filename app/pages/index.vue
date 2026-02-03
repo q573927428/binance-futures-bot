@@ -189,7 +189,7 @@
               <div v-if="botStore.state?.currentPosition" class="position-info">
                 <el-descriptions :column="2" border>
                   <el-descriptions-item label="开仓时间">
-                    {{ dayjs(botStore.state.currentPosition.openTime).format('YYYY-MM-DD HH:mm:ss') }}
+                    {{ dayjs(botStore.state.currentPosition.openTime).format('YYYY-MM-DD HH:mm') }}
                   </el-descriptions-item>
                   <el-descriptions-item label="交易对">
                     {{ botStore.state.currentPosition.symbol }}
@@ -201,9 +201,7 @@
                   </el-descriptions-item>
                   <el-descriptions-item label="入场价">
                     {{ botStore.state.currentPosition.entryPrice.toFixed(2) }}
-                  </el-descriptions-item>
-                  <el-descriptions-item label="当前价">
-                    ({{ botStore.state.currentPrice?.toFixed(2) || '--' }})
+                    <span class="text-secondary">({{ botStore.state.currentPrice?.toFixed(2) || '--' }})</span>
                   </el-descriptions-item>
                   <el-descriptions-item label="数量">
                     {{ botStore.state.currentPosition.quantity }}
@@ -222,8 +220,11 @@
                       {{ botStore.state.currentPnLPercentage ? botStore.state.currentPnLPercentage.toFixed(2) + '%' : '--' }}
                     </span>)
                   </el-descriptions-item>
-                  <el-descriptions-item label="止盈价">
+                  <el-descriptions-item label="止盈TP1">
                     {{ botStore.state.currentPosition.takeProfit1.toFixed(2) }}
+                  </el-descriptions-item>
+                  <el-descriptions-item label="止盈TP2">
+                    {{ botStore.state.currentPosition.takeProfit2.toFixed(2) }}
                   </el-descriptions-item>
                 </el-descriptions>
               </div>
@@ -672,6 +673,10 @@ onUnmounted(() => {
 
 .text-success {
   color: #67c23a;
+}
+
+.text-secondary {
+  color: #a9a9a9;
 }
 
 .text-danger {
