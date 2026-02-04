@@ -1,5 +1,19 @@
 [
   {
+    "id": "1770184421339-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "SHORT",
+    "entryPrice": 758.86,
+    "exitPrice": 754.84,
+    "quantity": 0.38,
+    "leverage": 10,
+    "pnl": 1.5275999999999932,
+    "pnlPercentage": 5.2974198139314,
+    "openTime": 1770181439275,
+    "closeTime": 1770184421339,
+    "reason": "TP1止盈"
+  },
+  {
     "id": "1770181060188-SOL/USDT",
     "symbol": "SOL/USDT",
     "direction": "SHORT",
