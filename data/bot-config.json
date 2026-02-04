@@ -14,7 +14,7 @@
   "positionScanInterval": 60,
   "aiConfig": {
     "enabled": true,
-    "analysisInterval": 10,
+    "analysisInterval": 1500,
     "minConfidence": 60,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
@@ -52,7 +52,7 @@
       "HIGH": 0.5
     }
   },
-  "trailingStopConfig": { 
+  "trailingStopConfig": {
     "enabled": true,
     "activationRatio": 0.5,
     "trailingDistance": 1.5,

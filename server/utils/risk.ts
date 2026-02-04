@@ -78,11 +78,12 @@ export function isPositionTimeout(
 }
 
 /**
- * 检查是否达到TP1条件（盈亏比1:1）
+ * 检查是否达到TP1条件（盈亏比2:1）
  */
 export function checkTP1Condition(
   currentPrice: number,
-  position: Position
+  position: Position,
+  riskConfig: BotConfig['riskConfig']  // 新增参数
 ): { triggered: boolean; reason: string; data: any } {
   const { entryPrice, stopLoss, direction } = position
   const risk = Math.abs(entryPrice - stopLoss)
@@ -94,14 +95,15 @@ export function checkTP1Condition(
     profit = entryPrice - currentPrice
   }
   
-  const triggered = profit >= risk
+  const requiredRiskRewardRatio = riskConfig.takeProfit.tp1RiskRewardRatio  // 使用配置值
+  const triggered = profit >= risk * requiredRiskRewardRatio  // 使用配置值
   const riskRewardRatio = risk > 0 ? profit / risk : 0
   
   let reason = ''
   if (triggered) {
-    reason = `达到TP1条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求2:1）`
+    reason = `达到TP1条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
   } else {
-    reason = `未达到TP1条件：当前盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求2:1）`
+    reason = `未达到TP1条件：当前盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
   }
   
   return {
@@ -114,7 +116,7 @@ export function checkTP1Condition(
       risk,
       profit,
       riskRewardRatio,
-      requiredRatio: 1,
+      requiredRatio: requiredRiskRewardRatio,  // 使用配置值
       direction
     }
   }

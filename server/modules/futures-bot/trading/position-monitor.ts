@@ -109,7 +109,7 @@ export class PositionMonitor {
       }
 
       // 检查TP1条件 目前 直接全部平仓（简化策略）
-      const tp1Result = checkTP1Condition(price, position)
+      const tp1Result = checkTP1Condition(price, position, this.config.riskConfig)
       if (tp1Result.triggered) {
         logger.success('止盈', tp1Result.reason, tp1Result.data)
         return { shouldClose: true, reason: 'TP1止盈' }
