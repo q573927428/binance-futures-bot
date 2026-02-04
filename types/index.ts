@@ -343,6 +343,14 @@ export interface HistoryStats {
 // 历史响应数据
 export interface HistoryResponseData extends Array<TradeHistory> {}
 
+// 分页信息
+export interface PaginationInfo {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 // 状态响应
 export type StatusResponse = ApiResponse<StatusResponseData>
 
@@ -352,6 +360,7 @@ export interface HistoryResponse {
   message?: string
   data?: HistoryResponseData
   stats?: HistoryStats
+  pagination?: PaginationInfo
 }
 
 // 启动/停止响应

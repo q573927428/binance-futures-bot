@@ -297,8 +297,17 @@ export class FuturesBot {
   /**
    * 获取交易历史
    */
-  async getHistory(limit?: number): Promise<TradeHistory[]> {
-    return getTradeHistory()
+  async getHistory(page: number = 1, pageSize: number = 20): Promise<{ data: TradeHistory[], total: number }> {
+    const allHistory = await getTradeHistory()
+    const total = allHistory.length
+    const startIndex = (page - 1) * pageSize
+    const endIndex = startIndex + pageSize
+    const data = allHistory.slice(startIndex, endIndex)
+    
+    return {
+      data,
+      total
+    }
   }
 
   /**

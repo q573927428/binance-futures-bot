@@ -308,6 +308,19 @@
                 </el-table-column>
               </el-table>
 
+              <!-- 分页组件 -->
+              <div v-if="botStore.pagination && botStore.pagination.total > 0" class="pagination-container">
+                <el-pagination
+                  v-model:current-page="currentPage"
+                  v-model:page-size="pageSize"
+                  :total="botStore.pagination.total"
+                  layout="total, prev, pager, next"
+                  :pager-count="3"
+                  @size-change="handlePageSizeChange"
+                  @current-change="handlePageChange"
+                />
+              </div>
+
               <el-empty v-if="botStore.history.length === 0" description="暂无交易记录" />
             </el-card>
 
@@ -516,6 +529,10 @@ const configDialogVisible = ref(false)
 const editConfig = ref<BotConfig | null>(null)
 let stopPolling: (() => void) | null = null
 
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(20)
+
 // 强制平仓时间字符串，用于时间选择器
 const forceLiquidateTime = computed({
   get: () => {
@@ -592,7 +609,19 @@ async function handleStop() {
 }
 
 async function handleRefreshHistory() {
-  await botStore.fetchHistory()
+  await botStore.fetchHistory(currentPage.value, pageSize.value)
+}
+
+// 分页处理函数
+function handlePageChange(page: number) {
+  currentPage.value = page
+  botStore.fetchHistory(page, pageSize.value)
+}
+
+function handlePageSizeChange(size: number) {
+  pageSize.value = size
+  currentPage.value = 1
+  botStore.fetchHistory(1, size)
 }
 
 async function handleRefreshBalances() {
@@ -886,6 +915,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {

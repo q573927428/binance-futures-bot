@@ -9,7 +9,8 @@ import type {
   StartStopResponse,
   ConfigResponse,
   HistoryResponse,
-  HistoryStats
+  HistoryStats,
+  PaginationInfo
 } from '../../types'
 
 export const useBotStore = defineStore('bot', {
@@ -20,6 +21,7 @@ export const useBotStore = defineStore('bot', {
     logs: [] as LogEntry[],
     cryptoBalances: [] as CryptoBalance[],
     historyStats: null as HistoryStats | null,
+    pagination: null as PaginationInfo | null,
     isLoading: false,
     error: null as string | null,
   }),
@@ -135,16 +137,22 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async fetchHistory() {
+    async fetchHistory(page: number = 1, pageSize: number = 20) {
       try {
         this.isLoading = true
         this.error = null
 
-        const response = await $fetch<HistoryResponse>('/api/bot/history')
+        const response = await $fetch<HistoryResponse>('/api/bot/history', {
+          query: {
+            page,
+            pageSize
+          }
+        })
 
         if (response.success) {
           this.history = response.data!
           this.historyStats = response.stats || null
+          this.pagination = response.pagination || null
         } else {
           this.error = response.message || '获取历史失败'
         }
