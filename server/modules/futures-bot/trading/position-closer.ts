@@ -1,7 +1,7 @@
 import type { Position, BotConfig, BotState } from '../../../../types'
 import { PositionStatus } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
-import { getOrderSide, checkCircuitBreaker } from '../../../utils/risk'
+import { getOrderSide, checkCircuitBreaker, calculatePnL } from '../../../utils/risk'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { recordTrade } from '../helpers/trade-recorder'
@@ -32,6 +32,23 @@ export class PositionCloser {
    */
   updateState(state: BotState): void {
     this.state = state
+  }
+
+  /**
+   * 记录交易并获取盈亏
+   */
+  private async recordTradeAndGetPnL(
+    position: Position,
+    exitPrice: number,
+    reason: string
+  ): Promise<{ pnl: number; updatedState: BotState | null }> {
+    // 计算盈亏
+    const { pnl } = calculatePnL(exitPrice, position)
+    
+    // 记录交易历史
+    const updatedState = await recordTrade(position, exitPrice, reason)
+    
+    return { pnl, updatedState }
   }
 
   /**
@@ -76,19 +93,14 @@ export class PositionCloser {
       // 获取当前价格
       const exitPrice = await this.binance.fetchPrice(position.symbol)
 
-      // 记录交易历史
-      const updatedState = await recordTrade(position, exitPrice, reason)
+      // 记录交易历史并获取本次交易盈亏
+      const { pnl, updatedState } = await this.recordTradeAndGetPnL(position, exitPrice, reason)
       if (updatedState) {
         this.state = updatedState
       }
 
-      // 获取交易盈亏（从记录的交易中获取）
-      const pnl = updatedState?.totalPnL ? 
-        (this.state.dailyPnL || 0) : 
-        0
-
       // 更新每日盈亏
-      this.state.dailyPnL += pnl
+      this.state.dailyPnL = (this.state.dailyPnL || 0) + pnl
 
       // 更新连续亏损次数
       let consecutiveLosses = this.state.circuitBreaker.consecutiveLosses
