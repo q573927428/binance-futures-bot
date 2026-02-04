@@ -445,7 +445,7 @@
         </el-form-item>
 
         <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="跟踪距离(%)">
-          <el-input-number v-model="editConfig.trailingStopConfig.trailingDistance" :min="0.1" :max="5" :step="0.1" />>
+          <el-input-number v-model="editConfig.trailingStopConfig.trailingDistance" :min="0.1" :max="5" :step="0.1" />
         </el-form-item>
 
         <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="更新间隔(秒)">
