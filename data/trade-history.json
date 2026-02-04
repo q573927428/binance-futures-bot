@@ -1,5 +1,33 @@
 [
   {
+    "id": "1770211535629-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "SHORT",
+    "entryPrice": 76069.4,
+    "exitPrice": 75831.7,
+    "quantity": 0.004,
+    "leverage": 10,
+    "pnl": 0.9507999999999884,
+    "pnlPercentage": 3.1247781630983957,
+    "openTime": 1770205090319,
+    "closeTime": 1770211535629,
+    "reason": "TP1止盈"
+  },
+  {
+    "id": "1770203510417-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "SHORT",
+    "entryPrice": 76109,
+    "exitPrice": 75899.1,
+    "quantity": 0.004,
+    "leverage": 10,
+    "pnl": 0.8395999999999767,
+    "pnlPercentage": 2.75788671510589,
+    "openTime": 1770198205470,
+    "closeTime": 1770203510417,
+    "reason": "TP1止盈"
+  },
+  {
     "id": "1770197803206-ETH/USDT",
     "symbol": "ETH/USDT",
     "direction": "LONG",

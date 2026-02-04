@@ -40,7 +40,7 @@
       },
       "adxDecreaseThreshold": 5
     },
-    "dailyTradeLimit": 8
+    "dailyTradeLimit": 10
   },
   "dynamicLeverageConfig": {
     "enabled": true,

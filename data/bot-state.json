@@ -1,34 +1,15 @@
 {
-  "status": "POSITION",
-  "currentPosition": {
-    "symbol": "BTC/USDT",
-    "direction": "SHORT",
-    "entryPrice": 76109,
-    "quantity": 0.004,
-    "leverage": 10,
-    "stopLoss": 76557.54199027442,
-    "takeProfit1": 75660.45800972558,
-    "takeProfit2": 75211.91601945116,
-    "openTime": 1770198205470,
-    "orderId": "900833012289",
-    "stopLossOrderId": "3000000535221008",
-    "stopLossOrderSymbol": "BTC/USDT:USDT",
-    "stopLossOrderSide": "BUY",
-    "stopLossOrderType": "STOP_MARKET",
-    "stopLossOrderQuantity": 0.004,
-    "stopLossOrderStopPrice": 76557.54199027442,
-    "stopLossOrderStatus": "open",
-    "stopLossOrderTimestamp": 1770198205457
-  },
+  "status": "MONITORING",
+  "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1770197803269,
-    "dailyLoss": 3.404667731767656,
-    "consecutiveLosses": 2
+    "timestamp": 1770211535839,
+    "dailyLoss": 2.1078404854787536,
+    "consecutiveLosses": 0
   },
-  "todayTrades": 5,
-  "dailyPnL": -4.743919999999998,
+  "todayTrades": 6,
+  "dailyPnL": -2.953520000000033,
   "lastResetDate": "2026-02-04",
   "monitoringSymbols": [
     "BTC/USDT",
@@ -37,14 +18,14 @@
     "SOL/USDT"
   ],
   "isRunning": true,
-  "currentPrice": 76093,
-  "currentPnL": 0.064,
-  "currentPnLPercentage": 0.21022480915529046,
-  "totalTrades": 4,
-  "totalPnL": -2.605319999999972,
-  "winRate": 50,
+  "currentPrice": 75847.1,
+  "currentPnL": 0.8891999999999535,
+  "currentPnLPercentage": 2.922331449965273,
+  "totalTrades": 6,
+  "totalPnL": -0.8149200000000056,
+  "winRate": 66.67,
   "allowNewTrades": true,
-  "lastTradeTime": 
-  "lastIndicatorUpdate": 1770197441720,
-  "lastPrice": 2262.71
+  "lastTradeTime": 1770211535839,
+  "lastIndicatorUpdate": 1770211474882,
+  "lastPrice": 75750.5
 }
