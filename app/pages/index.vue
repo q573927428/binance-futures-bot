@@ -162,6 +162,18 @@
                   </el-tag>
                 </div>
                 <div class="config-item">
+                  <span>动态杠杆:</span>
+                  <el-tag :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'">
+                    {{ botStore.config.dynamicLeverageConfig.enabled ? '已启用' : '未启用' }}
+                  </el-tag>
+                </div>
+                <div class="config-item">
+                  <span>移动止损:</span>
+                  <el-tag :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'">
+                    {{ botStore.config.trailingStopConfig.enabled ? '已启用' : '未启用' }}
+                  </el-tag>
+                </div>
+                <div class="config-item">
                   <span>市场扫描间隔:</span>
                   <span>{{ botStore.config.scanInterval }}秒</span>
                 </div>
@@ -402,6 +414,42 @@
 
         <el-form-item v-if="editConfig.aiConfig.enabled" label="缓存时长(分钟)">
           <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
+        </el-form-item>
+
+        <el-divider>动态杠杆配置</el-divider>
+
+        <el-form-item label="启用动态杠杆">
+          <el-switch v-model="editConfig.dynamicLeverageConfig.enabled" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="基础杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.baseLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="最小杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.minLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="最大杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.maxLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-divider>移动止损配置</el-divider>
+
+        <el-form-item label="启用移动止损">
+          <el-switch v-model="editConfig.trailingStopConfig.enabled" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="激活比例(%)">
+          <el-input-number v-model="editConfig.trailingStopConfig.activationRatio" :min="0.1" :max="5" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="跟踪距离(%)">
+          <el-input-number v-model="editConfig.trailingStopConfig.trailingDistance" :min="0.1" :max="5" :step="0.1" />>
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="更新间隔(秒)">
+          <el-input-number v-model="editConfig.trailingStopConfig.updateIntervalSeconds" :min="10" :max="300" />
         </el-form-item>
 
         <el-divider>风险配置</el-divider>
