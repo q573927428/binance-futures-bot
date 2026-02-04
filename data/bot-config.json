@@ -12,7 +12,7 @@
   "positionTimeoutHours": 4,
   "scanInterval": 120,
   "positionScanInterval": 60,
-  "tradeCooldownInterval": 1800,
+  "tradeCooldownInterval": 600,
   "aiConfig": {
     "enabled": true,
     "minConfidence": 60,
