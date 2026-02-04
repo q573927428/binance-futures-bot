@@ -341,7 +341,7 @@
     <el-dialog
       v-model="configDialogVisible"
       title="系统配置"
-      width="600px"
+      width="370px"
       :close-on-click-modal="false"
     >
       <el-form v-if="editConfig" :model="editConfig" label-width="150px">
