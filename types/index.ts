@@ -57,6 +57,9 @@ export interface BotConfig {
   // 持仓扫描间隔（秒）- 用于监控持仓状态
   positionScanInterval: number
   
+  // 交易冷却时间间隔（秒）- 两次交易之间的最小间隔时间
+  tradeCooldownInterval: number
+  
   // AI分析配置
   aiConfig: AIConfig
   
@@ -102,7 +105,6 @@ export interface RiskConfig {
 // AI配置
 export interface AIConfig {
   enabled: boolean          // 启用AI分析
-  analysisInterval: number  // 分析间隔（分钟）
   minConfidence: number     // 最小置信度（0-100）
   maxRiskLevel: RiskLevel   // 最大风险等级
   useForEntry: boolean      // 用于开仓决策
@@ -273,6 +275,7 @@ export interface BotState {
   monitoringSymbols: string[]
   isRunning: boolean  // 是否正在运行（扫描循环）
   allowNewTrades: boolean  // 是否允许新交易（用于每日交易限制控制）
+  lastTradeTime?: number   // 上次交易时间（用于冷却时间检查）
   currentPrice?: number  // 当前价格（仅当有持仓时有效）
   currentPnL?: number    // 当前盈亏金额（仅当有持仓时有效）
   currentPnLPercentage?: number  // 当前盈亏百分比（仅当有持仓时有效）

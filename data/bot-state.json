@@ -44,6 +44,7 @@
   "totalPnL": 3.6662000000000194,
   "winRate": 100,
   "allowNewTrades": true,
+  "lastTradeTime": 0,
   "lastIndicatorUpdate": 1770184912494,
   "lastPrice": 76261.1
 }

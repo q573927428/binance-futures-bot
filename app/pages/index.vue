@@ -156,10 +156,6 @@
 
               <div v-if="botStore.config" class="config-info">
                 <div class="config-item">
-                  <span>杠杆倍数:</span>
-                  <el-tag>{{ botStore.config.leverage }}x</el-tag>
-                </div>
-                <div class="config-item">
                   <span>AI分析:</span>
                   <el-tag :type="botStore.config.aiConfig.enabled ? 'success' : 'info'">
                     {{ botStore.config.aiConfig.enabled ? '已启用' : '未启用' }}
@@ -172,6 +168,10 @@
                 <div class="config-item">
                   <span>持仓扫描间隔:</span>
                   <span>{{ botStore.config.positionScanInterval }}秒</span>
+                </div>
+                <div class="config-item">
+                  <span>交易冷却时间:</span>
+                  <span>{{ formatCooldownTime(botStore.config.tradeCooldownInterval) }}</span>
                 </div>
               </div>
             </el-card>
@@ -370,14 +370,14 @@
           <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="24" />
         </el-form-item>
 
+        <el-form-item label="交易冷却时间间隔(秒)">
+          <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
+        </el-form-item>
+
         <el-divider>AI分析配置</el-divider>
 
         <el-form-item label="启用AI分析">
           <el-switch v-model="editConfig.aiConfig.enabled" />
-        </el-form-item>
-
-        <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析间隔(分钟  1440 等于1天)">
-          <el-input-number v-model="editConfig.aiConfig.analysisInterval" :min="1" :max="1500" />
         </el-form-item>
 
         <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
@@ -576,6 +576,23 @@ function formatBalance(value: number): string {
     return value.toFixed(3)
   } else {
     return value.toFixed(2)
+  }
+}
+
+function formatCooldownTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds}秒`
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60)
+    return `${minutes}分钟`
+  } else {
+    const hours = Math.floor(seconds / 3600)
+    const remainingMinutes = Math.floor((seconds % 3600) / 60)
+    if (remainingMinutes > 0) {
+      return `${hours}小时${remainingMinutes}分钟`
+    } else {
+      return `${hours}小时`
+    }
   }
 }
 
