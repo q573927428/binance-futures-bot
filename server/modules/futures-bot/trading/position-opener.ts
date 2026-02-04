@@ -271,6 +271,7 @@ export class PositionOpener {
       this.state.currentPosition = position
       this.state.status = PositionStatus.POSITION
       this.state.todayTrades += 1
+      this.state.lastTradeTime = Date.now() // 更新上次交易时间（开仓时间）
       await saveBotState(this.state)
 
       logger.success('持仓', `持仓建立完成`, position)
