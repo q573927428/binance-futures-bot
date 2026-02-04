@@ -208,6 +208,7 @@ export interface Position {
   quantity: number
   leverage: number
   stopLoss: number
+  initialStopLoss: number  // 初始止损价格（用于TP条件计算）
   takeProfit1: number
   takeProfit2: number
   openTime: number

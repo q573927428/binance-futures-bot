@@ -253,6 +253,7 @@ export class PositionOpener {
         quantity: actualQuantity,
         leverage: finalLeverage,
         stopLoss,
+        initialStopLoss: stopLoss,  // 保存初始止损价格
         takeProfit1,
         takeProfit2,
         openTime: Date.now(),

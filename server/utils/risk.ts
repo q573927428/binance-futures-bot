@@ -85,8 +85,9 @@ export function checkTP1Condition(
   position: Position,
   riskConfig: BotConfig['riskConfig']  // 新增参数
 ): { triggered: boolean; reason: string; data: any } {
-  const { entryPrice, stopLoss, direction } = position
-  const risk = Math.abs(entryPrice - stopLoss)
+  const { entryPrice, initialStopLoss, stopLoss, direction } = position
+  // 使用初始止损计算风险，而不是当前止损
+  const risk = Math.abs(entryPrice - initialStopLoss)
   
   let profit = 0
   if (direction === 'LONG') {
@@ -112,7 +113,8 @@ export function checkTP1Condition(
     data: {
       currentPrice,
       entryPrice,
-      stopLoss,
+      initialStopLoss,
+      currentStopLoss: stopLoss,
       risk,
       profit,
       riskRewardRatio,
@@ -133,8 +135,9 @@ export function checkTP2Condition(
   previousADX15m: number,
   riskConfig: BotConfig['riskConfig']
 ): { triggered: boolean; reason: string; data: any } {
-  const { entryPrice, stopLoss, direction } = position
-  const risk = Math.abs(entryPrice - stopLoss)
+  const { entryPrice, initialStopLoss, stopLoss, direction } = position
+  // 使用初始止损计算风险，而不是当前止损
+  const risk = Math.abs(entryPrice - initialStopLoss)
   
   let profit = 0
   if (direction === 'LONG') {
@@ -182,7 +185,8 @@ export function checkTP2Condition(
     data: {
       currentPrice,
       entryPrice,
-      stopLoss,
+      initialStopLoss,
+      currentStopLoss: stopLoss,
       risk,
       profit,
       riskRewardRatio,
