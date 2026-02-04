@@ -3,6 +3,7 @@ import { BinanceService } from '../../../utils/binance'
 import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry } from '../../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../../utils/ai-analysis'
 import { logger } from '../../../utils/logger'
+import { IndicatorsCache } from '../services/indicators-cache'
 
 /**
  * 市场分析器

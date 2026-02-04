@@ -280,6 +280,9 @@ export interface BotState {
   totalTrades?: number
   totalPnL?: number
   winRate?: number
+  // 优化相关字段
+  lastIndicatorUpdate?: number  // 上次指标计算时间
+  lastPrice?: number           // 上次计算指标时的价格
 }
 
 // 加密货币余额

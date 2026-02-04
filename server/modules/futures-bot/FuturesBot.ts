@@ -11,6 +11,7 @@ import { PositionMonitor } from './trading/position-monitor'
 import { PositionCloser } from './trading/position-closer'
 import { PositionValidator } from './trading/position-validator'
 import { PriceService } from './services/price-service'
+import { IndicatorsCache } from './services/indicators-cache'
 
 /**
  * 币安永续合约交易机器人
@@ -40,6 +41,7 @@ export class FuturesBot {
     this.positionOpener = new PositionOpener(this.binance, defaultConfig, defaultState)
     this.positionMonitor = new PositionMonitor(
       this.binance,
+      this.priceService,
       defaultConfig,
       defaultState,
       (symbol) => this.analyzer.getPreviousADX(symbol)

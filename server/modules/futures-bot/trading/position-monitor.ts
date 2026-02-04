@@ -5,23 +5,29 @@ import { calculateIndicators } from '../../../utils/indicators'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { calculateTrailingStopLoss, shouldUpdateTrailingStop } from '../helpers/trailing-stop'
+import { PriceService } from '../services/price-service'
 
 /**
  * 持仓监控器
  */
 export class PositionMonitor {
   private binance: BinanceService
+  private priceService: PriceService
   private config: BotConfig
   private state: BotState
   private getPreviousADX: (symbol: string) => number | undefined
+  private lastLogTime: number = 0
+  private readonly LOG_INTERVAL = 30000 // 30秒记录一次
 
   constructor(
     binance: BinanceService,
+    priceService: PriceService,
     config: BotConfig,
     state: BotState,
     getPreviousADX: (symbol: string) => number | undefined
   ) {
     this.binance = binance
+    this.priceService = priceService
     this.config = config
     this.state = state
     this.getPreviousADX = getPreviousADX
@@ -47,15 +53,24 @@ export class PositionMonitor {
    */
   async monitorPosition(position: Position): Promise<{ shouldClose: boolean; reason?: string }> {
     try {
-      const price = await this.binance.fetchPrice(position.symbol)
+      // 使用PriceService获取价格（优先WebSocket缓存）
+      const price = await this.priceService.getPrice(position.symbol)
 
       // 计算当前盈亏
       const { pnl, pnlPercentage } = calculatePnL(price, position)
 
-      logger.info(
-        '持仓监控',
-        `${position.symbol} ${position.direction} 入场价: ${position.entryPrice} 当前价: ${price} 盈亏: ${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)`
-      )
+      // 减少日志记录频率：每30秒记录一次，或者盈亏变化超过0.5%
+      const now = Date.now()
+      const shouldLog = (now - this.lastLogTime > this.LOG_INTERVAL) || 
+                       Math.abs(pnlPercentage - (this.state.currentPnLPercentage || 0)) > 0.5
+
+      if (shouldLog) {
+        logger.info(
+          '持仓监控',
+          `${position.symbol} ${position.direction} 入场价: ${position.entryPrice} 当前价: ${price} 盈亏: ${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)`
+        )
+        this.lastLogTime = now
+      }
 
       // 保存当前价格和盈亏到state中，供前端显示
       this.state.currentPrice = price
@@ -63,23 +78,34 @@ export class PositionMonitor {
       this.state.currentPnLPercentage = pnlPercentage
       await saveBotState(this.state)
 
-      // 重新计算指标
-      const indicators = await calculateIndicators(this.binance, position.symbol)
+      // 减少指标计算频率：只在需要检查条件时计算
+      // 检查是否需要计算指标（每5分钟或价格变化较大时）
+      const lastIndicatorTime = this.state.lastIndicatorUpdate || 0
+      const priceChangedSignificantly = Math.abs(price - (this.state.lastPrice || 0)) / (this.state.lastPrice || price) > 0.01 // 价格变化超过1%
+      
+      let indicators = null
+      if (now - lastIndicatorTime > 300000 || priceChangedSignificantly) { // 5分钟或价格变化大
+        indicators = await calculateIndicators(this.binance, position.symbol)
+        this.state.lastIndicatorUpdate = now
+        this.state.lastPrice = price
+      }
 
       // 获取当前symbol的previous ADX值
-      const prevADX = this.getPreviousADX(position.symbol) ?? indicators.adx15m
+      const prevADX = this.getPreviousADX(position.symbol) ?? (indicators?.adx15m || 0)
       
-      // 检查持仓超时
-      if (isPositionTimeout(position, this.config.positionTimeoutHours, prevADX > indicators.adx15m)) {
+      // 检查持仓超时（需要指标）
+      if (indicators && isPositionTimeout(position, this.config.positionTimeoutHours, prevADX > indicators.adx15m)) {
         logger.warn('风控', '持仓超时且ADX走弱')
         return { shouldClose: true, reason: '持仓超时' }
       }
 
-      // 检查TP2条件
-      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
-      if (tp2Result.triggered) {
-        logger.success('止盈', tp2Result.reason, tp2Result.data)
-        return { shouldClose: true, reason: 'TP2止盈' }
+      // 检查TP2条件（需要指标）
+      if (indicators) {
+        const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
+        if (tp2Result.triggered) {
+          logger.success('止盈', tp2Result.reason, tp2Result.data)
+          return { shouldClose: true, reason: 'TP2止盈' }
+        }
       }
 
       // 检查TP1条件 目前 直接全部平仓（简化策略）
@@ -89,8 +115,10 @@ export class PositionMonitor {
         return { shouldClose: true, reason: 'TP1止盈' }
       }
 
-      // 检查移动止损
-      await this.checkAndUpdateTrailingStop(price, position, indicators.atr)
+      // 检查移动止损（需要ATR指标）
+      if (indicators) {
+        await this.checkAndUpdateTrailingStop(price, position, indicators.atr)
+      }
 
       return { shouldClose: false }
     } catch (error: any) {
