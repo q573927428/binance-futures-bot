@@ -216,7 +216,7 @@ export function getDefaultConfig(): BotConfig {
     positionTimeoutHours: 4,         //持仓超时时间
     scanInterval: 120,                //市场扫描间隔
     positionScanInterval: 60,         //持仓扫描间隔
-    tradeCooldownInterval: 3600,     //交易冷却时间间隔（秒）- 默认60分钟
+    tradeCooldownInterval: 1800,     //交易冷却时间间隔（秒）- 默认60分钟
     aiConfig: { 
       enabled: true,                //启用AI分析
       minConfidence: 60,             //最小置信度（0-100）
