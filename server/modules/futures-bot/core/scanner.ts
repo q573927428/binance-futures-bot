@@ -162,9 +162,26 @@ export class MarketScanner {
       return
     }
 
+    // 检查交易冷却时间
+    if (this.state.lastTradeTime && this.state.lastTradeTime > 0) {
+      const now = Date.now()
+      const timeSinceLastTrade = Math.floor((now - this.state.lastTradeTime) / 1000) // 转换为秒
+      const cooldownRemaining = this.config.tradeCooldownInterval - timeSinceLastTrade
+      
+      if (cooldownRemaining > 0) {
+        logger.info('冷却', `交易冷却中，还需等待 ${cooldownRemaining} 秒`, {
+          上次交易时间: new Date(this.state.lastTradeTime).toLocaleString(),
+          冷却时间: this.config.tradeCooldownInterval,
+          已等待时间: timeSinceLastTrade,
+        })
+        return
+      }
+    }
+
     logger.info('扫描', `开始扫描交易机会 [${this.config.symbols.join(', ')}]`, {
       今日交易次数: this.state.todayTrades,
       限制次数: this.config.riskConfig.dailyTradeLimit,
+      冷却时间: this.config.tradeCooldownInterval,
     })
 
     for (const symbol of this.config.symbols) {

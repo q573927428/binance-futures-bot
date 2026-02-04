@@ -36,6 +36,7 @@ export class BinanceWebSocketService {
   private eventHandlers: Map<string, ((event: WebSocketEvent) => void)[]> = new Map()
   private priceCache: Map<string, PriceData> = new Map()
   private klineCache: Map<string, Map<string, KlineData>> = new Map() // symbol -> interval -> data
+  private symbolMapping: Map<string, string> = new Map() // 存储原始symbol到WebSocket格式的映射
 
   constructor(config: Partial<WebSocketConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -46,6 +47,14 @@ export class BinanceWebSocketService {
       lastActivity: Date.now(),
       reconnectAttempts: 0
     }
+  }
+
+  /**
+   * 格式化交易对符号为WebSocket格式
+   */
+  private formatSymbolForWebSocket(symbol: string): string {
+    // 移除斜杠并转换为小写
+    return symbol.replace('/', '').toLowerCase()
   }
 
   /**
@@ -144,7 +153,7 @@ export class BinanceWebSocketService {
     }
 
     // 构建订阅消息
-    const streams = newSymbols.map(symbol => `${symbol.toLowerCase()}@ticker`)
+    const streams = newSymbols.map(symbol => `${this.formatSymbolForWebSocket(symbol)}@ticker`)
     const subscribeMessage = {
       method: 'SUBSCRIBE',
       params: streams,
@@ -153,7 +162,12 @@ export class BinanceWebSocketService {
 
     this.ws.send(JSON.stringify(subscribeMessage))
     
-    // 更新状态
+    // 更新状态和映射
+    newSymbols.forEach(symbol => {
+      const wsSymbol = this.formatSymbolForWebSocket(symbol)
+      this.symbolMapping.set(wsSymbol, symbol) // 存储映射关系
+    })
+    
     this.state.connectedSymbols = [...this.state.connectedSymbols, ...newSymbols]
     this.state.subscriptions.symbols = [...this.state.subscriptions.symbols, ...newSymbols]
     
@@ -173,7 +187,7 @@ export class BinanceWebSocketService {
     
     symbols.forEach(symbol => {
       intervals.forEach(interval => {
-        streams.push(`${symbol.toLowerCase()}@kline_${interval}`)
+        streams.push(`${this.formatSymbolForWebSocket(symbol)}@kline_${interval}`)
       })
     })
 
@@ -208,7 +222,7 @@ export class BinanceWebSocketService {
     }
 
     // 构建取消订阅消息
-    const streams = symbols.map(symbol => `${symbol.toLowerCase()}@ticker`)
+    const streams = symbols.map(symbol => `${this.formatSymbolForWebSocket(symbol)}@ticker`)
     const unsubscribeMessage = {
       method: 'UNSUBSCRIBE',
       params: streams,
@@ -217,7 +231,12 @@ export class BinanceWebSocketService {
 
     this.ws.send(JSON.stringify(unsubscribeMessage))
     
-    // 更新状态
+    // 更新状态和映射
+    symbols.forEach(symbol => {
+      const wsSymbol = this.formatSymbolForWebSocket(symbol)
+      this.symbolMapping.delete(wsSymbol) // 删除映射关系
+    })
+    
     this.state.connectedSymbols = this.state.connectedSymbols.filter(
       symbol => !symbols.includes(symbol)
     )
@@ -424,12 +443,15 @@ export class BinanceWebSocketService {
   }
 
   /**
-   * 发送ping消息
+   * 发送ping消息（币安WebSocket不需要客户端主动发送ping）
+   * 保留此方法但改为空实现，因为币安服务器会主动发送ping
    */
   private sendPing(): void {
-    if (this.ws && this.state.status === WebSocketStatus.CONNECTED) {
-      this.ws.send(JSON.stringify({ ping: Date.now() }))
-    }
+    // 币安WebSocket服务器会主动发送ping，客户端只需要响应pong即可
+    // 不需要主动发送ping消息，避免触发"missing field 'method'"错误
+    // if (this.ws && this.state.status === WebSocketStatus.CONNECTED) {
+    //   this.ws.send(JSON.stringify({ ping: Date.now() }))
+    // }
   }
 
   /**

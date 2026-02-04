@@ -216,9 +216,9 @@ export function getDefaultConfig(): BotConfig {
     positionTimeoutHours: 4,         //持仓超时时间
     scanInterval: 120,                //市场扫描间隔
     positionScanInterval: 60,         //持仓扫描间隔
+    tradeCooldownInterval: 600,     //交易冷却时间间隔（秒）- 默认10分钟
     aiConfig: { 
       enabled: true,                //启用AI分析
-      analysisInterval: 1500,          //分析间隔（分钟）
       minConfidence: 60,             //最小置信度（0-100）
       maxRiskLevel: 'MEDIUM',        //最大风险等级
       useForEntry: true,             //用于开仓决策
@@ -285,6 +285,7 @@ export function getDefaultState(): BotState {
     monitoringSymbols: [],
     isRunning: false,
     allowNewTrades: true,  // 默认允许新交易
+    lastTradeTime: 0,      // 上次交易时间，默认为0
     // 总统计数据默认值
     totalTrades: 0,
     totalPnL: 0,

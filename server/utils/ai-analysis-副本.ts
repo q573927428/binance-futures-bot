@@ -298,8 +298,8 @@ export async function analyzeMarketWithAI(
             content: prompt,
           },
         ],
-        temperature: 0.3, // 降低温度以获得更一致的输出
-        max_tokens: 1000,
+        temperature: 0.2, // 降低温度以获得更一致的输出
+        max_tokens: 1500,
         response_format: { type: "json_object" } // 强制JSON格式输出
       }),
     })

@@ -156,13 +156,21 @@
 
               <div v-if="botStore.config" class="config-info">
                 <div class="config-item">
-                  <span>杠杆倍数:</span>
-                  <el-tag>{{ botStore.config.leverage }}x</el-tag>
-                </div>
-                <div class="config-item">
                   <span>AI分析:</span>
                   <el-tag :type="botStore.config.aiConfig.enabled ? 'success' : 'info'">
                     {{ botStore.config.aiConfig.enabled ? '已启用' : '未启用' }}
+                  </el-tag>
+                </div>
+                <div class="config-item">
+                  <span>动态杠杆:</span>
+                  <el-tag :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'">
+                    {{ botStore.config.dynamicLeverageConfig.enabled ? '已启用' : '未启用' }}
+                  </el-tag>
+                </div>
+                <div class="config-item">
+                  <span>移动止损:</span>
+                  <el-tag :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'">
+                    {{ botStore.config.trailingStopConfig.enabled ? '已启用' : '未启用' }}
                   </el-tag>
                 </div>
                 <div class="config-item">
@@ -172,6 +180,10 @@
                 <div class="config-item">
                   <span>持仓扫描间隔:</span>
                   <span>{{ botStore.config.positionScanInterval }}秒</span>
+                </div>
+                <div class="config-item">
+                  <span>交易冷却时间:</span>
+                  <span>{{ formatCooldownTime(botStore.config.tradeCooldownInterval) }}</span>
                 </div>
               </div>
             </el-card>
@@ -329,7 +341,7 @@
     <el-dialog
       v-model="configDialogVisible"
       title="系统配置"
-      width="600px"
+      width="370px"
       :close-on-click-modal="false"
     >
       <el-form v-if="editConfig" :model="editConfig" label-width="150px">
@@ -370,14 +382,14 @@
           <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="24" />
         </el-form-item>
 
+        <el-form-item label="交易冷却时间间隔(秒)">
+          <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
+        </el-form-item>
+
         <el-divider>AI分析配置</el-divider>
 
         <el-form-item label="启用AI分析">
           <el-switch v-model="editConfig.aiConfig.enabled" />
-        </el-form-item>
-
-        <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析间隔(分钟  1440 等于1天)">
-          <el-input-number v-model="editConfig.aiConfig.analysisInterval" :min="1" :max="1500" />
         </el-form-item>
 
         <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
@@ -402,6 +414,42 @@
 
         <el-form-item v-if="editConfig.aiConfig.enabled" label="缓存时长(分钟)">
           <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
+        </el-form-item>
+
+        <el-divider>动态杠杆配置</el-divider>
+
+        <el-form-item label="启用动态杠杆">
+          <el-switch v-model="editConfig.dynamicLeverageConfig.enabled" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="基础杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.baseLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="最小杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.minLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.dynamicLeverageConfig.enabled" label="最大杠杆">
+          <el-input-number v-model="editConfig.dynamicLeverageConfig.maxLeverage" :min="1" :max="20" />
+        </el-form-item>
+
+        <el-divider>移动止损配置</el-divider>
+
+        <el-form-item label="启用移动止损">
+          <el-switch v-model="editConfig.trailingStopConfig.enabled" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="激活比例(%)">
+          <el-input-number v-model="editConfig.trailingStopConfig.activationRatio" :min="0.1" :max="5" :step="0.1" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="跟踪距离(%)">
+          <el-input-number v-model="editConfig.trailingStopConfig.trailingDistance" :min="0.1" :max="5" :step="0.1" />>
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="更新间隔(秒)">
+          <el-input-number v-model="editConfig.trailingStopConfig.updateIntervalSeconds" :min="10" :max="300" />
         </el-form-item>
 
         <el-divider>风险配置</el-divider>
@@ -576,6 +624,23 @@ function formatBalance(value: number): string {
     return value.toFixed(3)
   } else {
     return value.toFixed(2)
+  }
+}
+
+function formatCooldownTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds}秒`
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60)
+    return `${minutes}分钟`
+  } else {
+    const hours = Math.floor(seconds / 3600)
+    const remainingMinutes = Math.floor((seconds % 3600) / 60)
+    if (remainingMinutes > 0) {
+      return `${hours}小时${remainingMinutes}分钟`
+    } else {
+      return `${hours}小时`
+    }
   }
 }
 

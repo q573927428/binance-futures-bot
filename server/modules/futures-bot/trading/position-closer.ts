@@ -117,6 +117,7 @@ export class PositionCloser {
       this.state.circuitBreaker = breaker
       this.state.currentPosition = null
       this.state.status = breaker.isTriggered ? PositionStatus.HALTED : PositionStatus.MONITORING
+      this.state.lastTradeTime = Date.now() // 更新上次交易时间（平仓时间）
       
       // 如果触发熔断，停止运行
       if (breaker.isTriggered) {
