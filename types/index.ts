@@ -51,8 +51,11 @@ export interface BotConfig {
   // 持仓超时时间（小时）
   positionTimeoutHours: number
   
-  // 扫描间隔（秒）
+  // 市场扫描间隔（秒）- 用于寻找交易机会
   scanInterval: number
+  
+  // 持仓扫描间隔（秒）- 用于监控持仓状态
+  positionScanInterval: number
   
   // AI分析配置
   aiConfig: AIConfig

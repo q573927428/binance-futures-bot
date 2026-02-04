@@ -11,6 +11,7 @@
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 4,
   "scanInterval": 120,
+  "positionScanInterval": 60,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 10,

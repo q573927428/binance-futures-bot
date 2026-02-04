@@ -166,8 +166,12 @@
                   </el-tag>
                 </div>
                 <div class="config-item">
-                  <span>扫描间隔:</span>
+                  <span>市场扫描间隔:</span>
                   <span>{{ botStore.config.scanInterval }}秒</span>
+                </div>
+                <div class="config-item">
+                  <span>持仓扫描间隔:</span>
+                  <span>{{ botStore.config.positionScanInterval }}秒</span>
                 </div>
               </div>
             </el-card>
@@ -346,8 +350,12 @@
           <el-input-number v-model="editConfig.maxRiskPercentage" :min="0.1" :max="50" :step="0.1" />
         </el-form-item>
 
-        <el-form-item label="扫描间隔(秒)">
+        <el-form-item label="市场扫描间隔(秒)">
           <el-input-number v-model="editConfig.scanInterval" :min="10" :max="300" />
+        </el-form-item>
+
+        <el-form-item label="持仓扫描间隔(秒)">
+          <el-input-number v-model="editConfig.positionScanInterval" :min="10" :max="300" />
         </el-form-item>
 
         <el-form-item label="止损ATR倍数">

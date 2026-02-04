@@ -53,9 +53,6 @@ export class PositionOpener {
         return
       }
 
-      this.state.status = PositionStatus.OPENING
-      await saveBotState(this.state)
-
       // 获取账户余额
       const account = await this.binance.fetchBalance()
       logger.info('账户', `余额: ${account.availableBalance} USDT`)
@@ -65,6 +62,9 @@ export class PositionOpener {
         logger.warn('余额不足', `账户余额（${account.availableBalance} USDT）,不足120 USDT，无法开仓`)
         return
       }
+
+      this.state.status = PositionStatus.OPENING
+      await saveBotState(this.state)
 
       // 计算止损价格
       const stopLoss = calculateStopLoss(

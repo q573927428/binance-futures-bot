@@ -89,9 +89,14 @@ export class MarketScanner {
 
     // 只有在机器人仍在运行时才设置下一次扫描
     if (this.state.isRunning) {
+      // 根据是否有持仓决定使用哪个扫描间隔
+      const interval = this.state.currentPosition 
+        ? this.config.positionScanInterval 
+        : this.config.scanInterval
+      
       this.scanTimer = setTimeout(
         () => this.scanLoop(),
-        this.config.scanInterval * 1000
+        interval * 1000
       )
     }
   }

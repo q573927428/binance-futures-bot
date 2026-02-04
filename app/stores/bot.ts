@@ -156,9 +156,9 @@ export const useBotStore = defineStore('bot', {
     },
 
     startPolling(interval?: number) {
-      // 使用配置中的 scanInterval 值，如果没有传入 interval 参数
-      // 配置中的 scanInterval 是秒，需要转换为毫秒
-      const pollInterval = interval || (this.config?.scanInterval || 60) * 1000
+      // 使用持仓扫描间隔作为前端轮询间隔
+      // 配置中的 positionScanInterval 是秒，需要转换为毫秒
+      const pollInterval = interval || (this.config?.positionScanInterval || 60) * 1000
       
       // 定时轮询状态
       const timer = setInterval(() => {

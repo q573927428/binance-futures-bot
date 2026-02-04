@@ -214,7 +214,8 @@ export function getDefaultConfig(): BotConfig {
     stopLossATRMultiplier: 1.5,      //止损ATR倍数
     maxStopLossPercentage: 2,      //最大止损比例
     positionTimeoutHours: 4,         //持仓超时时间
-    scanInterval: 120,                //扫描间隔
+    scanInterval: 120,                //市场扫描间隔
+    positionScanInterval: 60,         //持仓扫描间隔
     aiConfig: { 
       enabled: true,                //启用AI分析
       analysisInterval: 1440,          //分析间隔（分钟）
