@@ -177,7 +177,7 @@ function buildAIPrompt(
 
 ## 市场数据概览：
 - 当前价格: ${price.toFixed(4)}
-- 24小时价格变化: ${priceChange24h.toFixed(2)}%
+- 5小时价格变化: ${priceChange24h.toFixed(2)}%
 - 成交量: ${volume.toFixed(2)}
 - RSI(14): ${rsi.toFixed(2)}
 

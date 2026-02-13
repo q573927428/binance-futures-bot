@@ -69,7 +69,7 @@ export class MarketAnalyzer {
       }
 
       // 获取15分钟K线数据（用于AI分析、价格变化计算和入场条件检查）
-      const candles15m = await this.binance.fetchOHLCV(symbol, '15m', 2)
+      const candles15m = await this.binance.fetchOHLCV(symbol, '15m', 20)
       
       // 检查candles15m是否为空
       if (candles15m.length === 0) {
