@@ -81,13 +81,16 @@ export class MarketAnalyzer {
       const lastCandle = candles15m[candles15m.length - 1]!
       const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
 
+      // 获取成交量历史数据（用于成交量确认）
+      const volumeHistory = candles15m.map(candle => candle.volume)
+      
       // 检查入场条件
       let entryResult: any = null
 
       if (trendResult.direction === 'LONG') {
-        entryResult = checkLongEntry(price, indicators, lastCandle, this.config)
+        entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory)
       } else if (trendResult.direction === 'SHORT') {
-        entryResult = checkShortEntry(price, indicators, lastCandle, this.config)
+        entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory)
       }
 
       const entryOk = entryResult?.passed || false

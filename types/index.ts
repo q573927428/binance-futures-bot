@@ -45,6 +45,9 @@ export interface IndicatorsConfig {
     rsiMin: number                 // RSI最小值 (默认 40)
     rsiMax: number                 // RSI最大值 (默认 60)
     candleShadowThreshold: number  // K线下影线阈值 (默认 0.005 = 0.5%)
+    volumeConfirmation: boolean    // 成交量确认 (默认 true)
+    volumePeriod: number           // 成交量周期 (默认 20)
+    volumeMultiplier: number       // 成交量倍数 (默认 1.0)
   }
   
   // 做空入场条件配置
@@ -53,6 +56,9 @@ export interface IndicatorsConfig {
     rsiMin: number                 // RSI最小值 (默认 40)
     rsiMax: number                 // RSI最大值 (默认 55)
     candleShadowThreshold: number  // K线上影线阈值 (默认 0.005 = 0.5%)
+    volumeConfirmation: boolean    // 成交量确认 (默认 true)
+    volumePeriod: number           // 成交量周期 (默认 20)
+    volumeMultiplier: number       // 成交量倍数 (默认 1.0)
   }
 }
 

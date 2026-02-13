@@ -186,7 +186,8 @@ export function checkLongEntry(
   price: number,
   indicators: TechnicalIndicators,
   lastCandle: OHLCV,
-  config?: BotConfig
+  config?: BotConfig,
+  volumeHistory?: number[]
 ) {
   const { ema20, ema30, rsi } = indicators
 
@@ -195,6 +196,9 @@ export function checkLongEntry(
   const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.longEntry?.rsiMax || 60
   const candleShadowThreshold = config?.indicatorsConfig?.longEntry?.candleShadowThreshold || 0.005
+  const volumeConfirmation = config?.indicatorsConfig?.longEntry?.volumeConfirmation ?? true
+  const volumePeriod = config?.indicatorsConfig?.longEntry?.volumePeriod || 20
+  const volumeMultiplier = config?.indicatorsConfig?.longEntry?.volumeMultiplier || 1.0
 
   // 价格回踩 EMA20/EMA30（±阈值）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
@@ -214,11 +218,29 @@ export function checkLongEntry(
   
   const candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
 
-  const passed = nearEMA && rsiInRange && isConfirmCandle
+  // 成交量确认
+  let volumePassed = true
+  let volumeReason = ''
+  if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumePeriod) {
+    const currentVolume = lastCandle.volume
+    const recentVolumes = volumeHistory.slice(-volumePeriod)
+    const avgVolume = recentVolumes.reduce((sum, vol) => sum + vol, 0) / recentVolumes.length
+    
+    volumePassed = currentVolume >= avgVolume * volumeMultiplier
+    volumeReason = `当前成交量: ${currentVolume.toFixed(2)}，${volumePeriod}周期平均: ${avgVolume.toFixed(2)}，要求: ≥${(avgVolume * volumeMultiplier).toFixed(2)}`
+  } else if (volumeConfirmation) {
+    volumePassed = false
+    volumeReason = '成交量数据不足，无法确认'
+  }
+
+  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed
 
   let reason = ''
   if (passed) {
     reason = `价格回踩${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+    if (volumeConfirmation) {
+      reason += `，成交量确认`
+    }
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
@@ -229,6 +251,9 @@ export function checkLongEntry(
     }
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阳线且无明显下影线）')
+    }
+    if (!volumePassed) {
+      reasons.push(`成交量条件不满足: ${volumeReason}`)
     }
     reason = reasons.join('；')
   }
@@ -249,6 +274,8 @@ export function checkLongEntry(
       rsiValue,
       isConfirmCandle,
       candleType,
+      volumePassed,
+      volumeReason,
       lastCandle: {
         open: lastCandle.open,
         high: lastCandle.high,
@@ -262,12 +289,14 @@ export function checkLongEntry(
           rsiMin,
           rsiMax,
           confirmCandle: true,
+          volumeConfirmation,
         },
         actual: {
           nearEMA,
           rsiValue,
           rsiInRange,
           isConfirmCandle,
+          volumePassed,
         }
       }
     }
@@ -281,7 +310,8 @@ export function checkShortEntry(
   price: number,
   indicators: TechnicalIndicators,
   lastCandle: OHLCV,
-  config?: BotConfig
+  config?: BotConfig,
+  volumeHistory?: number[]
 ) {
   const { ema20, ema30, rsi } = indicators
 
@@ -290,6 +320,9 @@ export function checkShortEntry(
   const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.shortEntry?.rsiMax || 55
   const candleShadowThreshold = config?.indicatorsConfig?.shortEntry?.candleShadowThreshold || 0.005
+  const volumeConfirmation = config?.indicatorsConfig?.shortEntry?.volumeConfirmation ?? true
+  const volumePeriod = config?.indicatorsConfig?.shortEntry?.volumePeriod || 20
+  const volumeMultiplier = config?.indicatorsConfig?.shortEntry?.volumeMultiplier || 1.0
 
   // 价格反弹至 EMA20/EMA30（±阈值）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
@@ -309,11 +342,29 @@ export function checkShortEntry(
   
   const candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
 
-  const passed = nearEMA && rsiInRange && isConfirmCandle
+  // 成交量确认
+  let volumePassed = true
+  let volumeReason = ''
+  if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumePeriod) {
+    const currentVolume = lastCandle.volume
+    const recentVolumes = volumeHistory.slice(-volumePeriod)
+    const avgVolume = recentVolumes.reduce((sum, vol) => sum + vol, 0) / recentVolumes.length
+    
+    volumePassed = currentVolume >= avgVolume * volumeMultiplier
+    volumeReason = `当前成交量: ${currentVolume.toFixed(2)}，${volumePeriod}周期平均: ${avgVolume.toFixed(2)}，要求: ≥${(avgVolume * volumeMultiplier).toFixed(2)}`
+  } else if (volumeConfirmation) {
+    volumePassed = false
+    volumeReason = '成交量数据不足，无法确认'
+  }
+
+  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed
 
   let reason = ''
   if (passed) {
     reason = `价格反弹${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+    if (volumeConfirmation) {
+      reason += `，成交量确认`
+    }
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
@@ -324,6 +375,9 @@ export function checkShortEntry(
     }
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阴线且无明显上影线）')
+    }
+    if (!volumePassed) {
+      reasons.push(`成交量条件不满足: ${volumeReason}`)
     }
     reason = reasons.join('；')
   }
@@ -344,6 +398,8 @@ export function checkShortEntry(
       rsiValue,
       isConfirmCandle,
       candleType,
+      volumePassed,
+      volumeReason,
       lastCandle: {
         open: lastCandle.open,
         high: lastCandle.high,
@@ -357,12 +413,14 @@ export function checkShortEntry(
           rsiMin,
           rsiMax,
           confirmCandle: true,
+          volumeConfirmation,
         },
         actual: {
           nearEMA,
           rsiValue,
           rsiInRange,
           isConfirmCandle,
+          volumePassed,
         }
       }
     }

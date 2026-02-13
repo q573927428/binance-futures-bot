@@ -507,6 +507,76 @@
         <el-form-item label="每日交易限制">
           <el-input-number v-model="editConfig.riskConfig.dailyTradeLimit" :min="1" :max="50" />
         </el-form-item>
+
+        <el-divider>技术指标配置</el-divider>
+
+        <el-form-item label="1小时ADX阈值">
+          <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx1hThreshold" :min="10" :max="50" />
+        </el-form-item>
+
+        <el-form-item label="4小时ADX阈值">
+          <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx4hThreshold" :min="10" :max="50" />
+        </el-form-item>
+
+        <el-divider>做多入场条件</el-divider>
+
+        <el-form-item label="EMA偏离阈值(%)">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+        </el-form-item>
+
+        <el-form-item label="RSI最小值">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.rsiMin" :min="20" :max="80" />
+        </el-form-item>
+
+        <el-form-item label="RSI最大值">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.rsiMax" :min="20" :max="80" />
+        </el-form-item>
+
+        <el-form-item label="K线下影线阈值(%)">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.candleShadowThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+        </el-form-item>
+
+        <el-form-item label="启用成交量确认">
+          <el-switch v-model="editConfig.indicatorsConfig.longEntry.volumeConfirmation" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="成交量周期">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumePeriod" :min="5" :max="50" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="成交量倍数">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
+        </el-form-item>
+
+        <el-divider>做空入场条件</el-divider>
+
+        <el-form-item label="EMA偏离阈值(%)">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+        </el-form-item>
+
+        <el-form-item label="RSI最小值">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.rsiMin" :min="20" :max="80" />
+        </el-form-item>
+
+        <el-form-item label="RSI最大值">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.rsiMax" :min="20" :max="80" />
+        </el-form-item>
+
+        <el-form-item label="K线上影线阈值(%)">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.candleShadowThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+        </el-form-item>
+
+        <el-form-item label="启用成交量确认">
+          <el-switch v-model="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="成交量周期">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumePeriod" :min="5" :max="50" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="成交量倍数">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
+        </el-form-item>
       </el-form>
 
       <template #footer>

@@ -12,7 +12,7 @@
   "positionTimeoutHours": 4,
   "scanInterval": 120,
   "positionScanInterval": 60,
-  "tradeCooldownInterval": 600,
+  "tradeCooldownInterval": 3600,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -33,7 +33,7 @@
     },
     "takeProfit": {
       "tp1RiskRewardRatio": 1.5,
-      "tp2RiskRewardRatio": 2.0,
+      "tp2RiskRewardRatio": 2,
       "rsiExtreme": {
         "long": 70,
         "short": 30
@@ -46,7 +46,7 @@
     "enabled": true,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 6,
+    "baseLeverage": 5,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,
@@ -61,20 +61,26 @@
   },
   "indicatorsConfig": {
     "adxTrend": {
-      "adx1hThreshold": 25,
-      "adx4hThreshold": 28
+      "adx1hThreshold": 26,
+      "adx4hThreshold": 30
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.005,
+      "emaDeviationThreshold": 0.1,
       "rsiMin": 40,
       "rsiMax": 60,
-      "candleShadowThreshold": 0.005
+      "candleShadowThreshold": 0.1,
+      "volumeConfirmation": true,
+      "volumePeriod": 20,
+      "volumeMultiplier": 1
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.005,
+      "emaDeviationThreshold": 0.1,
       "rsiMin": 40,
       "rsiMax": 55,
-      "candleShadowThreshold": 0.005
+      "candleShadowThreshold": 0.1,
+      "volumeConfirmation": true,
+      "volumePeriod": 20,
+      "volumeMultiplier": 1
     }
   }
 }
