@@ -262,6 +262,24 @@ export function getDefaultConfig(): BotConfig {
       trailingDistance: 1.5,         // 跟踪距离：ATR的1.5倍
       updateIntervalSeconds: 60,     // 更新间隔：60秒检查一次
     },
+    indicatorsConfig: {
+      adxTrend: {
+        adx1hThreshold: 25,          // 1小时ADX阈值
+        adx4hThreshold: 28,          // 4小时ADX阈值
+      },
+      longEntry: {
+        emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)
+        rsiMin: 40,                  // RSI最小值
+        rsiMax: 60,                  // RSI最大值
+        candleShadowThreshold: 0.005, // K线下影线阈值 (0.5%)
+      },
+      shortEntry: {
+        emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)
+        rsiMin: 40,                  // RSI最小值
+        rsiMax: 55,                  // RSI最大值
+        candleShadowThreshold: 0.005, // K线上影线阈值 (0.5%)
+      },
+    },
   }
 }
 

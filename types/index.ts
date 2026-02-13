@@ -31,6 +31,31 @@ export interface TrailingStopConfig {
   updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
 }
 
+// 技术指标配置
+export interface IndicatorsConfig {
+  // ADX趋势检查配置
+  adxTrend: {
+    adx1hThreshold: number        // 1小时ADX阈值 (默认 25)
+    adx4hThreshold: number        // 4小时ADX阈值 (默认 28)
+  }
+  
+  // 做多入场条件配置
+  longEntry: {
+    emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
+    rsiMin: number                 // RSI最小值 (默认 40)
+    rsiMax: number                 // RSI最大值 (默认 60)
+    candleShadowThreshold: number  // K线下影线阈值 (默认 0.005 = 0.5%)
+  }
+  
+  // 做空入场条件配置
+  shortEntry: {
+    emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
+    rsiMin: number                 // RSI最小值 (默认 40)
+    rsiMax: number                 // RSI最大值 (默认 55)
+    candleShadowThreshold: number  // K线上影线阈值 (默认 0.005 = 0.5%)
+  }
+}
+
 // 系统配置
 export interface BotConfig {
   // 交易对
@@ -71,6 +96,9 @@ export interface BotConfig {
   
   // 移动止损配置
   trailingStopConfig: TrailingStopConfig
+  
+  // 技术指标配置
+  indicatorsConfig: IndicatorsConfig
 }
 
 // 风险配置

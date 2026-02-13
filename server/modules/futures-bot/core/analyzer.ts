@@ -55,7 +55,7 @@ export class MarketAnalyzer {
       this.previousADXMap[symbol] = indicators.adx15m
 
       // 检查ADX趋势条件（多周期）
-      const adxResult = checkADXTrend(indicators)
+      const adxResult = checkADXTrend(indicators, this.config)
       if (!adxResult.passed) {
         this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`)
         return null
@@ -85,9 +85,9 @@ export class MarketAnalyzer {
       let entryResult: any = null
 
       if (trendResult.direction === 'LONG') {
-        entryResult = checkLongEntry(price, indicators, lastCandle)
+        entryResult = checkLongEntry(price, indicators, lastCandle, this.config)
       } else if (trendResult.direction === 'SHORT') {
-        entryResult = checkShortEntry(price, indicators, lastCandle)
+        entryResult = checkShortEntry(price, indicators, lastCandle, this.config)
       }
 
       const entryOk = entryResult?.passed || false

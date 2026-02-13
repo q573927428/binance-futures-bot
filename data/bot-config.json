@@ -24,16 +24,16 @@
   },
   "riskConfig": {
     "circuitBreaker": {
-      "dailyLossThreshold": 10,
+      "dailyLossThreshold": 5,
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {
       "hour": 23,
-      "minute": 30
+      "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 3,
+      "tp1RiskRewardRatio": 1.5,
+      "tp2RiskRewardRatio": 2.0,
       "rsiExtreme": {
         "long": 70,
         "short": 30
@@ -58,5 +58,23 @@
     "activationRatio": 0.5,
     "trailingDistance": 1.5,
     "updateIntervalSeconds": 60
+  },
+  "indicatorsConfig": {
+    "adxTrend": {
+      "adx1hThreshold": 25,
+      "adx4hThreshold": 28
+    },
+    "longEntry": {
+      "emaDeviationThreshold": 0.005,
+      "rsiMin": 40,
+      "rsiMax": 60,
+      "candleShadowThreshold": 0.005
+    },
+    "shortEntry": {
+      "emaDeviationThreshold": 0.005,
+      "rsiMin": 40,
+      "rsiMax": 55,
+      "candleShadowThreshold": 0.005
+    }
   }
 }

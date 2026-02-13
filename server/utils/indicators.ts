@@ -1,5 +1,5 @@
 import { EMA, RSI, ADX, ATR } from 'technicalindicators'
-import type { OHLCV, TechnicalIndicators } from '../../types'
+import type { OHLCV, TechnicalIndicators, BotConfig } from '../../types'
 import { BinanceService } from './binance'
 
 /**
@@ -75,12 +75,16 @@ export async function calculateIndicators(
 /**
  * 检查ADX趋势条件（多周期确认）
  */
-export function checkADXTrend(indicators: TechnicalIndicators) {
+export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfig) {
   const adx1h = indicators.adx1h
   const adx4h = indicators.adx4h
   
-  const pass1h = adx1h >= 25
-  const pass4h = adx4h >= 28
+  // 使用配置参数或默认值
+  const adx1hThreshold = config?.indicatorsConfig?.adxTrend?.adx1hThreshold || 25
+  const adx4hThreshold = config?.indicatorsConfig?.adxTrend?.adx4hThreshold || 28
+  
+  const pass1h = adx1h >= adx1hThreshold
+  const pass4h = adx4h >= adx4hThreshold
 
   const passed = pass1h || pass4h
 
@@ -88,12 +92,12 @@ export function checkADXTrend(indicators: TechnicalIndicators) {
   let reason = ''
   if (passed) {
     if (pass1h) {
-      reason = `1h ADX(${adx1h.toFixed(2)}) >= 25（趋势明确）`
+      reason = `1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}（趋势明确）`
     } else {
-      reason = `4h ADX(${adx4h.toFixed(2)}) >= 28（大周期趋势明确）`
+      reason = `4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（大周期趋势明确）`
     }
   } else {
-    reason = `1h ADX(${adx1h.toFixed(2)}) < 25 且 4h ADX(${adx4h.toFixed(2)}) < 28`
+    reason = `1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`
   }
 
   return {
@@ -103,8 +107,8 @@ export function checkADXTrend(indicators: TechnicalIndicators) {
       adx1h,
       adx4h,
       required: {
-        adx1h: 25,
-        adx4h: 28
+        adx1h: adx1hThreshold,
+        adx4h: adx4hThreshold
       },
       actual: {
         adx1h,
@@ -181,25 +185,32 @@ export function getTrendDirection(
 export function checkLongEntry(
   price: number,
   indicators: TechnicalIndicators,
-  lastCandle: OHLCV
+  lastCandle: OHLCV,
+  config?: BotConfig
 ) {
   const { ema20, ema30, rsi } = indicators
 
-  // 价格回踩 EMA20/EMA30（±0.5%）
-  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.005
-  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.005
+  // 使用配置参数或默认值
+  const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
+  const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
+  const rsiMax = config?.indicatorsConfig?.longEntry?.rsiMax || 60
+  const candleShadowThreshold = config?.indicatorsConfig?.longEntry?.candleShadowThreshold || 0.005
+
+  // 价格回踩 EMA20/EMA30（±阈值）
+  const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
+  const nearEMA30 = Math.abs(price - ema30) / ema30 <= emaDeviationThreshold
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
-  // RSI在[40,60]区间
-  const rsiInRange = rsi >= 40 && rsi <= 60
+  // RSI在[min,max]区间
+  const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
   const rsiValue = rsi
 
   // 最近K线为确认阳线或明显下影线
   const isConfirmCandle =
     lastCandle.close > lastCandle.open ||
-    (lastCandle.open - lastCandle.low) / lastCandle.open >= 0.005
+    (lastCandle.open - lastCandle.low) / lastCandle.open >= candleShadowThreshold
   
   const candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
 
@@ -214,7 +225,7 @@ export function checkLongEntry(
       reasons.push(`价格未回踩EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
     }
     if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})[38 - 60]`)
+      reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
     }
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阳线且无明显下影线）')
@@ -248,8 +259,8 @@ export function checkLongEntry(
       conditions: {
         required: {
           nearEMA: true,
-          rsiMin: 38,
-          rsiMax: 60,
+          rsiMin,
+          rsiMax,
           confirmCandle: true,
         },
         actual: {
@@ -269,25 +280,32 @@ export function checkLongEntry(
 export function checkShortEntry(
   price: number,
   indicators: TechnicalIndicators,
-  lastCandle: OHLCV
+  lastCandle: OHLCV,
+  config?: BotConfig
 ) {
   const { ema20, ema30, rsi } = indicators
 
-  // 价格反弹至 EMA20/EMA30（±0.5%）
-  const nearEMA20 = Math.abs(price - ema20) / ema20 <= 0.005
-  const nearEMA30 = Math.abs(price - ema30) / ema30 <= 0.005
+  // 使用配置参数或默认值
+  const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
+  const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
+  const rsiMax = config?.indicatorsConfig?.shortEntry?.rsiMax || 55
+  const candleShadowThreshold = config?.indicatorsConfig?.shortEntry?.candleShadowThreshold || 0.005
+
+  // 价格反弹至 EMA20/EMA30（±阈值）
+  const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
+  const nearEMA30 = Math.abs(price - ema30) / ema30 <= emaDeviationThreshold
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
 
-  // RSI在[40,55]区间
-  const rsiInRange = rsi >= 40 && rsi <= 55
+  // RSI在[min,max]区间
+  const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
   const rsiValue = rsi
 
   // 最近K线为确认阴线或明显上影线
   const isConfirmCandle =
     lastCandle.close < lastCandle.open ||
-    (lastCandle.high - lastCandle.open) / lastCandle.open >= 0.005
+    (lastCandle.high - lastCandle.open) / lastCandle.open >= candleShadowThreshold
   
   const candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
 
@@ -302,7 +320,7 @@ export function checkShortEntry(
       reasons.push(`价格未反弹EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
     }
     if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})[45 - 62]`)
+      reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
     }
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阴线且无明显上影线）')
@@ -336,8 +354,8 @@ export function checkShortEntry(
       conditions: {
         required: {
           nearEMA: true,
-          rsiMin: 45,
-          rsiMax: 62,
+          rsiMin,
+          rsiMax,
           confirmCandle: true,
         },
         actual: {

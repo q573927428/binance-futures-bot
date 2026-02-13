@@ -4,13 +4,13 @@
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1770211535839,
-    "dailyLoss": 2.1078404854787536,
+    "timestamp": 1770959726582,
+    "dailyLoss": 0,
     "consecutiveLosses": 0
   },
-  "todayTrades": 6,
-  "dailyPnL": -2.953520000000033,
-  "lastResetDate": "2026-02-04",
+  "todayTrades": 3,
+  "dailyPnL": -5.30289999999999,
+  "lastResetDate": "2026-02-13",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -18,14 +18,14 @@
     "SOL/USDT"
   ],
   "isRunning": true,
-  "currentPrice": 75847.1,
-  "currentPnL": 0.8891999999999535,
-  "currentPnLPercentage": 2.922331449965273,
-  "totalTrades": 6,
-  "totalPnL": -0.8149200000000056,
-  "winRate": 66.67,
+  "currentPrice": 78.38,
+  "currentPnL": -1.1703999999999941,
+  "currentPnLPercentage": -4.516294585578627,
+  "totalTrades": 77,
+  "totalPnL": 13.547689900000158,
+  "winRate": 40.26,
   "allowNewTrades": true,
-  "lastTradeTime": 1770211535839,
-  "lastIndicatorUpdate": 1770211474882,
-  "lastPrice": 75750.5
+  "lastTradeTime": 1770946230696,
+  "lastIndicatorUpdate": 1770946229921,
+  "lastPrice": 78.38
 }
