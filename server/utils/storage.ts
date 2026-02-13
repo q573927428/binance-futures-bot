@@ -273,8 +273,8 @@ export function getDefaultConfig(): BotConfig {
         rsiMax: 60,                  // RSI最大值
         candleShadowThreshold: 0.005, // K线下影线阈值 (0.5%)
         volumeConfirmation: true,    // 成交量确认
-        volumePeriod: 20,            // 成交量周期
-        volumeMultiplier: 1.0,       // 成交量倍数
+        volumeEMAPeriod: 10,         // EMA成交量周期
+        volumeEMAMultiplier: 1.2,    // EMA成交量倍数
       },
       shortEntry: {
         emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)
@@ -282,8 +282,8 @@ export function getDefaultConfig(): BotConfig {
         rsiMax: 55,                  // RSI最大值
         candleShadowThreshold: 0.005, // K线上影线阈值 (0.5%)
         volumeConfirmation: true,    // 成交量确认
-        volumePeriod: 20,            // 成交量周期
-        volumeMultiplier: 1.0,       // 成交量倍数
+        volumeEMAPeriod: 10,         // EMA成交量周期
+        volumeEMAMultiplier: 1.2,    // EMA成交量倍数
       },
     },
   }

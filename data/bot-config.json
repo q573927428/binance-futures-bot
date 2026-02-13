@@ -70,8 +70,8 @@
       "rsiMax": 60,
       "candleShadowThreshold": 0.1,
       "volumeConfirmation": true,
-      "volumePeriod": 20,
-      "volumeMultiplier": 1
+      "volumeEMAPeriod": 10,
+      "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.1,
@@ -79,8 +79,8 @@
       "rsiMax": 55,
       "candleShadowThreshold": 0.1,
       "volumeConfirmation": true,
-      "volumePeriod": 20,
-      "volumeMultiplier": 1
+      "volumeEMAPeriod": 10,
+      "volumeEMAMultiplier": 1.2
     }
   }
 }

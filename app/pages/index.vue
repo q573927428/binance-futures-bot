@@ -540,12 +540,12 @@
           <el-switch v-model="editConfig.indicatorsConfig.longEntry.volumeConfirmation" />
         </el-form-item>
 
-        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="成交量周期">
-          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumePeriod" :min="5" :max="50" />
+        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="EMA成交量周期">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeEMAPeriod" :min="5" :max="50" />
         </el-form-item>
 
-        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="成交量倍数">
-          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
+        <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="EMA成交量倍数">
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
         </el-form-item>
 
         <el-divider>做空入场条件</el-divider>
@@ -570,12 +570,12 @@
           <el-switch v-model="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" />
         </el-form-item>
 
-        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="成交量周期">
-          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumePeriod" :min="5" :max="50" />
+        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="EMA成交量周期">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeEMAPeriod" :min="5" :max="50" />
         </el-form-item>
 
-        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="成交量倍数">
-          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
+        <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="EMA成交量倍数">
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
         </el-form-item>
       </el-form>
 
