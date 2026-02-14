@@ -125,6 +125,7 @@ export interface RiskConfig {
   takeProfit: {
     tp1RiskRewardRatio: number      // TP1盈亏比（1:1）
     tp2RiskRewardRatio: number      // TP2盈亏比（1:2）
+    tp2MinProfitRatio: number       // TP2最小盈利比例（默认0.5R）
     rsiExtreme: {
       long: number   // 多头RSI极值
       short: number  // 空头RSI极值

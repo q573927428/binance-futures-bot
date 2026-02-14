@@ -97,7 +97,7 @@ export function checkTP1Condition(
   }
   
   const requiredRiskRewardRatio = riskConfig.takeProfit.tp1RiskRewardRatio  // 使用配置值
-  const triggered = profit >= risk * requiredRiskRewardRatio  // 使用配置值
+  const triggered = profit > 0 && profit >= risk * requiredRiskRewardRatio // 使用配置值
   const riskRewardRatio = risk > 0 ? profit / risk : 0
   
   let reason = ''
@@ -126,6 +126,7 @@ export function checkTP1Condition(
 
 /**
  * 检查是否达到TP2条件（盈亏比1:2 或 RSI极值 或 ADX走弱）
+ * 新增要求：必须至少达到0.5R盈利才允许触发TP2
  */
 export function checkTP2Condition(
   currentPrice: number,
@@ -156,7 +157,12 @@ export function checkTP2Condition(
                       (direction === 'SHORT' && rsi <= riskConfig.takeProfit.rsiExtreme.short)
   const adxTriggered = adxChange >= riskConfig.takeProfit.adxDecreaseThreshold
   
-  const triggered = riskRewardTriggered || rsiTriggered || adxTriggered
+  // 新增：必须至少达到0.5R盈利才允许触发TP2
+  const minProfitRatio = riskConfig.takeProfit.tp2MinProfitRatio || 0.5
+  const hasMinProfit = profit >= risk * minProfitRatio
+  
+  // 触发条件：必须达到最小盈利，并且满足以下任意条件
+  const triggered = hasMinProfit && (riskRewardTriggered || rsiTriggered || adxTriggered)
   
   // 构建原因说明
   let reason = ''
@@ -174,9 +180,27 @@ export function checkTP2Condition(
     if (adxTriggered) {
       reasons.push(`ADX下降 ${adxChange.toFixed(2)} ≥ ${riskConfig.takeProfit.adxDecreaseThreshold}`)
     }
-    reason = `达到TP2条件：${reasons.join('，')}`
+    reason = `达到TP2条件：${reasons.join('，')}（已满足最小盈利${minProfitRatio}R）`
   } else {
-    reason = `未达到TP2条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1），RSI ${rsi.toFixed(1)}，ADX变化 ${adxChange.toFixed(2)}`
+    // 提供更详细的未触发原因
+    const reasons: string[] = []
+    if (!hasMinProfit) {
+      reasons.push(`未达到最小盈利${minProfitRatio}R（当前${riskRewardRatio.toFixed(2)}R）`)
+    } else {
+      if (!riskRewardTriggered) {
+        reasons.push(`盈亏比 ${riskRewardRatio.toFixed(2)}:1 < ${requiredRiskRewardRatio}:1`)
+      }
+      if (!rsiTriggered) {
+        const requiredRsi = direction === 'LONG' 
+          ? riskConfig.takeProfit.rsiExtreme.long 
+          : riskConfig.takeProfit.rsiExtreme.short
+        reasons.push(`RSI ${rsi.toFixed(1)} ${direction === 'LONG' ? '<' : '>'} ${requiredRsi}`)
+      }
+      if (!adxTriggered) {
+        reasons.push(`ADX变化 ${adxChange.toFixed(2)} < ${riskConfig.takeProfit.adxDecreaseThreshold}`)
+      }
+    }
+    reason = `未达到TP2条件：${reasons.join('，')}`
   }
   
   return {
@@ -191,6 +215,8 @@ export function checkTP2Condition(
       profit,
       riskRewardRatio,
       requiredRiskRewardRatio,
+      minProfitRatio,
+      hasMinProfit,
       rsi,
       adx15m,
       previousADX15m,

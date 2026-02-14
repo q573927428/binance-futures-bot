@@ -157,6 +157,16 @@ export class PositionMonitor {
 
       // 如果需要更新止损
       if (result.shouldUpdate && result.newStopLoss) {
+        // 增加方向验证（防御性检查）
+        if (position.direction === 'LONG' && result.newStopLoss <= position.stopLoss) {
+          logger.warn('移动止损', `新止损 ${result.newStopLoss} 不优于当前止损 ${position.stopLoss}，跳过更新`)
+          return
+        }
+        if (position.direction === 'SHORT' && result.newStopLoss >= position.stopLoss) {
+          logger.warn('移动止损', `新止损 ${result.newStopLoss} 不优于当前止损 ${position.stopLoss}，跳过更新`)
+          return
+        }
+        
         await this.updateStopLoss(position, result.newStopLoss, result.reason)
       }
     } catch (error: any) {
