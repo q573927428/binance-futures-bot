@@ -525,7 +525,7 @@
         <el-divider>做多入场条件</el-divider>
 
         <el-form-item label="EMA偏离阈值(%)">
-          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
         </el-form-item>
 
         <el-form-item label="RSI最小值">
@@ -537,7 +537,7 @@
         </el-form-item>
 
         <el-form-item label="K线下影线阈值(%)">
-          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.candleShadowThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+          <el-input-number v-model="editConfig.indicatorsConfig.longEntry.candleShadowThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
         </el-form-item>
 
         <el-form-item label="启用成交量确认">
@@ -555,7 +555,7 @@
         <el-divider>做空入场条件</el-divider>
 
         <el-form-item label="EMA偏离阈值(%)">
-          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
         </el-form-item>
 
         <el-form-item label="RSI最小值">
@@ -567,7 +567,7 @@
         </el-form-item>
 
         <el-form-item label="K线上影线阈值(%)">
-          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.candleShadowThreshold" :min="0.1" :max="5" :step="0.1" :precision="3" />
+          <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.candleShadowThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
         </el-form-item>
 
         <el-form-item label="启用成交量确认">
