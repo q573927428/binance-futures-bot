@@ -57,6 +57,15 @@
                   停止机器人
                 </el-button>
 
+                <el-button
+                  type="info"
+                  size="large"
+                  @click="goToAnalysis"
+                >
+                  <el-icon style="margin-right: 8px"><ElIconTrendCharts  /></el-icon>
+                  策略分析
+                </el-button>
+
                 <el-divider />
 
                 <div class="stats">
@@ -713,6 +722,11 @@ async function handleSaveConfig() {
   } else {
     ElMessage.error(botStore.error || '更新配置失败')
   }
+}
+
+// 跳转到策略分析页面
+function goToAnalysis() {
+  window.location.href = '/strategy-analysis'
 }
 
 function formatBalance(value: number): string {

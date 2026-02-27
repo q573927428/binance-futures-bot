@@ -12,6 +12,7 @@ import { PositionCloser } from './trading/position-closer'
 import { PositionValidator } from './trading/position-validator'
 import { PriceService } from './services/price-service'
 import { IndicatorsCache } from './services/indicators-cache'
+import { StrategyAnalyzer } from './helpers/strategy-analyzer'
 
 /**
  * 币安永续合约交易机器人
@@ -26,6 +27,7 @@ export class FuturesBot {
   private positionMonitor: PositionMonitor
   private positionCloser: PositionCloser
   private positionValidator: PositionValidator
+  private strategyAnalyzer: StrategyAnalyzer | null = null
   private isInitialized: boolean = false
 
   constructor() {
@@ -208,8 +210,8 @@ export class FuturesBot {
         return
       }
 
-      // 监控持仓
-      const result = await this.positionMonitor.monitorPosition(position)
+      // 监控持仓（传入策略分析器）
+      const result = await this.positionMonitor.monitorPosition(position, this.strategyAnalyzer || undefined)
       
       // 同步监控器的状态
       const monitorState = this.positionMonitor['state']
@@ -230,18 +232,93 @@ export class FuturesBot {
   }
 
   /**
+   * 初始化策略分析器（当开仓时调用）
+   */
+  private initializeStrategyAnalyzer(position: any): void {
+    if (!position) return
+    
+    try {
+      this.strategyAnalyzer = new StrategyAnalyzer(position)
+      logger.info('策略分析', `策略分析器已初始化: ${position.symbol}`)
+    } catch (error: any) {
+      logger.error('策略分析', '初始化策略分析器失败', error.message)
+      this.strategyAnalyzer = null
+    }
+  }
+
+  /**
+   * 生成策略分析指标（当平仓时调用）
+   */
+  private async generateStrategyAnalysisMetrics(
+    position: any,
+    exitPrice: number,
+    exitReason: string
+  ): Promise<void> {
+    if (!this.strategyAnalyzer) return
+    
+    try {
+      const exitTime = Date.now()
+      const metrics = await this.strategyAnalyzer.generateAnalysisMetrics(
+        exitPrice,
+        exitReason,
+        exitTime
+      )
+      
+      logger.success('策略分析', `分析指标已生成: ${position.symbol} MFE=${metrics.mfe.toFixed(2)}, MAE=${metrics.mae.toFixed(2)}`)
+      
+      // 重置策略分析器
+      this.strategyAnalyzer = null
+    } catch (error: any) {
+      logger.error('策略分析', '生成分析指标失败', error.message)
+      this.strategyAnalyzer = null
+    }
+  }
+
+  /**
    * 平仓（如果存在持仓）
    */
   private async closePositionIfExists(reason: string): Promise<void> {
     const state = this.stateManager.getState()
     if (!state.currentPosition) return
 
-    await this.positionCloser.closePosition(state.currentPosition, reason)
+    const position = state.currentPosition
+    
+    // 获取平仓价格（这里需要从平仓器中获取实际平仓价格）
+    // 在实际实现中，应该从positionCloser获取实际平仓价格
+    const exitPrice = await this.getExitPrice(position, reason)
+    
+    // 生成策略分析指标
+    await this.generateStrategyAnalysisMetrics(position, exitPrice, reason)
+    
+    // 执行平仓
+    await this.positionCloser.closePosition(position, reason)
     
     // 同步平仓器的状态
     const closerState = this.positionCloser['state']
     this.stateManager.setState(closerState)
     this.syncStateToModules()
+  }
+
+  /**
+   * 获取平仓价格（简化实现）
+   */
+  private async getExitPrice(position: any, reason: string): Promise<number> {
+    try {
+      // 尝试从价格服务获取当前价格
+      const price = await this.priceService.getPrice(position.symbol)
+      return price
+    } catch (error: any) {
+      logger.warn('策略分析', `获取平仓价格失败: ${error.message}，使用最后记录的价格`)
+      
+      // 如果有策略分析器，使用最后记录的价格
+      if (this.strategyAnalyzer) {
+        // 这里需要从策略分析器获取最后价格
+        // 简化处理：返回入场价格
+        return position.entryPrice
+      }
+      
+      return position.entryPrice
+    }
   }
 
   /**

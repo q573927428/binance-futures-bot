@@ -1,4 +1,4 @@
-import type { Position, BotConfig, BotState } from '../../../../types'
+import type { Position, BotConfig, BotState, TechnicalIndicators } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculatePnL, isPositionTimeout, checkTP1Condition, checkTP2Condition, getOrderSide } from '../../../utils/risk'
 import { calculateIndicators } from '../../../utils/indicators'
@@ -6,6 +6,7 @@ import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { calculateTrailingStopLoss, shouldUpdateTrailingStop } from '../helpers/trailing-stop'
 import { PriceService } from '../services/price-service'
+import { StrategyAnalyzer } from '../helpers/strategy-analyzer'
 
 /**
  * 持仓监控器
@@ -51,7 +52,10 @@ export class PositionMonitor {
    * 监控持仓
    * @returns 返回是否需要平仓以及平仓原因
    */
-  async monitorPosition(position: Position): Promise<{ shouldClose: boolean; reason?: string }> {
+  async monitorPosition(
+    position: Position,
+    strategyAnalyzer?: StrategyAnalyzer
+  ): Promise<{ shouldClose: boolean; reason?: string }> {
     try {
       // 使用PriceService获取价格（优先WebSocket缓存）
       const price = await this.priceService.getPrice(position.symbol)
@@ -78,6 +82,11 @@ export class PositionMonitor {
       this.state.currentPnLPercentage = pnlPercentage
       await saveBotState(this.state)
 
+      // 如果有策略分析器，记录价格点
+      if (strategyAnalyzer) {
+        strategyAnalyzer.recordPricePoint(price, now)
+      }
+
       // 减少指标计算频率：只在需要检查条件时计算
       // 检查是否需要计算指标（每5分钟或价格变化较大时）
       const lastIndicatorTime = this.state.lastIndicatorUpdate || 0
@@ -88,6 +97,11 @@ export class PositionMonitor {
         indicators = await calculateIndicators(this.binance, position.symbol)
         this.state.lastIndicatorUpdate = now
         this.state.lastPrice = price
+        
+        // 如果有策略分析器，记录ATR值
+        if (strategyAnalyzer && indicators) {
+          strategyAnalyzer.recordATR(indicators.atr)
+        }
       }
 
       // 获取当前symbol的previous ADX值

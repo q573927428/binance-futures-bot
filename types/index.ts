@@ -291,6 +291,87 @@ export interface TradeHistory {
   reason: string
 }
 
+// 策略分析指标
+export interface StrategyAnalysisMetrics {
+  // 基础信息
+  tradeId: string
+  symbol: string
+  direction: Direction
+  
+  // 时间信息
+  openTime: number
+  closeTime: number
+  duration: number  // 持仓时长（毫秒）
+  
+  // 价格信息
+  entryPrice: number
+  exitPrice: number
+  stopLossPrice: number
+  takeProfit1Price: number
+  takeProfit2Price: number
+  
+  // MFE/MAE指标
+  mfe: number  // 最大浮盈金额
+  mfePercentage: number  // 最大浮盈百分比
+  mae: number  // 最大浮亏金额
+  maePercentage: number  // 最大浮亏百分比
+  
+  // 风险回报指标
+  riskAmount: number  // 风险金额（初始止损对应的风险）
+  rewardAmount: number  // 实际盈利金额
+  riskRewardRatio: number  // 风险回报比
+  
+  // 入场指标
+  entryRSI: number  // 入场时的RSI值
+  entryADX15m: number  // 入场时的15分钟ADX值
+  entryADX1h: number  // 入场时的1小时ADX值
+  entryADX4h: number  // 入场时的4小时ADX值
+  entryEMA20: number  // 入场时的20周期EMA
+  entryEMA60: number  // 入场时的60周期EMA
+  entryPriceToEMA20Deviation: number  // 价格与EMA20的偏离度
+  entryPriceToEMA60Deviation: number  // 价格与EMA60的偏离度
+  
+  // 出场指标
+  exitRSI: number  // 出场时的RSI值
+  exitADX15m: number  // 出场时的15分钟ADX值
+  exitADX1h: number  // 出场时的1小时ADX值
+  exitADX4h: number  // 出场时的4小时ADX值
+  exitEMA20: number  // 出场时的20周期EMA
+  exitEMA60: number  // 出场时的60周期EMA
+  
+  // 波动性指标
+  averageATR: number  // 持仓期间平均ATR
+  priceRangePercentage: number  // 价格波动范围百分比
+  maxDrawdownPercentage: number  // 最大回撤百分比
+  
+  // 资金管理指标
+  positionSizePercentage: number  // 仓位大小百分比
+  actualLeverage: number  // 实际使用的杠杆倍数
+  marginUsed: number  // 使用的保证金
+  
+  // 交易结果
+  pnl: number
+  pnlPercentage: number
+  exitReason: string
+  exitReasonCategory: 'TP1' | 'TP2' | 'STOP_LOSS' | 'TIMEOUT' | 'FORCE_LIQUIDATE' | 'TRAILING_STOP' | 'OTHER'
+  
+  // 时间特征
+  tradeHour: number  // 交易小时（0-23）
+  tradeDayOfWeek: number  // 星期几（0-6，0=周日）
+  tradeMonth: number  // 月份（1-12）
+  
+  // 价格历史（可选，用于详细分析）
+  priceHistory?: Array<{
+    timestamp: number
+    price: number
+    pnl: number
+    pnlPercentage: number
+  }>
+  
+  // 创建时间
+  createdAt: number
+}
+
 // 熔断状态
 export interface CircuitBreaker {
   isTriggered: boolean
