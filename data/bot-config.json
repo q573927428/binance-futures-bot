@@ -47,7 +47,7 @@
     "enabled": true,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 8,
+    "baseLeverage": 6,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,
@@ -56,32 +56,32 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.5,
-    "trailingDistance": 1.5,
+    "activationRatio": 1,
+    "trailingDistance": 1,
     "updateIntervalSeconds": 60
   },
   "indicatorsConfig": {
     "adxTrend": {
-      "adx1hThreshold": 22,
-      "adx4hThreshold": 28
+      "adx1hThreshold": 28,
+      "adx4hThreshold": 32
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.005,
-      "rsiMin": 40,
-      "rsiMax": 60,
+      "emaDeviationThreshold": 0.008,
+      "rsiMin": 44,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.005,
-      "rsiMin": 35,
-      "rsiMax": 55,
+      "emaDeviationThreshold": 0.008,
+      "rsiMin": 38,
+      "rsiMax": 58,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 1.2
     }
   }
 }
