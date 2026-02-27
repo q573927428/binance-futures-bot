@@ -13,11 +13,13 @@ export class PositionValidator {
   private binance: BinanceService
   private config: BotConfig
   private state: BotState
+  private getStrategyAnalyzer?: () => any
 
-  constructor(binance: BinanceService, config: BotConfig, state: BotState) {
+  constructor(binance: BinanceService, config: BotConfig, state: BotState, getStrategyAnalyzer?: () => any) {
     this.binance = binance
     this.config = config
     this.state = state
+    this.getStrategyAnalyzer = getStrategyAnalyzer
   }
 
   /**
@@ -60,12 +62,15 @@ export class PositionValidator {
       )
   
       try {
+        // 获取策略分析器
+        const strategyAnalyzer = this.getStrategyAnalyzer ? this.getStrategyAnalyzer() : undefined
+        
         // 尝试查询止损订单状态
         if (position.stopLossOrderId) {
-          await this.handleCompensatedClose(position, '止损触发')
+          await this.handleCompensatedClose(position, '止损触发', strategyAnalyzer)
         } else {
           // 如果没有止损订单ID，可能是其他原因平仓
-          await this.handleCompensatedClose(position, '未知原因平仓')
+          await this.handleCompensatedClose(position, '未知原因平仓', strategyAnalyzer)
         }
       } catch (error: any) {
         logger.error('补偿平仓', '补偿平仓流程失败', error.message)
@@ -84,7 +89,7 @@ export class PositionValidator {
   /**
    * 处理补偿平仓（当检测到仓位已被平仓但本地没有记录时）
    */
-  async handleCompensatedClose(position: Position, reason: string): Promise<void> {
+  async handleCompensatedClose(position: Position, reason: string, strategyAnalyzer?: any): Promise<void> {
     try {
       logger.info('补偿平仓', `开始处理补偿平仓: ${position.symbol} ${reason}`)
 
@@ -131,6 +136,20 @@ export class PositionValidator {
         logger.warn('补偿平仓', `exitPrice为0，强制重新获取价格`)
         exitPrice = await this.binance.fetchPrice(position.symbol)
         logger.info('补偿平仓', `重新获取的价格: ${exitPrice}`)
+      }
+
+      // 如果有策略分析器，生成分析指标
+      if (strategyAnalyzer) {
+        try {
+          const metrics = await strategyAnalyzer.generateAnalysisMetrics(
+            exitPrice,
+            reason,
+            closeTime
+          )
+          logger.success('策略分析', `补偿平仓分析指标已生成: ${position.symbol} MFE=${metrics.mfe.toFixed(2)}, MAE=${metrics.mae.toFixed(2)}`)
+        } catch (error: any) {
+          logger.error('策略分析', `补偿平仓生成分析指标失败: ${error.message}`)
+        }
       }
 
       // 计算盈亏

@@ -40,7 +40,12 @@ export class FuturesBot {
     this.analyzer = new MarketAnalyzer(this.binance, defaultConfig)
     
     // 初始化交易模块
-    this.positionOpener = new PositionOpener(this.binance, defaultConfig, defaultState)
+    this.positionOpener = new PositionOpener(
+      this.binance, 
+      defaultConfig, 
+      defaultState,
+      (position) => this.initializeStrategyAnalyzer(position)
+    )
     this.positionMonitor = new PositionMonitor(
       this.binance,
       this.priceService,
@@ -49,7 +54,7 @@ export class FuturesBot {
       (symbol) => this.analyzer.getPreviousADX(symbol)
     )
     this.positionCloser = new PositionCloser(this.binance, defaultConfig, defaultState)
-    this.positionValidator = new PositionValidator(this.binance, defaultConfig, defaultState)
+    this.positionValidator = new PositionValidator(this.binance, defaultConfig, defaultState, () => this.strategyAnalyzer)
     
     // 初始化扫描器（传入回调函数）
     this.scanner = new MarketScanner(
@@ -234,7 +239,7 @@ export class FuturesBot {
   /**
    * 初始化策略分析器（当开仓时调用）
    */
-  private initializeStrategyAnalyzer(position: any): void {
+  initializeStrategyAnalyzer(position: any): void {
     if (!position) return
     
     try {
