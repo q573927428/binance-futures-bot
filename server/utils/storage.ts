@@ -211,8 +211,8 @@ export function getDefaultConfig(): BotConfig {
     symbols: ['BTC/USDT','ETH/USDT', 'BNB/USDT', 'SOL/USDT'],
     leverage: 10,                     //杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
     maxRiskPercentage: 20,           //单笔最大风险比例
-    stopLossATRMultiplier: 1.5,      //止损ATR倍数
-    maxStopLossPercentage: 2,      //最大止损比例
+    stopLossATRMultiplier: 2,      //止损ATR倍数
+    maxStopLossPercentage: 3,      //最大止损比例
     positionTimeoutHours: 4,         //持仓超时时间
     scanInterval: 120,                //市场扫描间隔
     positionScanInterval: 60,         //持仓扫描间隔

@@ -81,7 +81,7 @@
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 1.2
     }
   }
 }

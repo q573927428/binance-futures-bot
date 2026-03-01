@@ -438,8 +438,8 @@ export function calculateStopLoss(
   entryPrice: number,
   direction: 'LONG' | 'SHORT',
   atr: number,
-  atrMultiplier: number = 1.5,
-  maxStopLossPercent: number = 2
+  atrMultiplier: number = 2,
+  maxStopLossPercent: number = 3
 ): number {
   const stopLossDistance = atr * atrMultiplier
   const maxStopLossDistance = entryPrice * (maxStopLossPercent / 100)
