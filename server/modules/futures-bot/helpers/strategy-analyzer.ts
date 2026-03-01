@@ -163,10 +163,19 @@ export class StrategyAnalyzer {
     // 计算实际盈利金额
     const position = this.createPositionObject()
     const { pnl, pnlPercentage } = calculatePnL(exitPrice, position)
-    const rewardAmount = Math.max(0, pnl) // 只计算正盈利
+    const rewardAmount = pnl // 使用实际盈利金额（可以是负数）
     
     // 计算风险回报比
-    const riskRewardRatio = riskAmount > 0 ? Math.abs(rewardAmount) / Math.abs(riskAmount) : 0
+    // 如果盈利为正，风险回报比 = 盈利 / 风险
+    // 如果盈利为负，风险回报比 = -1 * (亏损 / 风险)
+    let riskRewardRatio = 0
+    if (riskAmount > 0) {
+      if (pnl >= 0) {
+        riskRewardRatio = pnl / riskAmount
+      } else {
+        riskRewardRatio = -1 * (Math.abs(pnl) / riskAmount)
+      }
+    }
     
     // 计算价格波动范围百分比
     const priceRangePercentage = (this.highestPrice - this.lowestPrice) / this.entryPrice * 100

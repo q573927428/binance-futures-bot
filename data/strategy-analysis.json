@@ -1,0 +1,942 @@
+[
+  {
+    "tradeId": "1772274384548-BTC-USDT",
+    "symbol": "BTC/USDT",
+    "direction": "SHORT",
+    "openTime": 1772274384548,
+    "closeTime": 1772286611446,
+    "duration": 12226898,
+    "entryPrice": 63854.7,
+    "exitPrice": 64618.3,
+    "stopLossPrice": 64573.62818278809,
+    "takeProfit1Price": 63135.771817211906,
+    "takeProfit2Price": 62416.843634423814,
+    "mfe": 0.158,
+    "mfePercentage": 0.9897470350655472,
+    "mae": -1.5272000000000117,
+    "maePercentage": -9.566719442734907,
+    "riskAmount": 1.4378563655761827,
+    "rewardAmount": 0,
+    "riskRewardRatio": 0,
+    "entryRSI": 0,
+    "entryADX15m": 0,
+    "entryADX1h": 0,
+    "entryADX4h": 0,
+    "entryEMA20": 0,
+    "entryEMA60": 0,
+    "entryPriceToEMA20Deviation": 0,
+    "entryPriceToEMA60Deviation": 0,
+    "exitRSI": 0,
+    "exitADX15m": 0,
+    "exitADX1h": 0,
+    "exitADX4h": 0,
+    "exitEMA20": 0,
+    "exitEMA60": 0,
+    "averageATR": 304.5894965503985,
+    "priceRangePercentage": 1.319558309725057,
+    "maxDrawdownPercentage": 9.566719442734907,
+    "positionSizePercentage": 1.277094,
+    "actualLeverage": 8,
+    "marginUsed": 15.963675,
+    "pnl": -1.5272000000000117,
+    "pnlPercentage": -9.566719442734907,
+    "exitReason": "止损触发",
+    "exitReasonCategory": "STOP_LOSS",
+    "tradeHour": 18,
+    "tradeDayOfWeek": 6,
+    "tradeMonth": 2,
+    "priceHistory": [
+      {
+        "timestamp": 1772274384548,
+        "price": 63854.7,
+        "pnl": 0,
+        "pnlPercentage": 0
+      },
+      {
+        "timestamp": 1772274685656,
+        "price": 63852.6,
+        "pnl": 0.00419999999999709,
+        "pnlPercentage": 0.026309731311850746
+      },
+      {
+        "timestamp": 1772274986807,
+        "price": 63924,
+        "pnl": -0.13860000000000583,
+        "pnlPercentage": -0.8682211332917128
+      },
+      {
+        "timestamp": 1772275287954,
+        "price": 63954.5,
+        "pnl": -0.19960000000000583,
+        "pnlPercentage": -1.2503386594879051
+      },
+      {
+        "timestamp": 1772275589103,
+        "price": 63866,
+        "pnl": -0.02260000000000582,
+        "pnlPercentage": -0.14157141134485524
+      },
+      {
+        "timestamp": 1772275890246,
+        "price": 63881.6,
+        "pnl": -0.053800000000002915,
+        "pnlPercentage": -0.33701512966157804
+      },
+      {
+        "timestamp": 1772276191400,
+        "price": 63919.8,
+        "pnl": -0.13020000000001164,
+        "pnlPercentage": -0.8156016706680113
+      },
+      {
+        "timestamp": 1772276492543,
+        "price": 63915.4,
+        "pnl": -0.12140000000000874,
+        "pnlPercentage": -0.7604765193478866
+      },
+      {
+        "timestamp": 1772276793707,
+        "price": 64058.1,
+        "pnl": -0.40680000000000294,
+        "pnlPercentage": -2.5482854042067564
+      },
+      {
+        "timestamp": 1772277094851,
+        "price": 64046.8,
+        "pnl": -0.38420000000001164,
+        "pnlPercentage": -2.406713992861992
+      },
+      {
+        "timestamp": 1772277396084,
+        "price": 64039.5,
+        "pnl": -0.3696000000000058,
+        "pnlPercentage": -2.3152563554445065
+      },
+      {
+        "timestamp": 1772277697240,
+        "price": 64126.4,
+        "pnl": -0.5434000000000088,
+        "pnlPercentage": -3.403978094016627
+      },
+      {
+        "timestamp": 1772277998391,
+        "price": 64073.4,
+        "pnl": -0.4374000000000087,
+        "pnlPercentage": -2.739970589478981
+      },
+      {
+        "timestamp": 1772278299549,
+        "price": 64229,
+        "pnl": -0.7486000000000058,
+        "pnlPercentage": -4.6893963952536355
+      },
+      {
+        "timestamp": 1772278600726,
+        "price": 64107.9,
+        "pnl": -0.5064000000000087,
+        "pnlPercentage": -3.1722018896025426
+      },
+      {
+        "timestamp": 1772278901889,
+        "price": 63965.7,
+        "pnl": -0.222,
+        "pnlPercentage": -1.390657226484503
+      },
+      {
+        "timestamp": 1772279203041,
+        "price": 63978.9,
+        "pnl": -0.24840000000000872,
+        "pnlPercentage": -1.556032680444877
+      },
+      {
+        "timestamp": 1772279504198,
+        "price": 63981.2,
+        "pnl": -0.253,
+        "pnlPercentage": -1.58484810045306
+      },
+      {
+        "timestamp": 1772279805379,
+        "price": 63867.6,
+        "pnl": -0.02580000000000291,
+        "pnlPercentage": -0.1616169209157848
+      },
+      {
+        "timestamp": 1772280106527,
+        "price": 63916.5,
+        "pnl": -0.12360000000000583,
+        "pnlPercentage": -0.7742578071778949
+      },
+      {
+        "timestamp": 1772280407702,
+        "price": 63920.1,
+        "pnl": -0.13080000000000291,
+        "pnlPercentage": -0.8193602037125093
+      },
+      {
+        "timestamp": 1772280708857,
+        "price": 63854,
+        "pnl": 0.0013999999999941793,
+        "pnlPercentage": 0.008769910437253196
+      },
+      {
+        "timestamp": 1772281010025,
+        "price": 63927.7,
+        "pnl": -0.146,
+        "pnlPercentage": -0.9145763741744929
+      },
+      {
+        "timestamp": 1772281311197,
+        "price": 64024.5,
+        "pnl": -0.33960000000000584,
+        "pnlPercentage": -2.127329703216871
+      },
+      {
+        "timestamp": 1772281612357,
+        "price": 63939.9,
+        "pnl": -0.17040000000000874,
+        "pnlPercentage": -1.0674233846530248
+      },
+      {
+        "timestamp": 1772281913502,
+        "price": 63977.3,
+        "pnl": -0.24520000000001166,
+        "pnlPercentage": -1.5359871708739476
+      },
+      {
+        "timestamp": 1772282214654,
+        "price": 63942.1,
+        "pnl": -0.17480000000000293,
+        "pnlPercentage": -1.0949859603130414
+      },
+      {
+        "timestamp": 1772282515818,
+        "price": 63994.2,
+        "pnl": -0.279,
+        "pnlPercentage": -1.747717865717011
+      },
+      {
+        "timestamp": 1772282816967,
+        "price": 63930,
+        "pnl": -0.1506000000000058,
+        "pnlPercentage": -0.9433917941827668
+      },
+      {
+        "timestamp": 1772283118119,
+        "price": 63863.1,
+        "pnl": -0.01680000000000291,
+        "pnlPercentage": -0.10523892524749413
+      },
+      {
+        "timestamp": 1772283419262,
+        "price": 63916,
+        "pnl": -0.12260000000000583,
+        "pnlPercentage": -0.7679935854369738
+      },
+      {
+        "timestamp": 1772283720406,
+        "price": 63974,
+        "pnl": -0.23860000000000584,
+        "pnlPercentage": -1.4946433073838312
+      },
+      {
+        "timestamp": 1772284021551,
+        "price": 63943.5,
+        "pnl": -0.17760000000000584,
+        "pnlPercentage": -1.112525781187639
+      },
+      {
+        "timestamp": 1772284322716,
+        "price": 63984.9,
+        "pnl": -0.26040000000000874,
+        "pnlPercentage": -1.6312033413359313
+      },
+      {
+        "timestamp": 1772284623868,
+        "price": 64094,
+        "pnl": -0.47860000000000585,
+        "pnlPercentage": -2.9980565252049156
+      },
+      {
+        "timestamp": 1772284925015,
+        "price": 63988.9,
+        "pnl": -0.26840000000000874,
+        "pnlPercentage": -1.6813171152633009
+      },
+      {
+        "timestamp": 1772285226156,
+        "price": 64026.1,
+        "pnl": -0.34280000000000294,
+        "pnlPercentage": -2.1473752127878005
+      },
+      {
+        "timestamp": 1772285527305,
+        "price": 64049.3,
+        "pnl": -0.38920000000001165,
+        "pnlPercentage": -2.438035101566598
+      },
+      {
+        "timestamp": 1772285828448,
+        "price": 63935.9,
+        "pnl": -0.16240000000000873,
+        "pnlPercentage": -1.0173096107256552
+      },
+      {
+        "timestamp": 1772286129613,
+        "price": 63931.6,
+        "pnl": -0.1538000000000029,
+        "pnlPercentage": -0.9634373037536965
+      },
+      {
+        "timestamp": 1772286430762,
+        "price": 64113.9,
+        "pnl": -0.5184000000000087,
+        "pnlPercentage": -3.247372550493597
+      },
+      {
+        "timestamp": 1772286551320,
+        "price": 64495.9,
+        "pnl": -1.2824000000000089,
+        "pnlPercentage": -8.033237960557384
+      }
+    ],
+    "createdAt": 1772286611506
+  },
+  {
+    "tradeId": "1772226740231-SOL-USDT",
+    "symbol": "SOL/USDT",
+    "direction": "SHORT",
+    "openTime": 1772226740231,
+    "closeTime": 1772255711869,
+    "duration": 28971638,
+    "entryPrice": 81.65,
+    "exitPrice": 81.73,
+    "stopLossPrice": 82.53904542957028,
+    "takeProfit1Price": 80.76095457042973,
+    "takeProfit2Price": 79.87190914085946,
+    "mfe": 2.173600000000013,
+    "mfePercentage": 11.463563992651627,
+    "mae": -1.1077000000000023,
+    "maePercentage": -5.842008573178211,
+    "riskAmount": 1.8581049478018723,
+    "rewardAmount": 0,
+    "riskRewardRatio": 0,
+    "entryRSI": 0,
+    "entryADX15m": 0,
+    "entryADX1h": 0,
+    "entryADX4h": 0,
+    "entryEMA20": 0,
+    "entryEMA60": 0,
+    "entryPriceToEMA20Deviation": 0,
+    "entryPriceToEMA60Deviation": 0,
+    "exitRSI": 0,
+    "exitADX15m": 0,
+    "exitADX1h": 0,
+    "exitADX4h": 0,
+    "exitEMA20": 0,
+    "exitEMA60": 0,
+    "averageATR": 0.393866434282112,
+    "priceRangePercentage": 1.9228413962033157,
+    "maxDrawdownPercentage": 5.842008573178211,
+    "positionSizePercentage": 1.7064850000000003,
+    "actualLeverage": 9,
+    "marginUsed": 18.960944444444447,
+    "pnl": -0.16719999999999643,
+    "pnlPercentage": -0.8818126148193322,
+    "exitReason": "持仓超时",
+    "exitReasonCategory": "TIMEOUT",
+    "tradeHour": 5,
+    "tradeDayOfWeek": 6,
+    "tradeMonth": 2,
+    "priceHistory": [
+      {
+        "timestamp": 1772226740231,
+        "price": 81.65,
+        "pnl": 0,
+        "pnlPercentage": 0
+      },
+      {
+        "timestamp": 1772227041345,
+        "price": 81.62,
+        "pnl": 0.06270000000000236,
+        "pnlPercentage": 0.330679730557269
+      },
+      {
+        "timestamp": 1772227342517,
+        "price": 81.62,
+        "pnl": 0.06270000000000236,
+        "pnlPercentage": 0.330679730557269
+      },
+      {
+        "timestamp": 1772227643693,
+        "price": 81.47,
+        "pnl": 0.37620000000001425,
+        "pnlPercentage": 1.9840783833436142
+      },
+      {
+        "timestamp": 1772227944863,
+        "price": 81.39,
+        "pnl": 0.5434000000000107,
+        "pnlPercentage": 2.8658909981629463
+      },
+      {
+        "timestamp": 1772228246010,
+        "price": 81.31,
+        "pnl": 0.7106000000000071,
+        "pnlPercentage": 3.7477036129822783
+      },
+      {
+        "timestamp": 1772228547173,
+        "price": 81.3,
+        "pnl": 0.7315000000000178,
+        "pnlPercentage": 3.857930189834754
+      },
+      {
+        "timestamp": 1772228848337,
+        "price": 81.37,
+        "pnl": 0.5852000000000024,
+        "pnlPercentage": 3.0863441518677406
+      },
+      {
+        "timestamp": 1772229149501,
+        "price": 81.22,
+        "pnl": 0.8987000000000142,
+        "pnlPercentage": 4.739742804654085
+      },
+      {
+        "timestamp": 1772229450652,
+        "price": 81.07,
+        "pnl": 1.2122000000000261,
+        "pnlPercentage": 6.393141457440431
+      },
+      {
+        "timestamp": 1772229751821,
+        "price": 81.18,
+        "pnl": 0.9822999999999975,
+        "pnlPercentage": 5.180649112063673
+      },
+      {
+        "timestamp": 1772230053004,
+        "price": 81.2,
+        "pnl": 0.9405000000000059,
+        "pnlPercentage": 4.960195958358879
+      },
+      {
+        "timestamp": 1772230354166,
+        "price": 81.2,
+        "pnl": 0.9405000000000059,
+        "pnlPercentage": 4.960195958358879
+      },
+      {
+        "timestamp": 1772230655327,
+        "price": 81.24,
+        "pnl": 0.8569000000000225,
+        "pnlPercentage": 4.519289650949292
+      },
+      {
+        "timestamp": 1772230956503,
+        "price": 81.01,
+        "pnl": 1.337600000000001,
+        "pnlPercentage": 7.054500918554812
+      },
+      {
+        "timestamp": 1772231257676,
+        "price": 81.16,
+        "pnl": 1.0241000000000189,
+        "pnlPercentage": 5.401102265768624
+      },
+      {
+        "timestamp": 1772231558823,
+        "price": 81.14,
+        "pnl": 1.0659000000000107,
+        "pnlPercentage": 5.6215554194734185
+      },
+      {
+        "timestamp": 1772231679386,
+        "price": 80.61,
+        "pnl": 2.173600000000013,
+        "pnlPercentage": 11.463563992651627
+      },
+      {
+        "timestamp": 1772231920161,
+        "price": 81.1,
+        "pnl": 1.1495000000000237,
+        "pnlPercentage": 6.0624617268831615
+      },
+      {
+        "timestamp": 1772232221315,
+        "price": 81.44,
+        "pnl": 0.4389000000000166,
+        "pnlPercentage": 2.3147581139008837
+      },
+      {
+        "timestamp": 1772232522465,
+        "price": 81.37,
+        "pnl": 0.5852000000000024,
+        "pnlPercentage": 3.0863441518677406
+      },
+      {
+        "timestamp": 1772232823630,
+        "price": 81.46,
+        "pnl": 0.39710000000002493,
+        "pnlPercentage": 2.09430496019609
+      },
+      {
+        "timestamp": 1772233124783,
+        "price": 81.33,
+        "pnl": 0.6688000000000154,
+        "pnlPercentage": 3.527250459277484
+      },
+      {
+        "timestamp": 1772233425957,
+        "price": 81.49,
+        "pnl": 0.33440000000002257,
+        "pnlPercentage": 1.7636252296388206
+      },
+      {
+        "timestamp": 1772233727112,
+        "price": 81.51,
+        "pnl": 0.2926000000000012,
+        "pnlPercentage": 1.5431720759338703
+      },
+      {
+        "timestamp": 1772234028267,
+        "price": 81.43,
+        "pnl": 0.4597999999999976,
+        "pnlPercentage": 2.424984690753202
+      },
+      {
+        "timestamp": 1772234329417,
+        "price": 81.5,
+        "pnl": 0.3135000000000119,
+        "pnlPercentage": 1.6533986527863453
+      },
+      {
+        "timestamp": 1772234630571,
+        "price": 81.61,
+        "pnl": 0.08360000000001307,
+        "pnlPercentage": 0.4409063074097443
+      },
+      {
+        "timestamp": 1772234931716,
+        "price": 81.55,
+        "pnl": 0.2090000000000178,
+        "pnlPercentage": 1.1022657685242825
+      },
+      {
+        "timestamp": 1772235232878,
+        "price": 81.74,
+        "pnl": -0.18809999999997742,
+        "pnlPercentage": -0.9920391916716507
+      },
+      {
+        "timestamp": 1772235534043,
+        "price": 81.88,
+        "pnl": -0.4806999999999786,
+        "pnlPercentage": -2.5352112676055203
+      },
+      {
+        "timestamp": 1772235835199,
+        "price": 81.6,
+        "pnl": 0.10450000000002375,
+        "pnlPercentage": 0.5511328842622195
+      },
+      {
+        "timestamp": 1772236136366,
+        "price": 81.78,
+        "pnl": -0.2716999999999905,
+        "pnlPercentage": -1.432945499081395
+      },
+      {
+        "timestamp": 1772236437526,
+        "price": 82,
+        "pnl": -0.731499999999988,
+        "pnlPercentage": -3.8579301898345975
+      },
+      {
+        "timestamp": 1772236738680,
+        "price": 81.85,
+        "pnl": -0.4179999999999762,
+        "pnlPercentage": -2.2045315370482514
+      },
+      {
+        "timestamp": 1772237039822,
+        "price": 81.82,
+        "pnl": -0.35529999999997386,
+        "pnlPercentage": -1.8738518064909828
+      },
+      {
+        "timestamp": 1772237340996,
+        "price": 81.95,
+        "pnl": -0.626999999999994,
+        "pnlPercentage": -3.306797305572534
+      },
+      {
+        "timestamp": 1772237642164,
+        "price": 82.03,
+        "pnl": -0.7941999999999905,
+        "pnlPercentage": -4.188609920391865
+      },
+      {
+        "timestamp": 1772237943322,
+        "price": 81.86,
+        "pnl": -0.4388999999999869,
+        "pnlPercentage": -2.314758113900727
+      },
+      {
+        "timestamp": 1772238244488,
+        "price": 81.74,
+        "pnl": -0.18809999999997742,
+        "pnlPercentage": -0.9920391916716507
+      },
+      {
+        "timestamp": 1772238545643,
+        "price": 81.62,
+        "pnl": 0.06270000000000236,
+        "pnlPercentage": 0.330679730557269
+      },
+      {
+        "timestamp": 1772238846814,
+        "price": 81.68,
+        "pnl": -0.06270000000000236,
+        "pnlPercentage": -0.330679730557269
+      },
+      {
+        "timestamp": 1772239147976,
+        "price": 81.71,
+        "pnl": -0.12539999999997503,
+        "pnlPercentage": -0.6613594611143816
+      },
+      {
+        "timestamp": 1772239449142,
+        "price": 82.01,
+        "pnl": -0.7523999999999987,
+        "pnlPercentage": -3.9681567666870716
+      },
+      {
+        "timestamp": 1772239750288,
+        "price": 81.97,
+        "pnl": -0.6687999999999857,
+        "pnlPercentage": -3.5272504592773286
+      },
+      {
+        "timestamp": 1772240051452,
+        "price": 81.9,
+        "pnl": -0.5225,
+        "pnlPercentage": -2.7556644213104713
+      },
+      {
+        "timestamp": 1772240352626,
+        "price": 82.04,
+        "pnl": -0.8151000000000012,
+        "pnlPercentage": -4.298836497244341
+      },
+      {
+        "timestamp": 1772240653777,
+        "price": 82.1,
+        "pnl": -0.9404999999999761,
+        "pnlPercentage": -4.960195958358722
+      },
+      {
+        "timestamp": 1772240954932,
+        "price": 81.96,
+        "pnl": -0.647899999999975,
+        "pnlPercentage": -3.4170238824248527
+      },
+      {
+        "timestamp": 1772241256098,
+        "price": 82.03,
+        "pnl": -0.7941999999999905,
+        "pnlPercentage": -4.188609920391865
+      },
+      {
+        "timestamp": 1772241557258,
+        "price": 82.15,
+        "pnl": -1.045,
+        "pnlPercentage": -5.511328842620943
+      },
+      {
+        "timestamp": 1772241858422,
+        "price": 82.12,
+        "pnl": -0.9822999999999975,
+        "pnlPercentage": -5.180649112063673
+      },
+      {
+        "timestamp": 1772242159571,
+        "price": 81.93,
+        "pnl": -0.5852000000000024,
+        "pnlPercentage": -3.0863441518677406
+      },
+      {
+        "timestamp": 1772242460733,
+        "price": 81.74,
+        "pnl": -0.18809999999997742,
+        "pnlPercentage": -0.9920391916716507
+      },
+      {
+        "timestamp": 1772242761874,
+        "price": 81.88,
+        "pnl": -0.4806999999999786,
+        "pnlPercentage": -2.5352112676055203
+      },
+      {
+        "timestamp": 1772243063035,
+        "price": 81.77,
+        "pnl": -0.25079999999997976,
+        "pnlPercentage": -1.3227189222289195
+      },
+      {
+        "timestamp": 1772243364190,
+        "price": 81.84,
+        "pnl": -0.39709999999999523,
+        "pnlPercentage": -2.0943049601959327
+      },
+      {
+        "timestamp": 1772243665343,
+        "price": 81.83,
+        "pnl": -0.37619999999998455,
+        "pnlPercentage": -1.9840783833434579
+      },
+      {
+        "timestamp": 1772243966520,
+        "price": 81.82,
+        "pnl": -0.35529999999997386,
+        "pnlPercentage": -1.8738518064909828
+      },
+      {
+        "timestamp": 1772244267666,
+        "price": 81.72,
+        "pnl": -0.14629999999998575,
+        "pnlPercentage": -0.7715860379668569
+      },
+      {
+        "timestamp": 1772244568830,
+        "price": 81.92,
+        "pnl": -0.5642999999999917,
+        "pnlPercentage": -2.976117575015265
+      },
+      {
+        "timestamp": 1772244869978,
+        "price": 81.87,
+        "pnl": -0.4597999999999976,
+        "pnlPercentage": -2.424984690753202
+      },
+      {
+        "timestamp": 1772245171141,
+        "price": 82.03,
+        "pnl": -0.7941999999999905,
+        "pnlPercentage": -4.188609920391865
+      },
+      {
+        "timestamp": 1772245472285,
+        "price": 81.98,
+        "pnl": -0.6896999999999964,
+        "pnlPercentage": -3.637477036129803
+      },
+      {
+        "timestamp": 1772245773429,
+        "price": 81.99,
+        "pnl": -0.7105999999999774,
+        "pnlPercentage": -3.7477036129821215
+      },
+      {
+        "timestamp": 1772246074600,
+        "price": 82,
+        "pnl": -0.731499999999988,
+        "pnlPercentage": -3.8579301898345975
+      },
+      {
+        "timestamp": 1772246375764,
+        "price": 81.99,
+        "pnl": -0.7105999999999774,
+        "pnlPercentage": -3.7477036129821215
+      },
+      {
+        "timestamp": 1772246676907,
+        "price": 82.08,
+        "pnl": -0.8986999999999845,
+        "pnlPercentage": -4.739742804653929
+      },
+      {
+        "timestamp": 1772246978072,
+        "price": 82.09,
+        "pnl": -0.9195999999999952,
+        "pnlPercentage": -4.849969381506404
+      },
+      {
+        "timestamp": 1772247279231,
+        "price": 82.07,
+        "pnl": -0.8777999999999738,
+        "pnlPercentage": -4.629516227801454
+      },
+      {
+        "timestamp": 1772247580400,
+        "price": 82.08,
+        "pnl": -0.8986999999999845,
+        "pnlPercentage": -4.739742804653929
+      },
+      {
+        "timestamp": 1772247881564,
+        "price": 81.88,
+        "pnl": -0.4806999999999786,
+        "pnlPercentage": -2.5352112676055203
+      },
+      {
+        "timestamp": 1772248182718,
+        "price": 81.93,
+        "pnl": -0.5852000000000024,
+        "pnlPercentage": -3.0863441518677406
+      },
+      {
+        "timestamp": 1772248483862,
+        "price": 81.95,
+        "pnl": -0.626999999999994,
+        "pnlPercentage": -3.306797305572534
+      },
+      {
+        "timestamp": 1772248785008,
+        "price": 81.99,
+        "pnl": -0.7105999999999774,
+        "pnlPercentage": -3.7477036129821215
+      },
+      {
+        "timestamp": 1772249086166,
+        "price": 81.99,
+        "pnl": -0.7105999999999774,
+        "pnlPercentage": -3.7477036129821215
+      },
+      {
+        "timestamp": 1772249387333,
+        "price": 81.88,
+        "pnl": -0.4806999999999786,
+        "pnlPercentage": -2.5352112676055203
+      },
+      {
+        "timestamp": 1772249688479,
+        "price": 81.76,
+        "pnl": -0.2298999999999988,
+        "pnlPercentage": -1.212492345376601
+      },
+      {
+        "timestamp": 1772249989634,
+        "price": 81.57,
+        "pnl": 0.16720000000002613,
+        "pnlPercentage": 0.8818126148194886
+      },
+      {
+        "timestamp": 1772250290783,
+        "price": 81.54,
+        "pnl": 0.2298999999999988,
+        "pnlPercentage": 1.212492345376601
+      },
+      {
+        "timestamp": 1772250591932,
+        "price": 81.64,
+        "pnl": 0.02090000000001069,
+        "pnlPercentage": 0.11022657685247524
+      },
+      {
+        "timestamp": 1772250893085,
+        "price": 81.7,
+        "pnl": -0.10449999999999406,
+        "pnlPercentage": -0.5511328842620629
+      },
+      {
+        "timestamp": 1772251194237,
+        "price": 81.69,
+        "pnl": -0.08359999999998337,
+        "pnlPercentage": -0.4409063074095877
+      },
+      {
+        "timestamp": 1772251495390,
+        "price": 81.73,
+        "pnl": -0.16719999999999643,
+        "pnlPercentage": -0.8818126148193322
+      },
+      {
+        "timestamp": 1772251796546,
+        "price": 81.64,
+        "pnl": 0.02090000000001069,
+        "pnlPercentage": 0.11022657685247524
+      },
+      {
+        "timestamp": 1772252097698,
+        "price": 81.78,
+        "pnl": -0.2716999999999905,
+        "pnlPercentage": -1.432945499081395
+      },
+      {
+        "timestamp": 1772252398853,
+        "price": 81.83,
+        "pnl": -0.37619999999998455,
+        "pnlPercentage": -1.9840783833434579
+      },
+      {
+        "timestamp": 1772252700020,
+        "price": 81.75,
+        "pnl": -0.2089999999999881,
+        "pnlPercentage": -1.1022657685241257
+      },
+      {
+        "timestamp": 1772253001186,
+        "price": 81.51,
+        "pnl": 0.2926000000000012,
+        "pnlPercentage": 1.5431720759338703
+      },
+      {
+        "timestamp": 1772253302345,
+        "price": 81.44,
+        "pnl": 0.4389000000000166,
+        "pnlPercentage": 2.3147581139008837
+      },
+      {
+        "timestamp": 1772253603494,
+        "price": 81.62,
+        "pnl": 0.06270000000000236,
+        "pnlPercentage": 0.330679730557269
+      },
+      {
+        "timestamp": 1772253904610,
+        "price": 81.63,
+        "pnl": 0.04180000000002138,
+        "pnlPercentage": 0.22045315370495047
+      },
+      {
+        "timestamp": 1772254205777,
+        "price": 81.71,
+        "pnl": -0.12539999999997503,
+        "pnlPercentage": -0.6613594611143816
+      },
+      {
+        "timestamp": 1772254506945,
+        "price": 81.63,
+        "pnl": 0.04180000000002138,
+        "pnlPercentage": 0.22045315370495047
+      },
+      {
+        "timestamp": 1772254808111,
+        "price": 81.61,
+        "pnl": 0.08360000000001307,
+        "pnlPercentage": 0.4409063074097443
+      },
+      {
+        "timestamp": 1772255109271,
+        "price": 81.62,
+        "pnl": 0.06270000000000236,
+        "pnlPercentage": 0.330679730557269
+      },
+      {
+        "timestamp": 1772255410436,
+        "price": 81.66,
+        "pnl": -0.02089999999998099,
+        "pnlPercentage": -0.1102265768523186
+      },
+      {
+        "timestamp": 1772255711632,
+        "price": 81.74,
+        "pnl": -0.18809999999997742,
+        "pnlPercentage": -0.9920391916716507
+      }
+    ],
+    "createdAt": 1772255711870
+  }
+]

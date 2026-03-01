@@ -1,6 +1,7 @@
-import type { BotConfig, BotState, TradeHistory } from '../../../types'
+import type { BotConfig, BotState, TradeHistory, TechnicalIndicators } from '../../../types'
 import { PositionStatus } from '../../../types'
 import { BinanceService } from '../../utils/binance'
+import { calculateIndicators } from '../../utils/indicators'
 import { logger } from '../../utils/logger'
 import { saveBotState, getDefaultConfig, getDefaultState, getTradeHistory } from '../../utils/storage'
 import { StateManager } from './core/state-manager'
@@ -44,7 +45,7 @@ export class FuturesBot {
       this.binance, 
       defaultConfig, 
       defaultState,
-      (position) => this.initializeStrategyAnalyzer(position)
+      (position, entryIndicators) => this.initializeStrategyAnalyzer(position, entryIndicators)
     )
     this.positionMonitor = new PositionMonitor(
       this.binance,
@@ -239,15 +240,41 @@ export class FuturesBot {
   /**
    * 初始化策略分析器（当开仓时调用）
    */
-  initializeStrategyAnalyzer(position: any): void {
+  initializeStrategyAnalyzer(position: any, entryIndicators?: TechnicalIndicators): void {
     if (!position) return
     
     try {
       this.strategyAnalyzer = new StrategyAnalyzer(position)
+      
+      // 如果有入场指标，记录到策略分析器中
+      if (entryIndicators) {
+        this.strategyAnalyzer.recordEntryIndicators(entryIndicators)
+        logger.info('策略分析', `入场指标已记录: ${position.symbol} RSI=${entryIndicators.rsi}, ADX15m=${entryIndicators.adx15m}`)
+      }
+      
       logger.info('策略分析', `策略分析器已初始化: ${position.symbol}`)
     } catch (error: any) {
       logger.error('策略分析', '初始化策略分析器失败', error.message)
       this.strategyAnalyzer = null
+    }
+  }
+
+  /**
+   * 记录出场指标
+   */
+  private async recordExitIndicators(position: any): Promise<void> {
+    if (!this.strategyAnalyzer) return
+    
+    try {
+      // 使用指标缓存服务获取出场指标
+      const indicatorsCache = new IndicatorsCache(this.binance)
+      const exitIndicators = await indicatorsCache.getIndicators(position.symbol)
+      
+      // 记录出场指标到策略分析器
+      this.strategyAnalyzer.recordExitIndicators(exitIndicators)
+      logger.info('策略分析', `出场指标已记录: ${position.symbol} RSI=${exitIndicators.rsi}, ADX15m=${exitIndicators.adx15m}`)
+    } catch (error: any) {
+      logger.error('策略分析', `记录出场指标失败: ${error.message}`)
     }
   }
 
@@ -291,6 +318,9 @@ export class FuturesBot {
     // 获取平仓价格（这里需要从平仓器中获取实际平仓价格）
     // 在实际实现中，应该从positionCloser获取实际平仓价格
     const exitPrice = await this.getExitPrice(position, reason)
+    
+    // 在平仓前计算并记录出场指标
+    await this.recordExitIndicators(position)
     
     // 生成策略分析指标
     await this.generateStrategyAnalysisMetrics(position, exitPrice, reason)

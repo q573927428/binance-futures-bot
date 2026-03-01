@@ -9,7 +9,7 @@
   "maxRiskPercentage": 10,
   "stopLossATRMultiplier": 2,
   "maxStopLossPercentage": 3,
-  "positionTimeoutHours": 4,
+  "positionTimeoutHours": 12,
   "scanInterval": 300,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 3600,
@@ -47,7 +47,7 @@
     "enabled": true,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 6,
+    "baseLeverage": 10,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,
@@ -70,7 +70,7 @@
       "rsiMin": 40,
       "rsiMax": 60,
       "candleShadowThreshold": 0.003,
-      "volumeConfirmation": false,
+      "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
       "volumeEMAMultiplier": 0.8
     },

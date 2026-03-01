@@ -1,4 +1,4 @@
-import type { TradeSignal, Position, BotConfig, BotState } from '../../../../types'
+import type { TradeSignal, Position, BotConfig, BotState, TechnicalIndicators } from '../../../../types'
 import { PositionStatus } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculateStopLoss, calculateTakeProfit, calculatePositionSize, calculateMaxUsdtAmount } from '../../../utils/indicators'
@@ -19,13 +19,13 @@ export class PositionOpener {
   private binance: BinanceService
   private config: BotConfig
   private state: BotState
-  private onPositionOpened?: (position: any) => void
+  private onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators) => void
 
   constructor(
     binance: BinanceService, 
     config: BotConfig, 
     state: BotState,
-    onPositionOpened?: (position: any) => void
+    onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators) => void
   ) {
     this.binance = binance
     this.config = config
@@ -72,6 +72,9 @@ export class PositionOpener {
 
       this.state.status = PositionStatus.OPENING
       await saveBotState(this.state)
+
+      // 保存入场指标，供策略分析器使用
+      const entryIndicators = signal.indicators
 
       // 计算止损价格
       const stopLoss = calculateStopLoss(
@@ -282,10 +285,10 @@ export class PositionOpener {
       this.state.lastTradeTime = Date.now() // 更新上次交易时间（开仓时间）
       await saveBotState(this.state)
 
-      // 通知上层初始化策略分析器
+      // 通知上层初始化策略分析器，并传递入场指标
       if (this.onPositionOpened) {
         try {
-          this.onPositionOpened(position)
+          this.onPositionOpened(position, entryIndicators)
           logger.info('策略分析', `策略分析器初始化通知已发送: ${position.symbol}`)
         } catch (error: any) {
           logger.error('策略分析', `初始化策略分析器通知失败: ${error.message}`)
