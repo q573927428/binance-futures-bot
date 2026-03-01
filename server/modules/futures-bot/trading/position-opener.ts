@@ -97,12 +97,13 @@ export class PositionOpener {
             this.config.dynamicLeverageConfig
           )
 
-          // 计算安全杠杆（基于账户风险）
+          // 计算安全杠杆（基于账户风险），考虑ADX趋势强度
           const safeLeverage = calculateSafeLeverage(
             account.availableBalance,
             this.config.maxRiskPercentage,
             stopLoss,
-            signal.price
+            signal.price,
+            signal.indicators.adx15m  // 传递15分钟ADX值，用于动态调整最小止损距离
           )
 
           // 计算最终杠杆（取两者中的较小值）

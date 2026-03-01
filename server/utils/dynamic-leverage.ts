@@ -43,28 +43,56 @@ export function calculateQuickLeverage(
 
 /**
  * 计算安全杠杆倍数（考虑账户风险）
- * 基于止损距离计算最大安全杠杆
+ * 基于止损距离计算最大安全杠杆，根据ADX趋势强度动态调整
  */
 export function calculateSafeLeverage(
   accountBalance: number,
   maxRiskPercentage: number,
   stopLossPrice: number,
-  entryPrice: number
+  entryPrice: number,
+  adx15m?: number
 ): number {
-  if (accountBalance <= 0) return 1
-  
-  // 计算止损距离（价格百分比）
-  const stopLossDistance = Math.abs(entryPrice - stopLossPrice) / entryPrice
-  
-  if (stopLossDistance === 0) return 1
-  
-  // 安全杠杆 = (最大风险百分比/100) / 止损距离
-  const safeLeverage = (maxRiskPercentage / 100) / stopLossDistance
-  
-  // 确保杠杆为正数且合理（1-20倍）
-  return Math.max(1, Math.min(20, Math.round(safeLeverage)))
-}
 
+  if (accountBalance <= 0 || entryPrice <= 0) return 1
+
+  // 实际止损距离
+  const stopLossDistance =
+    Math.abs(entryPrice - stopLossPrice) / entryPrice
+
+  if (stopLossDistance <= 0) return 1
+
+  // ===== 1️⃣ 基础最小止损距离 =====
+  const baseStopLoss = 0.015 // 1.5%
+
+  let minStopLossDistance = baseStopLoss
+
+  if (adx15m !== undefined && adx15m >= 0) {
+
+    // 趋势越强 → 因子越小
+    // ADX 0–60 → 因子 1.3–0.7
+    const trendFactor =
+      1.3 - Math.min(adx15m, 60) / 100
+
+    minStopLossDistance = baseStopLoss * trendFactor
+  }
+
+  // 限制在合理范围
+  minStopLossDistance = Math.max(
+    0.01,
+    Math.min(0.02, minStopLossDistance)
+  )
+
+  // ===== 2️⃣ 取有效止损距离 =====
+  const effectiveStopLossDistance =
+    Math.max(stopLossDistance, minStopLossDistance)
+
+  // ===== 3️⃣ 计算安全杠杆 =====
+  const safeLeverage =
+    (maxRiskPercentage / 100) / effectiveStopLossDistance
+
+  // ===== 4️⃣ 限制范围 =====
+  return Math.max(1, Math.min(20, Math.floor(safeLeverage)))
+}
 /**
  * 综合计算最终杠杆（结合动态杠杆和安全杠杆）
  * 取两者中的较小值，确保安全
