@@ -11,6 +11,9 @@ import json
 import argparse
 from datetime import datetime
 from pathlib import Path
+
+# 添加当前目录到Python路径，确保可以导入log_analyzer
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from log_analyzer import LogParser
 
 
