@@ -5,16 +5,6 @@ import { logger } from '../../../utils/logger'
 import dayjs from 'dayjs'
 
 /**
- * 价格历史记录
- */
-interface PriceHistoryPoint {
-  timestamp: number
-  price: number
-  pnl: number
-  pnlPercentage: number
-}
-
-/**
  * 策略分析器 - 用于记录和分析交易策略指标
  */
 export class StrategyAnalyzer {
@@ -35,8 +25,7 @@ export class StrategyAnalyzer {
   private maxAdverseExcursion: number = 0
   private maxAdverseExcursionPercentage: number = 0
   
-  // 价格历史记录
-  private priceHistory: PriceHistoryPoint[] = []
+  // 当前价格
   private lastPrice: number = 0
   
   // 入场指标
@@ -110,22 +99,6 @@ export class StrategyAnalyzer {
     if (pnl < this.maxAdverseExcursion) {
       this.maxAdverseExcursion = pnl
       this.maxAdverseExcursionPercentage = pnlPercentage
-    }
-    
-    // 记录价格历史（限制频率，避免数据过大）
-    const now = Date.now()
-    const lastRecord = this.priceHistory[this.priceHistory.length - 1]
-    
-    // 每5分钟记录一次，或者价格变化超过0.5%
-    if (!lastRecord || 
-        (now - lastRecord.timestamp > 300000) || 
-        Math.abs(price - lastRecord.price) / lastRecord.price > 0.005) {
-      this.priceHistory.push({
-        timestamp,
-        price,
-        pnl,
-        pnlPercentage
-      })
     }
   }
 
@@ -280,14 +253,6 @@ export class StrategyAnalyzer {
       tradeHour,
       tradeDayOfWeek,
       tradeMonth,
-      
-      // 价格历史（可选）
-      priceHistory: this.priceHistory.length > 0 ? this.priceHistory.map(point => ({
-        timestamp: point.timestamp,
-        price: point.price,
-        pnl: point.pnl,
-        pnlPercentage: point.pnlPercentage
-      })) : undefined,
       
       // 创建时间
       createdAt: Date.now()
