@@ -45,7 +45,7 @@ export class FuturesBot {
       this.binance, 
       defaultConfig, 
       defaultState,
-      (position, entryIndicators) => this.initializeStrategyAnalyzer(position, entryIndicators)
+      (position, entryIndicators, aiAnalysis) => this.initializeStrategyAnalyzer(position, entryIndicators, aiAnalysis)
     )
     this.positionMonitor = new PositionMonitor(
       this.binance,
@@ -240,7 +240,7 @@ export class FuturesBot {
   /**
    * 初始化策略分析器（当开仓时调用）
    */
-  initializeStrategyAnalyzer(position: any, entryIndicators?: TechnicalIndicators): void {
+  initializeStrategyAnalyzer(position: any, entryIndicators?: TechnicalIndicators, aiAnalysis?: any): void {
     if (!position) return
     
     try {
@@ -250,6 +250,12 @@ export class FuturesBot {
       if (entryIndicators) {
         this.strategyAnalyzer.recordEntryIndicators(entryIndicators)
         logger.info('策略分析', `入场指标已记录: ${position.symbol} RSI=${entryIndicators.rsi}, ADX15m=${entryIndicators.adx15m}`)
+      }
+      
+      // 如果有AI分析指标，记录到策略分析器中
+      if (aiAnalysis) {
+        this.strategyAnalyzer.recordAIAnalysis(aiAnalysis)
+        logger.info('策略分析', `AI分析指标已记录: ${position.symbol} 置信度=${aiAnalysis.confidence}, 评分=${aiAnalysis.score}`)
       }
       
       logger.info('策略分析', `策略分析器已初始化: ${position.symbol}`)

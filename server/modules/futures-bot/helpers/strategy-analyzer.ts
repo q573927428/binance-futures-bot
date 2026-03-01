@@ -1,4 +1,4 @@
-import type { Position, TechnicalIndicators, StrategyAnalysisMetrics } from '../../../../types'
+import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis } from '../../../../types'
 import { calculatePnL } from '../../../utils/risk'
 import { saveStrategyAnalysisMetrics } from '../../../utils/analysis-storage'
 import { logger } from '../../../utils/logger'
@@ -30,6 +30,9 @@ export class StrategyAnalyzer {
   
   // 入场指标
   private entryIndicators: TechnicalIndicators | null = null
+  
+  // AI分析指标
+  private aiAnalysis: AIAnalysis | null = null
   
   // 出场指标
   private exitIndicators: TechnicalIndicators | null = null
@@ -70,6 +73,15 @@ export class StrategyAnalyzer {
     this.atrHistory.push(indicators.atr)
     
     logger.info('策略分析', `记录入场指标: ${this.symbol} RSI=${indicators.rsi}, ADX15m=${indicators.adx15m}`)
+  }
+
+  /**
+   * 记录AI分析指标
+   */
+  recordAIAnalysis(aiAnalysis: AIAnalysis): void {
+    this.aiAnalysis = aiAnalysis
+    
+    logger.info('策略分析', `记录AI分析指标: ${this.symbol} 置信度=${aiAnalysis.confidence}, 评分=${aiAnalysis.score}, 风险等级=${aiAnalysis.riskLevel}`)
   }
 
   /**
@@ -225,6 +237,15 @@ export class StrategyAnalyzer {
       entryPriceToEMA20Deviation,
       entryPriceToEMA60Deviation,
       
+      // AI分析指标
+      aiConfidence: this.aiAnalysis?.confidence || 0,
+      aiScore: this.aiAnalysis?.score || 0,
+      aiRiskLevel: this.aiAnalysis?.riskLevel || 'MEDIUM',
+      aiReasoning: this.aiAnalysis?.reasoning || '无AI分析数据',
+      aiSupport: this.aiAnalysis?.technicalData.support,
+      aiResistance: this.aiAnalysis?.technicalData.resistance,
+      aiKeyFactors: this.extractKeyFactors(this.aiAnalysis?.reasoning),
+      
       // 出场指标
       exitRSI: this.exitIndicators?.rsi || 0,
       exitADX15m: this.exitIndicators?.adx15m || 0,
@@ -331,6 +352,44 @@ export class StrategyAnalyzer {
     } else {
       return 'OTHER'
     }
+  }
+
+  /**
+   * 从AI分析理由中提取关键因素
+   */
+  private extractKeyFactors(reasoning?: string): string[] {
+    if (!reasoning) return []
+    
+    const keyFactors: string[] = []
+    
+    // 常见的关键因素模式
+    const patterns = [
+      { regex: /趋势强度.*?(强|弱)/, prefix: '趋势强度: ' },
+      { regex: /ADX.*?(\d+)/, prefix: 'ADX趋势: ' },
+      { regex: /RSI.*?(\d+)/, prefix: 'RSI: ' },
+      { regex: /EMA.*?(排列|交叉)/, prefix: 'EMA: ' },
+      { regex: /支撑.*?(\d+\.?\d*)/, prefix: '支撑位: ' },
+      { regex: /阻力.*?(\d+\.?\d*)/, prefix: '阻力位: ' },
+      { regex: /波动性.*?(高|低)/, prefix: '波动性: ' },
+      { regex: /成交量.*?(放大|缩小)/, prefix: '成交量: ' },
+      { regex: /风险.*?(高|中|低)/, prefix: '风险等级: ' },
+      { regex: /置信度.*?(\d+)/, prefix: '置信度: ' }
+    ]
+    
+    for (const pattern of patterns) {
+      const match = reasoning.match(pattern.regex)
+      if (match) {
+        keyFactors.push(pattern.prefix + match[1])
+      }
+    }
+    
+    // 如果没找到模式匹配，尝试提取关键句子
+    if (keyFactors.length === 0) {
+      const sentences = reasoning.split(/[。！？\.\!\?]/).filter(s => s.trim().length > 10)
+      keyFactors.push(...sentences.slice(0, 3))
+    }
+    
+    return keyFactors.slice(0, 5) // 最多返回5个关键因素
   }
 
   /**

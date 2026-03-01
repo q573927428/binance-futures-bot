@@ -19,13 +19,13 @@ export class PositionOpener {
   private binance: BinanceService
   private config: BotConfig
   private state: BotState
-  private onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators) => void
+  private onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators, aiAnalysis?: any) => void
 
   constructor(
     binance: BinanceService, 
     config: BotConfig, 
     state: BotState,
-    onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators) => void
+    onPositionOpened?: (position: any, entryIndicators?: TechnicalIndicators, aiAnalysis?: any) => void
   ) {
     this.binance = binance
     this.config = config
@@ -285,10 +285,10 @@ export class PositionOpener {
       this.state.lastTradeTime = Date.now() // 更新上次交易时间（开仓时间）
       await saveBotState(this.state)
 
-      // 通知上层初始化策略分析器，并传递入场指标
+      // 通知上层初始化策略分析器，并传递入场指标和AI分析数据
       if (this.onPositionOpened) {
         try {
-          this.onPositionOpened(position, entryIndicators)
+          this.onPositionOpened(position, entryIndicators, signal.aiAnalysis)
           logger.info('策略分析', `策略分析器初始化通知已发送: ${position.symbol}`)
         } catch (error: any) {
           logger.error('策略分析', `初始化策略分析器通知失败: ${error.message}`)

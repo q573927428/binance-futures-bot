@@ -27,7 +27,16 @@
 - **entryPriceToEMA20Deviation**: 入场价格相对于EMA20的偏离度百分比
 - **entryPriceToEMA60Deviation**: 入场价格相对于EMA60的偏离度百分比
 
-### 4. 出场指标（平仓时记录）
+### 4. AI分析指标（开仓时记录）
+- **aiConfidence**: AI置信度（0-100）
+- **aiScore**: AI综合评分（0-100）
+- **aiRiskLevel**: AI风险等级（LOW/MEDIUM/HIGH）
+- **aiReasoning**: AI分析理由
+- **aiSupport**: AI分析的支撑位价格
+- **aiResistance**: AI分析的阻力位价格
+- **aiKeyFactors**: AI分析的关键因素列表
+
+### 5. 出场指标（平仓时记录）
 - **exitRSI**: 出场时的RSI值
 - **exitADX15m**: 出场时的15分钟ADX值
 - **exitADX1h**: 出场时的1小时ADX值

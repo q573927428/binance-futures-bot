@@ -331,6 +331,15 @@ export interface StrategyAnalysisMetrics {
   entryPriceToEMA20Deviation: number  // 价格与EMA20的偏离度
   entryPriceToEMA60Deviation: number  // 价格与EMA60的偏离度
   
+  // AI分析指标
+  aiConfidence: number  // AI置信度
+  aiScore: number  // AI综合评分
+  aiRiskLevel: RiskLevel  // AI风险等级
+  aiReasoning: string  // AI分析理由
+  aiSupport?: number  // AI分析的支撑位
+  aiResistance?: number  // AI分析的阻力位
+  aiKeyFactors?: string[]  // AI分析的关键因素
+  
   // 出场指标
   exitRSI: number  // 出场时的RSI值
   exitADX15m: number  // 出场时的15分钟ADX值
