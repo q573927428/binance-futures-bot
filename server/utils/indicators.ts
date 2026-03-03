@@ -76,6 +76,7 @@ export async function calculateIndicators(
  * 检查ADX趋势条件（多周期确认）
  */
 export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfig) {
+  const adx15m = indicators.adx15m
   const adx1h = indicators.adx1h
   const adx4h = indicators.adx4h
   
@@ -83,27 +84,46 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
   const adx1hThreshold = config?.indicatorsConfig?.adxTrend?.adx1hThreshold || 25
   const adx4hThreshold = config?.indicatorsConfig?.adxTrend?.adx4hThreshold || 28
   
+  // 三个条件：1小时ADX阈值、4小时ADX阈值、15分钟ADX大于1小时ADX
   const pass1h = adx1h >= adx1hThreshold
   const pass4h = adx4h >= adx4hThreshold
+  const pass15mVs1h = adx15m > adx1h  // 新增条件：15分钟ADX大于1小时ADX
 
-  const passed = pass1h || pass4h
+  // 最严格逻辑：必须满足15分钟ADX > 1小时ADX，并且至少满足1小时或4小时ADX达标
+  const passed = pass15mVs1h && (pass1h || pass4h)
 
   // 提供更详细的调试信息
   let reason = ''
   if (passed) {
-    if (pass1h) {
-      reason = `1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}（趋势明确）`
-    } else {
-      reason = `4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（大周期趋势明确）`
+    // 根据具体满足的条件显示不同的原因
+    if (pass15mVs1h && pass1h && pass4h) {
+      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（趋势全面确认）`
+    } else if (pass15mVs1h && pass1h) {
+      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}（短期加速+中期趋势）`
+    } else if (pass15mVs1h && pass4h) {
+      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（短期加速+长期趋势）`
     }
   } else {
-    reason = `1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`
+    // 根据具体不满足的条件显示不同的原因
+    const reasons: string[] = []
+    if (!pass15mVs1h) {
+      reasons.push(`15m ADX(${adx15m.toFixed(2)}) ≤ 1h ADX(${adx1h.toFixed(2)})`)
+    }
+    if (!pass1h && !pass4h) {
+      reasons.push(`1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
+    } else if (!pass1h) {
+      reasons.push(`1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold}`)
+    } else if (!pass4h) {
+      reasons.push(`4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
+    }
+    reason = reasons.join('，')
   }
 
   return {
     passed,
     reason,
     data: {
+      adx15m,  // 新增：返回15分钟ADX值
       adx1h,
       adx4h,
       required: {
@@ -111,14 +131,17 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
         adx4h: adx4hThreshold
       },
       actual: {
+        adx15m,
         adx1h,
         adx4h,
         pass1h,
-        pass4h
+        pass4h,
+        pass15mVs1h  // 新增：返回15分钟vs1小时比较结果
       }
     }
   }
 }
+
 
 /**
  * 判断趋势方向
