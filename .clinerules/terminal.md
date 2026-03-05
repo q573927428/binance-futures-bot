@@ -1,0 +1,1 @@
+When running terminal commands, do not use && to link two commands. Be sure to run them one by one
