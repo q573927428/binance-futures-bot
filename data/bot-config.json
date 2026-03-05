@@ -8,7 +8,7 @@
     "DOGE/USDT"
   ],
   "leverage": 10,
-  "maxRiskPercentage": 20,
+  "maxRiskPercentage": 10,
   "stopLossATRMultiplier": 1.5,
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 8,
@@ -43,7 +43,7 @@
       },
       "adxDecreaseThreshold": 5
     },
-    "dailyTradeLimit": 10
+    "dailyTradeLimit": 8
   },
   "dynamicLeverageConfig": {
     "enabled": true,
@@ -64,8 +64,8 @@
   },
   "indicatorsConfig": {
     "adxTrend": {
-      "adx1hThreshold": 26,
-      "adx4hThreshold": 30
+      "adx1hThreshold": 22,
+      "adx4hThreshold": 25
     },
     "longEntry": {
       "emaDeviationThreshold": 0.005,
@@ -74,11 +74,11 @@
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.005,
-      "rsiMin": 40,
+      "rsiMin": 35,
       "rsiMax": 60,
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
