@@ -3,20 +3,22 @@
     "BTC/USDT",
     "ETH/USDT",
     "BNB/USDT",
-    "SOL/USDT"
+    "SOL/USDT",
+    "HYPE/USDT",
+    "DOGE/USDT"
   ],
   "leverage": 10,
   "maxRiskPercentage": 20,
-  "stopLossATRMultiplier": 2,
-  "maxStopLossPercentage": 3,
-  "positionTimeoutHours": 12,
+  "stopLossATRMultiplier": 1.5,
+  "maxStopLossPercentage": 2,
+  "positionTimeoutHours": 8,
   "scanInterval": 300,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 3600,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minConfidence": 60,
+    "minConfidence": 70,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
     "useForExit": true,
@@ -56,7 +58,7 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 1,
+    "activationRatio": 0.6,
     "trailingDistance": 1,
     "updateIntervalSeconds": 60
   },
@@ -66,16 +68,16 @@
       "adx4hThreshold": 30
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.006,
+      "emaDeviationThreshold": 0.005,
       "rsiMin": 40,
-      "rsiMax": 60,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 8,
       "volumeEMAMultiplier": 0.8
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.006,
+      "emaDeviationThreshold": 0.005,
       "rsiMin": 40,
       "rsiMax": 60,
       "candleShadowThreshold": 0.003,

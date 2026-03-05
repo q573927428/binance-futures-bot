@@ -43,7 +43,7 @@
                   @click="handleStart"
                 >
                   <el-icon style="margin-right: 8px"><ElIconVideoPlay /></el-icon>
-                  启动机器人
+                  启动
                 </el-button>
 
                 <el-button
@@ -54,7 +54,7 @@
                   @click="handleStop"
                 >
                   <el-icon style="margin-right: 8px"><ElIconVideoPause  /></el-icon>
-                  停止机器人
+                  停止
                 </el-button>
 
                 <el-button
@@ -63,7 +63,7 @@
                   @click="goToAnalysis"
                 >
                   <el-icon style="margin-right: 8px"><ElIconTrendCharts  /></el-icon>
-                  策略分析
+                  分析
                 </el-button>
 
                 <el-divider />
@@ -373,6 +373,8 @@
             <el-option label="ETH/USDT" value="ETH/USDT" />
             <el-option label="BNB/USDT" value="BNB/USDT" />
             <el-option label="SOL/USDT" value="SOL/USDT" />
+            <el-option label="HYPE/USDT" value="HYPE/USDT" />
+            <el-option label="DOGE/USDT" value="DOGE/USDT" />
           </el-select>
         </el-form-item>
 
