@@ -37,6 +37,8 @@ export interface IndicatorsConfig {
   adxTrend: {
     adx1hThreshold: number        // 1小时ADX阈值 (默认 25)
     adx4hThreshold: number        // 4小时ADX阈值 (默认 28)
+    adx15mThreshold: number       // 15分钟ADX阈值 (默认 30)
+    enableAdx15mVs1hCheck: boolean // 启用15分钟ADX > 1小时ADX检查 (默认 true)
   }
   
   // 做多入场条件配置

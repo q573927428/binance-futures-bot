@@ -267,6 +267,8 @@ export function getDefaultConfig(): BotConfig {
       adxTrend: {
         adx1hThreshold: 25,          // 1小时ADX阈值
         adx4hThreshold: 28,          // 4小时ADX阈值
+        adx15mThreshold: 30,         // 15分钟ADX阈值
+        enableAdx15mVs1hCheck: true, // 启用15分钟ADX > 1小时ADX检查
       },
       longEntry: {
         emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)

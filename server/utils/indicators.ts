@@ -83,38 +83,48 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
   // 使用配置参数或默认值
   const adx1hThreshold = config?.indicatorsConfig?.adxTrend?.adx1hThreshold || 25
   const adx4hThreshold = config?.indicatorsConfig?.adxTrend?.adx4hThreshold || 28
+  const adx15mThreshold = config?.indicatorsConfig?.adxTrend?.adx15mThreshold || 30
+  const enableAdx15mVs1hCheck = config?.indicatorsConfig?.adxTrend?.enableAdx15mVs1hCheck ?? true
   
-  // 三个条件：1小时ADX阈值、4小时ADX阈值、15分钟ADX大于1小时ADX
+  // 三个绝对阈值条件
+  const pass15m = adx15m >= adx15mThreshold
   const pass1h = adx1h >= adx1hThreshold
   const pass4h = adx4h >= adx4hThreshold
-  const pass15mVs1h = adx15m > adx1h  // 新增条件：15分钟ADX大于1小时ADX
+  
+  // 相对比较条件（根据开关决定）
+  const pass15mVs1h = enableAdx15mVs1hCheck ? adx15m > adx1h : true
 
-  // 最严格逻辑：必须满足15分钟ADX > 1小时ADX，并且至少满足1小时或4小时ADX达标
-  const passed = pass15mVs1h && (pass1h || pass4h)
+  // 逻辑：必须满足三个绝对阈值，并且根据开关决定是否检查相对比较
+  const passed = pass15m && pass1h && pass4h && pass15mVs1h
 
   // 提供更详细的调试信息
   let reason = ''
   if (passed) {
     // 根据具体满足的条件显示不同的原因
-    if (pass15mVs1h && pass1h && pass4h) {
-      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（趋势全面确认）`
-    } else if (pass15mVs1h && pass1h) {
-      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}（短期加速+中期趋势）`
-    } else if (pass15mVs1h && pass4h) {
-      reason = `15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)}) 且 4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}（短期加速+长期趋势）`
+    const conditions: string[] = []
+    conditions.push(`15m ADX(${adx15m.toFixed(2)}) >= ${adx15mThreshold}`)
+    conditions.push(`1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}`)
+    conditions.push(`4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}`)
+    
+    if (enableAdx15mVs1hCheck) {
+      conditions.push(`15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)})`)
     }
+    
+    reason = conditions.join(' 且 ') + '（趋势全面确认）'
   } else {
     // 根据具体不满足的条件显示不同的原因
     const reasons: string[] = []
-    if (!pass15mVs1h) {
-      reasons.push(`15m ADX(${adx15m.toFixed(2)}) ≤ 1h ADX(${adx1h.toFixed(2)})`)
+    if (!pass15m) {
+      reasons.push(`15m ADX(${adx15m.toFixed(2)}) < ${adx15mThreshold}`)
     }
-    if (!pass1h && !pass4h) {
-      reasons.push(`1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold} 且 4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
-    } else if (!pass1h) {
+    if (!pass1h) {
       reasons.push(`1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold}`)
-    } else if (!pass4h) {
+    }
+    if (!pass4h) {
       reasons.push(`4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
+    }
+    if (enableAdx15mVs1hCheck && !pass15mVs1h) {
+      reasons.push(`15m ADX(${adx15m.toFixed(2)}) ≤ 1h ADX(${adx1h.toFixed(2)})`)
     }
     reason = reasons.join('，')
   }
@@ -123,20 +133,23 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
     passed,
     reason,
     data: {
-      adx15m,  // 新增：返回15分钟ADX值
+      adx15m,
       adx1h,
       adx4h,
       required: {
+        adx15m: adx15mThreshold,
         adx1h: adx1hThreshold,
-        adx4h: adx4hThreshold
+        adx4h: adx4hThreshold,
+        enableAdx15mVs1hCheck
       },
       actual: {
         adx15m,
         adx1h,
         adx4h,
+        pass15m,
         pass1h,
         pass4h,
-        pass15mVs1h  // 新增：返回15分钟vs1小时比较结果
+        pass15mVs1h
       }
     }
   }

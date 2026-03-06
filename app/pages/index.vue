@@ -533,6 +533,14 @@
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx4hThreshold" :min="10" :max="50" />
         </el-form-item>
 
+        <el-form-item label="15分钟ADX阈值">
+          <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
+        </el-form-item>
+
+        <el-form-item label="ADX15m > 1h检查">
+          <el-switch v-model="editConfig.indicatorsConfig.adxTrend.enableAdx15mVs1hCheck" />
+        </el-form-item>
+
         <el-divider>做多入场条件</el-divider>
 
         <el-form-item label="EMA偏离阈值(%)">

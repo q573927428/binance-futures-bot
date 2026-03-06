@@ -38,8 +38,8 @@
       "tp2RiskRewardRatio": 3,
       "tp2MinProfitRatio": 0.5,
       "rsiExtreme": {
-        "long": 70,
-        "short": 30
+        "long": 75,
+        "short": 25
       },
       "adxDecreaseThreshold": 5
     },
@@ -64,26 +64,28 @@
   },
   "indicatorsConfig": {
     "adxTrend": {
-      "adx1hThreshold": 22,
-      "adx4hThreshold": 25
+      "adx1hThreshold": 20,
+      "adx4hThreshold": 18,
+      "adx15mThreshold": 30,
+      "enableAdx15mVs1hCheck": true
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.005,
-      "rsiMin": 40,
-      "rsiMax": 65,
+      "emaDeviationThreshold": 0.02,
+      "rsiMin": 35,
+      "rsiMax": 70,
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAPeriod": 12,
+      "volumeEMAMultiplier": 0.8
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.005,
+      "emaDeviationThreshold": 0.02,
       "rsiMin": 35,
-      "rsiMax": 60,
+      "rsiMax": 70,
       "candleShadowThreshold": 0.003,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 8,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAPeriod": 12,
+      "volumeEMAMultiplier": 0.8
     }
   }
 }
