@@ -143,55 +143,334 @@
     <!-- 详细交易记录 -->
     <div class="section">
       <h2>详细交易记录</h2>
-      <div class="pagination-controls">
-        <button @click="prevPage" :disabled="pagination.page === 1">上一页</button>
-        <span>第 {{ pagination.page }} 页 / 共 {{ pagination.totalPages }} 页 ({{ pagination.total }} 条记录)</span>
-        <button @click="nextPage" :disabled="pagination.page === pagination.totalPages">下一页</button>
+      
+      <!-- 表格控制栏 -->
+      <div class="table-controls">
+        <div class="pagination-controls">
+          <button @click="prevPage" :disabled="pagination.page === 1">上一页</button>
+          <span>第 {{ pagination.page }} 页 / 共 {{ pagination.totalPages }} 页 ({{ pagination.total }} 条记录)</span>
+          <button @click="nextPage" :disabled="pagination.page === pagination.totalPages">下一页</button>
+        </div>
+        
+        <div class="table-actions">
+          <div class="page-size-selector">
+            <label>每页显示:</label>
+            <select v-model="pagination.pageSize" @change="changePageSize">
+              <option value="10">10条</option>
+              <option value="20">20条</option>
+              <option value="50">50条</option>
+              <option value="100">100条</option>
+            </select>
+          </div>
+          
+          <div class="sort-controls">
+            <label>排序:</label>
+            <select v-model="sortBy" @change="applySorting">
+              <option value="closeTime">出场时间</option>
+              <option value="pnl">盈亏金额</option>
+              <option value="pnlPercentage">盈亏百分比</option>
+              <option value="riskRewardRatio">风险回报比</option>
+              <option value="aiConfidence">AI置信度</option>
+            </select>
+            <select v-model="sortOrder" @change="applySorting">
+              <option value="desc">降序</option>
+              <option value="asc">升序</option>
+            </select>
+          </div>
+        </div>
       </div>
       
-      <div class="trades-table">
-        <table>
-          <thead>
-            <tr>
-              <th>交易ID</th>
-              <th>交易对</th>
-              <th>方向</th>
-              <th>入场时间</th>
-              <th>出场时间</th>
-              <th>持仓时长</th>
-              <th>盈亏</th>
-              <th>MFE</th>
-              <th>MAE</th>
-              <th>风险回报比</th>
-              <th>退出原因</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="trade in trades" :key="trade.tradeId">
-              <td>{{ trade.tradeId.substring(0, 8) }}...</td>
-              <td>{{ trade.symbol }}</td>
-              <td :class="{ 'long': trade.direction === 'LONG', 'short': trade.direction === 'SHORT' }">
-                {{ trade.direction === 'LONG' ? '做多' : '做空' }}
-              </td>
-              <td>{{ formatDate(trade.openTime) }}</td>
-              <td>{{ formatDate(trade.closeTime) }}</td>
-              <td>{{ formatDuration(trade.duration) }}</td>
-              <td :class="{ 'positive': trade.pnl > 0, 'negative': trade.pnl < 0 }">
-                {{ trade.pnl.toFixed(2) }} USDT
-              </td>
-              <td :class="{ 'positive': trade.mfe > 0, 'negative': trade.mfe < 0 }">
-                {{ trade.mfe.toFixed(2) }}
-              </td>
-              <td :class="{ 'positive': trade.mae > 0, 'negative': trade.mae < 0 }">
-                {{ trade.mae.toFixed(2) }}
-              </td>
-              <td>{{ trade.riskRewardRatio.toFixed(2) }}</td>
-              <td :class="getExitReasonClass(trade.exitReasonCategory)">
-                {{ trade.exitReason }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- 交易记录表格 -->
+      <div class="trades-table-container">
+        <div class="trades-table">
+          <table>
+            <thead>
+              <tr>
+                <th class="expand-col"></th>
+                <th @click="sortByColumn('tradeId')" class="sortable">
+                  交易ID
+                  <span v-if="sortBy === 'tradeId'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('symbol')" class="sortable">
+                  交易对
+                  <span v-if="sortBy === 'symbol'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('direction')" class="sortable">
+                  方向
+                  <span v-if="sortBy === 'direction'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('openTime')" class="sortable">
+                  入场时间
+                  <span v-if="sortBy === 'openTime'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('closeTime')" class="sortable">
+                  出场时间
+                  <span v-if="sortBy === 'closeTime'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('duration')" class="sortable">
+                  持仓时长
+                  <span v-if="sortBy === 'duration'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('pnl')" class="sortable">
+                  盈亏(USDT)
+                  <span v-if="sortBy === 'pnl'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('pnlPercentage')" class="sortable">
+                  盈亏%
+                  <span v-if="sortBy === 'pnlPercentage'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('entryPrice')" class="sortable">
+                  入场价
+                  <span v-if="sortBy === 'entryPrice'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('exitPrice')" class="sortable">
+                  出场价
+                  <span v-if="sortBy === 'exitPrice'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('positionSizePercentage')" class="sortable">
+                  仓位%
+                  <span v-if="sortBy === 'positionSizePercentage'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('actualLeverage')" class="sortable">
+                  杠杆
+                  <span v-if="sortBy === 'actualLeverage'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('aiConfidence')" class="sortable">
+                  AI置信度
+                  <span v-if="sortBy === 'aiConfidence'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+                <th @click="sortByColumn('exitReason')" class="sortable">
+                  退出原因
+                  <span v-if="sortBy === 'exitReason'" class="sort-indicator">
+                    {{ sortOrder === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="trade in sortedTrades" :key="trade.tradeId">
+                <tr @click="toggleTradeDetails(trade.tradeId)" class="trade-row" :class="{ 'expanded': expandedTrades[trade.tradeId] }">
+                  <td class="expand-col">
+                    <span class="expand-icon">{{ expandedTrades[trade.tradeId] ? '−' : '+' }}</span>
+                  </td>
+                  <td class="trade-id">{{ trade.tradeId.substring(0, 8) }}...</td>
+                  <td>{{ trade.symbol }}</td>
+                  <td :class="{ 'long': trade.direction === 'LONG', 'short': trade.direction === 'SHORT' }">
+                    <span class="direction-badge">{{ trade.direction === 'LONG' ? '做多' : '做空' }}</span>
+                  </td>
+                  <td>{{ formatDate(trade.openTime) }}</td>
+                  <td>{{ formatDate(trade.closeTime) }}</td>
+                  <td>{{ formatDuration(trade.duration) }}</td>
+                  <td :class="{ 'positive': trade.pnl > 0, 'negative': trade.pnl < 0 }">
+                    <span class="pnl-value">{{ trade.pnl.toFixed(2) }} USDT</span>
+                  </td>
+                  <td :class="{ 'positive': trade.pnlPercentage > 0, 'negative': trade.pnlPercentage < 0 }">
+                    {{ trade.pnlPercentage.toFixed(2) }}%
+                  </td>
+                  <td>{{ trade.entryPrice.toFixed(2) }}</td>
+                  <td>{{ trade.exitPrice.toFixed(2) }}</td>
+                  <td>{{ trade.positionSizePercentage.toFixed(2) }}%</td>
+                  <td>{{ trade.actualLeverage }}x</td>
+                  <td>
+                    <div class="confidence-indicator" :class="getConfidenceClass(trade.aiConfidence)">
+                      {{ trade.aiConfidence || 0 }}
+                    </div>
+                  </td>
+                  <td :class="getExitReasonClass(trade.exitReasonCategory)">
+                    <span class="exit-reason-badge">{{ trade.exitReason }}</span>
+                  </td>
+                </tr>
+                
+                <!-- 展开的详细信息 -->
+                <tr v-if="expandedTrades[trade.tradeId]" class="trade-details-row">
+                  <td colspan="15">
+                    <div class="trade-details">
+                      <div class="details-grid">
+                        <!-- 价格信息 -->
+                        <div class="details-section">
+                          <h4>价格信息</h4>
+                          <div class="details-content">
+                            <div class="detail-item">
+                              <span class="detail-label">入场价格:</span>
+                              <span class="detail-value">{{ trade.entryPrice.toFixed(2) }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场价格:</span>
+                              <span class="detail-value">{{ trade.exitPrice.toFixed(2) }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">止损价格:</span>
+                              <span class="detail-value">{{ trade.stopLossPrice?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">止盈1价格:</span>
+                              <span class="detail-value">{{ trade.takeProfit1Price?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">止盈2价格:</span>
+                              <span class="detail-value">{{ trade.takeProfit2Price?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- 风险指标 -->
+                        <div class="details-section">
+                          <h4>风险指标</h4>
+                          <div class="details-content">
+                            <div class="detail-item">
+                              <span class="detail-label">MFE:</span>
+                              <span class="detail-value" :class="{ 'positive': trade.mfe > 0, 'negative': trade.mfe < 0 }">
+                                {{ trade.mfe.toFixed(2) }} ({{ trade.mfePercentage?.toFixed(2) || 0 }}%)
+                              </span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">MAE:</span>
+                              <span class="detail-value" :class="{ 'positive': trade.mae > 0, 'negative': trade.mae < 0 }">
+                                {{ trade.mae.toFixed(2) }} ({{ trade.maePercentage?.toFixed(2) || 0 }}%)
+                              </span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">风险回报比:</span>
+                              <span class="detail-value">{{ trade.riskRewardRatio.toFixed(2) }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">最大回撤:</span>
+                              <span class="detail-value negative">{{ trade.maxDrawdownPercentage?.toFixed(2) || 0 }}%</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">平均ATR:</span>
+                              <span class="detail-value">{{ trade.averageATR?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- AI分析 -->
+                        <div class="details-section ai-analysis">
+                          <h4>AI分析</h4>
+                          <div class="details-content">
+                            <div class="ai-stats">
+                              <div class="ai-stat">
+                                <span class="ai-stat-label">置信度:</span>
+                                <span class="ai-stat-value" :class="getConfidenceClass(trade.aiConfidence)">
+                                  {{ trade.aiConfidence || 0 }}
+                                </span>
+                              </div>
+                              <div class="ai-stat">
+                                <span class="ai-stat-label">评分:</span>
+                                <span class="ai-stat-value">{{ trade.aiScore || 0 }}</span>
+                              </div>
+                              <div class="ai-stat">
+                                <span class="ai-stat-label">风险等级:</span>
+                                <span class="ai-stat-value" :class="getRiskLevelClass(trade.aiRiskLevel)">
+                                  {{ trade.aiRiskLevel || 'N/A' }}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div v-if="trade.aiKeyFactors && trade.aiKeyFactors.length > 0" class="ai-key-factors">
+                              <h5>关键因素:</h5>
+                              <div class="factors-list">
+                                <span v-for="factor in trade.aiKeyFactors" :key="factor" class="factor-badge">
+                                  {{ factor }}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div v-if="trade.aiReasoning" class="ai-reasoning">
+                              <h5>AI推理:</h5>
+                              <div class="reasoning-text">{{ trade.aiReasoning }}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- 技术指标 -->
+                        <div class="details-section">
+                          <h4>技术指标</h4>
+                          <div class="details-content">
+                            <div class="detail-item">
+                              <span class="detail-label">入场RSI:</span>
+                              <span class="detail-value">{{ trade.entryRSI?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">入场ADX(15m):</span>
+                              <span class="detail-value">{{ trade.entryADX15m?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">入场ADX(1h):</span>
+                              <span class="detail-value">{{ trade.entryADX1h?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">入场ADX(4h):</span>
+                              <span class="detail-value">{{ trade.entryADX4h?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">入场EMA20:</span>
+                              <span class="detail-value">{{ trade.entryEMA20?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">入场EMA60:</span>
+                              <span class="detail-value">{{ trade.entryEMA60?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场RSI:</span>
+                              <span class="detail-value">{{ trade.exitRSI?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场ADX(15m):</span>
+                              <span class="detail-value">{{ trade.exitADX15m?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场ADX(1h):</span>
+                              <span class="detail-value">{{ trade.exitADX1h?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场ADX(4h):</span>
+                              <span class="detail-value">{{ trade.exitADX4h?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场EMA20:</span>
+                              <span class="detail-value">{{ trade.exitEMA20?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div class="detail-item">
+                              <span class="detail-label">出场EMA60:</span>
+                              <span class="detail-value">{{ trade.exitEMA60?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -282,6 +561,13 @@ const pagination = ref({
   hasNextPage: false,
   hasPrevPage: false
 })
+
+// 排序
+const sortBy = ref('closeTime')
+const sortOrder = ref('desc')
+
+// 展开的交易详情
+const expandedTrades = ref<Record<string, boolean>>({})
 
 // 计算最大退出原因数量（用于图表）
 const maxExitReasonCount = computed(() => {
@@ -390,6 +676,86 @@ function getExitReasonClass(category: string): string {
   }
 }
 
+// 计算排序后的交易记录
+const sortedTrades = computed(() => {
+  const tradesArray = [...trades.value]
+  
+  return tradesArray.sort((a, b) => {
+    let aValue = a[sortBy.value]
+    let bValue = b[sortBy.value]
+    
+    // 处理可能不存在的字段
+    if (aValue === undefined || aValue === null) aValue = 0
+    if (bValue === undefined || bValue === null) bValue = 0
+    
+    // 处理字符串比较
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortOrder.value === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue)
+    }
+    
+    // 处理数字比较
+    return sortOrder.value === 'asc' 
+      ? (aValue as number) - (bValue as number)
+      : (bValue as number) - (aValue as number)
+  })
+})
+
+// 切换交易详情展开状态
+function toggleTradeDetails(tradeId: string) {
+  expandedTrades.value[tradeId] = !expandedTrades.value[tradeId]
+}
+
+// 按列排序
+function sortByColumn(column: string) {
+  if (sortBy.value === column) {
+    // 如果已经是按此列排序，切换排序顺序
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // 否则设置新的排序列和默认排序顺序
+    sortBy.value = column
+    sortOrder.value = 'desc'
+  }
+}
+
+// 应用排序
+function applySorting() {
+  // 排序逻辑已经在 sortedTrades computed 属性中处理
+  // 这里只需要触发重新计算
+}
+
+// 更改每页显示数量
+function changePageSize() {
+  pagination.value.page = 1 // 重置到第一页
+  loadData()
+}
+
+// 获取置信度样式类
+function getConfidenceClass(confidence: number): string {
+  if (!confidence) return 'confidence-low'
+  
+  if (confidence >= 90) return 'confidence-high'
+  if (confidence >= 70) return 'confidence-medium'
+  return 'confidence-low'
+}
+
+// 获取风险等级样式类
+function getRiskLevelClass(riskLevel: string): string {
+  if (!riskLevel) return 'risk-unknown'
+  
+  switch (riskLevel.toUpperCase()) {
+    case 'LOW':
+      return 'risk-low'
+    case 'MEDIUM':
+      return 'risk-medium'
+    case 'HIGH':
+      return 'risk-high'
+    default:
+      return 'risk-unknown'
+  }
+}
+
 // 初始化
 onMounted(() => {
   loadData()
@@ -399,7 +765,7 @@ onMounted(() => {
 <style scoped>
 .strategy-analysis-page {
   padding: 20px;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -745,6 +1111,333 @@ onMounted(() => {
   font-size: 1.1rem;
 }
 
+/* 表格控制栏样式 */
+.table-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.table-actions {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page-size-selector,
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-size-selector label,
+.sort-controls label {
+  font-weight: 600;
+  color: #555;
+}
+
+.page-size-selector select,
+.sort-controls select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  min-width: 100px;
+}
+
+/* 表格样式 */
+.trades-table-container {
+  overflow-x: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.trades-table {
+  min-width: 1400px;
+}
+
+.trades-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trades-table th,
+.trades-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.trades-table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.trades-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.trades-table th.sortable:hover {
+  background: #e9ecef;
+}
+
+.sort-indicator {
+  margin-left: 5px;
+  font-weight: bold;
+  color: #3498db;
+}
+
+/* 交易行样式 */
+.trade-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.trade-row:hover {
+  background: #f8f9fa !important;
+}
+
+.trade-row.expanded {
+  background: #f0f7ff;
+}
+
+.expand-col {
+  width: 40px;
+  text-align: center;
+}
+
+.expand-icon {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  text-align: center;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: white;
+  font-weight: bold;
+  color: #555;
+}
+
+.trade-id {
+  font-family: monospace;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.direction-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.long .direction-badge {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.short .direction-badge {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.pnl-value {
+  font-weight: 600;
+}
+
+/* 置信度指示器 */
+.confidence-indicator {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+  text-align: center;
+  min-width: 40px;
+}
+
+.confidence-high {
+  background: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.confidence-medium {
+  background: rgba(241, 196, 15, 0.1);
+  color: #f1c40f;
+}
+
+.confidence-low {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+/* 退出原因徽章 */
+.exit-reason-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+/* 交易详情样式 */
+.trade-details-row {
+  background: #f8f9fa;
+}
+
+.trade-details {
+  padding: 20px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.details-section {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.details-section h4 {
+  margin: 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  color: #2c3e50;
+  font-size: 1.1em;
+}
+
+.details-content {
+  padding: 15px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #555;
+  min-width: 120px;
+}
+
+.detail-value {
+  color: #333;
+  text-align: right;
+  flex: 1;
+}
+
+/* AI分析样式 */
+.ai-analysis .details-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.ai-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.ai-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-stat-label {
+  font-size: 0.9em;
+  color: #7f8c8d;
+}
+
+.ai-stat-value {
+  font-weight: 600;
+  font-size: 1.1em;
+}
+
+.risk-low {
+  color: #2ecc71;
+}
+
+.risk-medium {
+  color: #f1c40f;
+}
+
+.risk-high {
+  color: #e74c3c;
+}
+
+.risk-unknown {
+  color: #7f8c8d;
+}
+
+.ai-key-factors h5 {
+  margin: 0 0 10px 0;
+  color: #555;
+  font-size: 1em;
+}
+
+.factors-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.factor-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(52, 152, 219, 0.1);
+  color: #3498db;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.ai-reasoning h5 {
+  margin: 0 0 10px 0;
+  color: #555;
+  font-size: 1em;
+}
+
+.reasoning-text {
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9em;
+  line-height: 1.5;
+  color: #555;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;
@@ -769,6 +1462,20 @@ onMounted(() => {
   .reason-stats {
     width: 100%;
     justify-content: space-between;
+  }
+  
+  .table-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .ai-stats {
+    flex-direction: column;
+    gap: 10px;
   }
 }
 </style>
