@@ -1,0 +1,70 @@
+//@version=6
+indicator("Trade History Dashboard", overlay=true, max_labels_count=500, max_lines_count=500)
+
+var int[] openTimes = array.from(1772657925080,1772645215513,1772624501024,1772380745024,1772363641585,1772338784307,1772327560810,1772274384548,1772226740231)
+var int[] closeTimes = array.from(1772664911940,1772649793586,1772634681032,1772383817068,1772375024753,1772342759994,1772330030537,1772286611446,1772255711869)
+
+var float[] entryPrices = array.from(92.89,90.97,89.5,1997.56,624.26,2001.8,616.02,63854.7,81.65)
+var float[] exitPrices = array.from(91.23,91.95,91.03,1968.33105,626.54,2020.39,626.11,64618.3,81.73)
+
+var float[] stopLoss = array.from(91.26304930089448,89.0582143519875,87.97690178568136,1971.7197526912034,619.7589437712153,1967.4819396561275,610.835963660291,64573.62818278809,82.53904542957028)
+var float[] tp1 = array.from(94.51695069910552,92.8817856480125,91.02309821431864,2023.4002473087965,628.7610562287847,2036.1180603438725,621.204036339709,63135.771817211906,80.76095457042973)
+var float[] tp2 = array.from(96.14390139821104,94.793571296025,92.54619642863727,2049.240494617593,633.2621124575694,2070.4361206877447,626.388072679418,62416.843634423814,79.87190914085946)
+
+var string[] directions = array.from("LONG","LONG","LONG","LONG","LONG","LONG","LONG","SHORT","SHORT")
+var string[] symbols = array.from("SOL/USDT","SOL/USDT","SOL/USDT","ETH/USDT","BNB/USDT","ETH/USDT","BNB/USDT","BTC/USDT","SOL/USDT")
+var float[] pnl = array.from(-19.66,9.70,18.80,-8.78,2.19,5.57,14.74,-9.57,-0.88)
+
+var int[] leverage = array.from(11,9,11,6,6,6,9,8,9)
+
+for i = 0 to array.size(openTimes) - 1
+
+    openTime = array.get(openTimes, i)
+    closeTime = array.get(closeTimes, i)
+
+    entryPrice = array.get(entryPrices, i)
+    exitPrice = array.get(exitPrices, i)
+
+    sl = array.get(stopLoss, i)
+    t1 = array.get(tp1, i)
+    t2 = array.get(tp2, i)
+
+    dir = array.get(directions, i)
+    sym = array.get(symbols, i)
+    lev = array.get(leverage, i)
+    p = array.get(pnl, i)
+
+    openCond = time >= openTime and time[1] < openTime
+    closeCond = time >= closeTime and time[1] < closeTime
+
+    if openCond
+
+        label.new(
+            bar_index,
+            entryPrice,
+            sym + "\n" +
+            dir + " ENTRY" + "\n" +
+            "Lev: " + str.tostring(lev),
+            style = dir == "LONG" ? label.style_label_up : label.style_label_down,
+            color = dir == "LONG" ? color.green : color.red,
+            textcolor = color.white,
+            size = size.small
+        )
+
+        line.new(bar_index, entryPrice, bar_index, sl, color=color.red, width=1)
+        line.new(bar_index, entryPrice, bar_index, t1, color=color.green, width=1)
+        line.new(bar_index, entryPrice, bar_index, t2, color=color.green, width=1)
+
+    if closeCond
+
+        label.new(
+            bar_index,
+            exitPrice,
+            sym + "\nEXIT\nPnL: " + str.tostring(p) + "%",
+            style = label.style_label_left,
+            color = p > 0 ? color.green : color.red,
+            textcolor = color.white,
+            size = size.small
+        )
+
+        line.new(bar_index, entryPrice, bar_index, exitPrice, color=color.blue, width=2)
