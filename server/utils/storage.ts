@@ -288,6 +288,12 @@ export function getDefaultConfig(): BotConfig {
         volumeEMAPeriod: 10,         // EMA成交量周期
         volumeEMAMultiplier: 1.2,    // EMA成交量倍数
       },
+      priceBreakout: {
+        enabled: true,               // 启用价格突破指标
+        period: 5,                   // 突破周期（K线数）
+        requireConfirmation: true,   // 需要收盘价确认
+        confirmationCandles: 1,      // 确认K线数量
+      },
     },
   }
 }

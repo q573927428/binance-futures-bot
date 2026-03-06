@@ -88,9 +88,9 @@ export class MarketAnalyzer {
       let entryResult: any = null
 
       if (trendResult.direction === 'LONG') {
-        entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory)
+        entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, candles15m)
       } else if (trendResult.direction === 'SHORT') {
-        entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory)
+        entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory, candles15m)
       }
 
       const entryOk = entryResult?.passed || false

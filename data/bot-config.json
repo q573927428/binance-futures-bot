@@ -86,6 +86,12 @@
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 0.8
+    },
+    "priceBreakout": {
+      "enabled": true,
+      "period": 5,
+      "requireConfirmation": true,
+      "confirmationCandles": 1
     }
   }
 }

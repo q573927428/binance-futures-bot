@@ -31,6 +31,14 @@ export interface TrailingStopConfig {
   updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
 }
 
+// 价格突破配置
+export interface PriceBreakoutConfig {
+  enabled: boolean           // 是否启用价格突破指标
+  period: number            // 突破周期（默认5）
+  requireConfirmation: boolean // 是否需要收盘价确认（可配置开关）
+  confirmationCandles: number // 确认K线数量（默认1）
+}
+
 // 技术指标配置
 export interface IndicatorsConfig {
   // ADX趋势检查配置
@@ -62,6 +70,9 @@ export interface IndicatorsConfig {
     volumeEMAPeriod: number        // EMA成交量周期 (默认 10)
     volumeEMAMultiplier: number    // EMA成交量倍数 (默认 1.2)
   }
+  
+  // 价格突破配置
+  priceBreakout: PriceBreakoutConfig
 }
 
 // 系统配置

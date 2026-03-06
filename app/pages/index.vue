@@ -600,6 +600,24 @@
         <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="EMA成交量倍数">
           <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
         </el-form-item>
+
+        <el-divider>价格突破配置</el-divider>
+
+        <el-form-item label="启用价格突破指标">
+          <el-switch v-model="editConfig.indicatorsConfig.priceBreakout.enabled" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled" label="突破周期(K线数)">
+          <el-input-number v-model="editConfig.indicatorsConfig.priceBreakout.period" :min="3" :max="20" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled" label="需要收盘价确认">
+          <el-switch v-model="editConfig.indicatorsConfig.priceBreakout.requireConfirmation" />
+        </el-form-item>
+
+        <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled && editConfig.indicatorsConfig.priceBreakout.requireConfirmation" label="确认K线数量">
+          <el-input-number v-model="editConfig.indicatorsConfig.priceBreakout.confirmationCandles" :min="1" :max="3" />
+        </el-form-item>
       </el-form>
 
       <template #footer>

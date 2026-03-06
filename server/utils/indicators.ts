@@ -223,7 +223,8 @@ export function checkLongEntry(
   indicators: TechnicalIndicators,
   lastCandle: OHLCV,
   config?: BotConfig,
-  volumeHistory?: number[]
+  volumeHistory?: number[],
+  candles15m?: OHLCV[]
 ) {
   const { ema20, ema30, rsi } = indicators
 
@@ -271,13 +272,29 @@ export function checkLongEntry(
     volumeReason = '成交量数据不足，无法计算EMA'
   }
 
-  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed
+  // 检查价格突破条件
+  let priceBreakoutPassed = true
+  let priceBreakoutReason = '价格突破指标未检查'
+  let priceBreakoutData: any = null
+  
+  if (candles15m && candles15m.length > 0) {
+    const priceBreakoutResult = checkPriceBreakoutLong(price, candles15m, config)
+    priceBreakoutPassed = priceBreakoutResult.passed
+    priceBreakoutReason = priceBreakoutResult.reason
+    priceBreakoutData = priceBreakoutResult.data
+  }
+
+  // 所有条件必须同时满足
+  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed && priceBreakoutPassed
 
   let reason = ''
   if (passed) {
     reason = `价格回踩${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
     if (volumeConfirmation) {
       reason += `，成交量确认`
+    }
+    if (priceBreakoutData?.enabled) {
+      reason += `，价格突破确认`
     }
   } else {
     const reasons: string[] = []
@@ -292,6 +309,9 @@ export function checkLongEntry(
     }
     if (!volumePassed) {
       reasons.push(`成交量条件不满足: ${volumeReason}`)
+    }
+    if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
+      reasons.push(`价格突破条件不满足: ${priceBreakoutReason}`)
     }
     reason = reasons.join('；')
   }
@@ -314,6 +334,9 @@ export function checkLongEntry(
       candleType,
       volumePassed,
       volumeReason,
+      priceBreakoutPassed,
+      priceBreakoutReason,
+      priceBreakoutData,
       lastCandle: {
         open: lastCandle.open,
         high: lastCandle.high,
@@ -328,6 +351,7 @@ export function checkLongEntry(
           rsiMax,
           confirmCandle: true,
           volumeConfirmation,
+          priceBreakout: priceBreakoutData?.enabled || false,
         },
         actual: {
           nearEMA,
@@ -335,6 +359,7 @@ export function checkLongEntry(
           rsiInRange,
           isConfirmCandle,
           volumePassed,
+          priceBreakoutPassed,
         }
       }
     }
@@ -349,7 +374,8 @@ export function checkShortEntry(
   indicators: TechnicalIndicators,
   lastCandle: OHLCV,
   config?: BotConfig,
-  volumeHistory?: number[]
+  volumeHistory?: number[],
+  candles15m?: OHLCV[]
 ) {
   const { ema20, ema30, rsi } = indicators
 
@@ -397,13 +423,29 @@ export function checkShortEntry(
     volumeReason = '成交量数据不足，无法计算EMA'
   }
 
-  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed
+  // 检查价格突破条件
+  let priceBreakoutPassed = true
+  let priceBreakoutReason = '价格突破指标未检查'
+  let priceBreakoutData: any = null
+  
+  if (candles15m && candles15m.length > 0) {
+    const priceBreakoutResult = checkPriceBreakoutShort(price, candles15m, config)
+    priceBreakoutPassed = priceBreakoutResult.passed
+    priceBreakoutReason = priceBreakoutResult.reason
+    priceBreakoutData = priceBreakoutResult.data
+  }
+
+  // 所有条件必须同时满足
+  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed && priceBreakoutPassed
 
   let reason = ''
   if (passed) {
     reason = `价格反弹${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
     if (volumeConfirmation) {
       reason += `，成交量确认`
+    }
+    if (priceBreakoutData?.enabled) {
+      reason += `，价格突破确认`
     }
   } else {
     const reasons: string[] = []
@@ -418,6 +460,9 @@ export function checkShortEntry(
     }
     if (!volumePassed) {
       reasons.push(`成交量条件不满足: ${volumeReason}`)
+    }
+    if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
+      reasons.push(`价格突破条件不满足: ${priceBreakoutReason}`)
     }
     reason = reasons.join('；')
   }
@@ -440,6 +485,9 @@ export function checkShortEntry(
       candleType,
       volumePassed,
       volumeReason,
+      priceBreakoutPassed,
+      priceBreakoutReason,
+      priceBreakoutData,
       lastCandle: {
         open: lastCandle.open,
         high: lastCandle.high,
@@ -454,6 +502,7 @@ export function checkShortEntry(
           rsiMax,
           confirmCandle: true,
           volumeConfirmation,
+          priceBreakout: priceBreakoutData?.enabled || false,
         },
         actual: {
           nearEMA,
@@ -461,6 +510,7 @@ export function checkShortEntry(
           rsiInRange,
           isConfirmCandle,
           volumePassed,
+          priceBreakoutPassed,
         }
       }
     }
@@ -565,4 +615,174 @@ export function checkMinNotional(
 ): boolean {
   const notional = quantity * price
   return notional >= minNotional
+}
+
+/**
+ * 检查做多价格突破条件
+ */
+export function checkPriceBreakoutLong(
+  price: number,
+  candles: OHLCV[],
+  config?: BotConfig
+): { passed: boolean; reason: string; data?: any } {
+  // 使用配置参数或默认值
+  const enabled = config?.indicatorsConfig?.priceBreakout?.enabled ?? true
+  const period = config?.indicatorsConfig?.priceBreakout?.period ?? 5
+  const requireConfirmation = config?.indicatorsConfig?.priceBreakout?.requireConfirmation ?? true
+  const confirmationCandles = config?.indicatorsConfig?.priceBreakout?.confirmationCandles ?? 1
+
+  // 如果未启用价格突破指标，直接返回通过
+  if (!enabled) {
+    return {
+      passed: true,
+      reason: '价格突破指标未启用',
+      data: {
+        enabled: false,
+        period,
+        requireConfirmation,
+        confirmationCandles
+      }
+    }
+  }
+
+  // 检查是否有足够的K线数据
+  if (candles.length < period + confirmationCandles) {
+    return {
+      passed: false,
+      reason: `K线数据不足，需要至少${period + confirmationCandles}根K线，当前只有${candles.length}根`,
+      data: {
+        enabled,
+        period,
+        requireConfirmation,
+        confirmationCandles,
+        candlesCount: candles.length
+      }
+    }
+  }
+
+  // 获取最近N根K线（排除最后确认的K线）
+  const startIndex = Math.max(0, candles.length - period - confirmationCandles)
+  const endIndex = candles.length - confirmationCandles
+  const recentCandles = candles.slice(startIndex, endIndex)
+  
+  // 计算最近N根K线的最高价
+  const highestHigh = Math.max(...recentCandles.map(c => c.high))
+  
+  // 检查当前价格是否突破最高价
+  const priceBreakout = price > highestHigh
+  
+  let passed = priceBreakout
+  let reason = `当前价格${price.toFixed(2)} ${priceBreakout ? '>' : '≤'} 最近${period}根K线最高价${highestHigh.toFixed(2)}`
+  
+  // 如果需要确认，检查最近确认K线的收盘价
+  if (requireConfirmation && priceBreakout) {
+    const confirmationCandlesSlice = candles.slice(-confirmationCandles)
+    const allConfirm = confirmationCandlesSlice.every(candle => candle.close > highestHigh)
+    
+    passed = allConfirm
+    reason = allConfirm 
+      ? `${reason}，且最近${confirmationCandles}根K线收盘价确认突破`
+      : `${reason}，但最近${confirmationCandles}根K线收盘价未全部确认突破`
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      enabled,
+      period,
+      requireConfirmation,
+      confirmationCandles,
+      price,
+      highestHigh,
+      priceBreakout,
+      recentCandlesCount: recentCandles.length,
+      confirmationCandlesCount: confirmationCandles
+    }
+  }
+}
+
+/**
+ * 检查做空价格突破条件
+ */
+export function checkPriceBreakoutShort(
+  price: number,
+  candles: OHLCV[],
+  config?: BotConfig
+): { passed: boolean; reason: string; data?: any } {
+  // 使用配置参数或默认值
+  const enabled = config?.indicatorsConfig?.priceBreakout?.enabled ?? true
+  const period = config?.indicatorsConfig?.priceBreakout?.period ?? 5
+  const requireConfirmation = config?.indicatorsConfig?.priceBreakout?.requireConfirmation ?? true
+  const confirmationCandles = config?.indicatorsConfig?.priceBreakout?.confirmationCandles ?? 1
+
+  // 如果未启用价格突破指标，直接返回通过
+  if (!enabled) {
+    return {
+      passed: true,
+      reason: '价格突破指标未启用',
+      data: {
+        enabled: false,
+        period,
+        requireConfirmation,
+        confirmationCandles
+      }
+    }
+  }
+
+  // 检查是否有足够的K线数据
+  if (candles.length < period + confirmationCandles) {
+    return {
+      passed: false,
+      reason: `K线数据不足，需要至少${period + confirmationCandles}根K线，当前只有${candles.length}根`,
+      data: {
+        enabled,
+        period,
+        requireConfirmation,
+        confirmationCandles,
+        candlesCount: candles.length
+      }
+    }
+  }
+
+  // 获取最近N根K线（排除最后确认的K线）
+  const startIndex = Math.max(0, candles.length - period - confirmationCandles)
+  const endIndex = candles.length - confirmationCandles
+  const recentCandles = candles.slice(startIndex, endIndex)
+  
+  // 计算最近N根K线的最低价
+  const lowestLow = Math.min(...recentCandles.map(c => c.low))
+  
+  // 检查当前价格是否突破最低价
+  const priceBreakout = price < lowestLow
+  
+  let passed = priceBreakout
+  let reason = `当前价格${price.toFixed(2)} ${priceBreakout ? '<' : '≥'} 最近${period}根K线最低价${lowestLow.toFixed(2)}`
+  
+  // 如果需要确认，检查最近确认K线的收盘价
+  if (requireConfirmation && priceBreakout) {
+    const confirmationCandlesSlice = candles.slice(-confirmationCandles)
+    const allConfirm = confirmationCandlesSlice.every(candle => candle.close < lowestLow)
+    
+    passed = allConfirm
+    reason = allConfirm 
+      ? `${reason}，且最近${confirmationCandles}根K线收盘价确认突破`
+      : `${reason}，但最近${confirmationCandles}根K线收盘价未全部确认突破`
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      enabled,
+      period,
+      requireConfirmation,
+      confirmationCandles,
+      price,
+      lowestLow,
+      priceBreakout,
+      recentCandlesCount: recentCandles.length,
+      confirmationCandlesCount: confirmationCandles
+    }
+  }
 }
