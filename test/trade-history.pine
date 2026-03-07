@@ -16,6 +16,10 @@ var string[] symbols = array.from("SOL/USDT","SOL/USDT","SOL/USDT","ETH/USDT","B
 var float[] pnl = array.from(-19.66,9.70,18.80,-8.78,2.19,5.57,14.74,-9.57,-0.88)
 
 var int[] leverage = array.from(11,9,11,6,6,6,9,8,9)
+var float[] entryRSIs = array.from(58.08,53.63,59.83,51.36,51.78,54.23,0,0,0)
+var float[] entryADXs = array.from(41.0759605590437,42.83925267795245,42.8104673359004,26.072803455234066,27.340047312943874,48.12400793804818,0,0,0)
+var float[] averageATRs = array.from(0.7304342631928114,0.8787026993233367,0.6914334642666543,13.318310638928539,2.0726572852171596,15.876820720606696,2.6972589631960067,304.5894965503985,0.393866434282112)
+var string[] exitReasons = array.from("止损触发","TP2止盈","TP2止盈","止损触发","止损触发","TP2止盈","TP2止盈","止损触发","持仓超时")
 
 for i = 0 to array.size(openTimes) - 1
 
@@ -33,6 +37,12 @@ for i = 0 to array.size(openTimes) - 1
     sym = array.get(symbols, i)
     lev = array.get(leverage, i)
     p = array.get(pnl, i)
+    
+    // 获取新字段
+    entryRSI = array.get(entryRSIs, i)
+    entryADX = array.get(entryADXs, i)
+    avgATR = array.get(averageATRs, i)
+    exitReason = array.get(exitReasons, i)
 
     openCond = time >= openTime and time[1] < openTime
     closeCond = time >= closeTime and time[1] < closeTime
@@ -43,28 +53,33 @@ for i = 0 to array.size(openTimes) - 1
             bar_index,
             entryPrice,
             sym + "\n" +
-            dir + " ENTRY" + "\n" +
-            "Lev: " + str.tostring(lev),
+            dir + " 开仓" + "\n" +
+            "Lev: " + str.tostring(lev) + "\n" +
+            "RSI: " + str.tostring(entryRSI, "#.##") + "\n" +
+            "ADX: " + str.tostring(entryADX, "#.##") + "\n" +
+            "ATR: " + str.tostring(avgATR, "#.##"),
             style = dir == "LONG" ? label.style_label_up : label.style_label_down,
             color = dir == "LONG" ? color.green : color.red,
             textcolor = color.white,
             size = size.small
         )
 
-        line.new(bar_index, entryPrice, bar_index, sl, color=color.red, width=1)
-        line.new(bar_index, entryPrice, bar_index, t1, color=color.green, width=1)
-        line.new(bar_index, entryPrice, bar_index, t2, color=color.green, width=1)
+        // line.new(bar_index, entryPrice, bar_index, sl, color=color.red, width=1)
+        // line.new(bar_index, entryPrice, bar_index, t1, color=color.green, width=1)
+        // line.new(bar_index, entryPrice, bar_index, t2, color=color.green, width=1)
 
     if closeCond
-
+        
         label.new(
             bar_index,
             exitPrice,
-            sym + "\nEXIT\nPnL: " + str.tostring(p) + "%",
+            sym + "\n平仓\n" +
+            "PnL: " + str.tostring(p) + "%\n" +
+            exitReason,
             style = label.style_label_left,
-            color = p > 0 ? color.green : color.red,
-            textcolor = color.white,
+            color = color.yellow,
+            textcolor = p > 0 ? color.green : color.red,
             size = size.small
         )
 
-        line.new(bar_index, entryPrice, bar_index, exitPrice, color=color.blue, width=2)
+        // line.new(bar_index, entryPrice, bar_index, exitPrice, color=color.blue, width=2)
