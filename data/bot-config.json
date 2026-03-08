@@ -11,8 +11,8 @@
   "maxRiskPercentage": 10,
   "stopLossATRMultiplier": 1.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 8,
-  "scanInterval": 300,
+  "positionTimeoutHours": 12,
+  "scanInterval": 180,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 3600,
   "aiConfig": {
@@ -38,8 +38,8 @@
       "tp2RiskRewardRatio": 3,
       "tp2MinProfitRatio": 0.5,
       "rsiExtreme": {
-        "long": 75,
-        "short": 25
+        "long": 80,
+        "short": 20
       },
       "adxDecreaseThreshold": 5
     },
@@ -65,27 +65,27 @@
   "indicatorsConfig": {
     "adxTrend": {
       "adx1hThreshold": 20,
-      "adx4hThreshold": 18,
+      "adx4hThreshold": 16,
       "adx15mThreshold": 30,
-      "enableAdx15mVs1hCheck": true
+      "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
       "emaDeviationThreshold": 0.02,
-      "rsiMin": 35,
+      "rsiMin": 30,
       "rsiMax": 70,
-      "candleShadowThreshold": 0.003,
+      "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 0.6
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
-      "rsiMin": 35,
+      "rsiMin": 30,
       "rsiMax": 70,
-      "candleShadowThreshold": 0.003,
+      "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 0.8
+      "volumeEMAMultiplier": 0.6
     },
     "priceBreakout": {
       "enabled": true,
