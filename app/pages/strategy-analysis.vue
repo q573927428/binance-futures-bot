@@ -409,6 +409,41 @@
                           </div>
                         </div>
                         
+                        <!-- 移动止损信息 -->
+                        <div class="details-section" v-if="trade.trailingStopEnabled !== undefined">
+                          <h4>移动止损</h4>
+                          <div class="details-content">
+                            <div class="detail-item">
+                              <span class="detail-label">启用状态:</span>
+                              <span class="detail-value">{{ trade.trailingStopEnabled ? '已启用' : '未启用' }}</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled" class="detail-item">
+                              <span class="detail-label">激活盈亏比:</span>
+                              <span class="detail-value">{{ trade.trailingStopActivationRatio?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled" class="detail-item">
+                              <span class="detail-label">跟踪距离(ATR倍数):</span>
+                              <span class="detail-value">{{ trade.trailingStopDistance?.toFixed(2) || 'N/A' }}</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled" class="detail-item">
+                              <span class="detail-label">更新间隔(秒):</span>
+                              <span class="detail-value">{{ trade.trailingStopUpdateInterval || 'N/A' }}</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled && trade.trailingStopCount" class="detail-item">
+                              <span class="detail-label">移动止损次数:</span>
+                              <span class="detail-value">{{ trade.trailingStopCount }} 次</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled && trade.lastTrailingStopPrice" class="detail-item">
+                              <span class="detail-label">最后移动止损价:</span>
+                              <span class="detail-value">{{ trade.lastTrailingStopPrice.toFixed(2) }}</span>
+                            </div>
+                            <div v-if="trade.trailingStopEnabled && trade.lastTrailingStopUpdateTime" class="detail-item">
+                              <span class="detail-label">最后更新时间:</span>
+                              <span class="detail-value">{{ formatDate(trade.lastTrailingStopUpdateTime) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
                         <!-- 技术指标 -->
                         <div class="details-section">
                           <h4>技术指标</h4>
@@ -1303,7 +1338,7 @@ onMounted(() => {
 
 .details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
 }
 

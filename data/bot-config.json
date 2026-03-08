@@ -9,7 +9,7 @@
   ],
   "leverage": 10,
   "maxRiskPercentage": 10,
-  "stopLossATRMultiplier": 1.5,
+  "stopLossATRMultiplier": 2,
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 12,
   "scanInterval": 180,
@@ -58,7 +58,7 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.6,
+    "activationRatio": 0.8,
     "trailingDistance": 1,
     "updateIntervalSeconds": 60
   },
@@ -76,7 +76,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 0.6
+      "volumeEMAMultiplier": 0.8
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
@@ -85,7 +85,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 0.6
+      "volumeEMAMultiplier": 1
     },
     "priceBreakout": {
       "enabled": true,

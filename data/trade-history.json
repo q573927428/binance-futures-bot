@@ -1,5 +1,19 @@
 [
   {
+    "id": "1772946387182-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "SHORT",
+    "entryPrice": 66991.4,
+    "exitPrice": 66787.2,
+    "quantity": 0.002,
+    "leverage": 8,
+    "pnl": 0.4083999999999942,
+    "pnlPercentage": 2.43852195953507,
+    "openTime": 1772938255914,
+    "closeTime": 1772946387182,
+    "reason": "止损触发"
+  },
+  {
     "id": "1772934462716-BTC/USDT",
     "symbol": "BTC/USDT",
     "direction": "SHORT",

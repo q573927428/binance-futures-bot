@@ -296,10 +296,14 @@ export class FuturesBot {
     
     try {
       const exitTime = Date.now()
+      // 获取移动止损数据
+      const trailingStopData = position.trailingStopData
+      
       const metrics = await this.strategyAnalyzer.generateAnalysisMetrics(
         exitPrice,
         exitReason,
-        exitTime
+        exitTime,
+        trailingStopData
       )
       
       logger.success('策略分析', `分析指标已生成: ${position.symbol} MFE=${metrics.mfe.toFixed(2)}, MAE=${metrics.mae.toFixed(2)}`)

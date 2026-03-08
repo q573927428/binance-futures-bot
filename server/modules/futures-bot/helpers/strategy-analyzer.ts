@@ -1,4 +1,4 @@
-import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis } from '../../../../types'
+import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis, TrailingStopData } from '../../../../types'
 import { calculatePnL } from '../../../utils/risk'
 import { saveStrategyAnalysisMetrics } from '../../../utils/analysis-storage'
 import { logger } from '../../../utils/logger'
@@ -134,7 +134,8 @@ export class StrategyAnalyzer {
   async generateAnalysisMetrics(
     exitPrice: number,
     exitReason: string,
-    exitTime: number
+    exitTime: number,
+    trailingStopData?: TrailingStopData
   ): Promise<StrategyAnalysisMetrics> {
     // 确保记录最终价格点
     this.recordPricePoint(exitPrice, exitTime)
@@ -274,6 +275,15 @@ export class StrategyAnalyzer {
       tradeHour,
       tradeDayOfWeek,
       tradeMonth,
+      
+      // 移动止损指标
+      trailingStopEnabled: trailingStopData?.enabled,
+      trailingStopActivationRatio: trailingStopData?.activationRatio,
+      trailingStopDistance: trailingStopData?.trailingDistance,
+      trailingStopUpdateInterval: trailingStopData?.updateIntervalSeconds,
+      lastTrailingStopPrice: trailingStopData?.lastTrailingStopPrice,
+      lastTrailingStopUpdateTime: trailingStopData?.lastTrailingStopUpdateTime,
+      trailingStopCount: trailingStopData?.trailingStopCount,
       
       // 创建时间
       createdAt: Date.now()

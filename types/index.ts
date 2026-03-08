@@ -31,6 +31,17 @@ export interface TrailingStopConfig {
   updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
 }
 
+// 移动止损数据（简化版，只保存最后一次移动止损信息）
+export interface TrailingStopData {
+  enabled: boolean                    // 是否启用移动止损
+  activationRatio: number             // 激活盈亏比
+  trailingDistance: number            // 跟踪距离（ATR倍数）
+  updateIntervalSeconds: number       // 更新间隔秒数
+  lastTrailingStopPrice?: number      // 最后一次移动止损价格
+  lastTrailingStopUpdateTime?: number // 最后一次移动止损更新时间
+  trailingStopCount: number           // 移动止损总次数
+}
+
 // 价格突破配置
 export interface PriceBreakoutConfig {
   enabled: boolean           // 是否启用价格突破指标
@@ -271,6 +282,7 @@ export interface Position {
   stopLossOrderStatus?: string
   stopLossOrderTimestamp?: number
   lastStopLossUpdate?: number  // 上次止损更新时间（用于移动止损）
+  trailingStopData?: TrailingStopData  // 移动止损数据
 }
 
 // 订单信息
@@ -389,6 +401,15 @@ export interface StrategyAnalysisMetrics {
     pnl: number
     pnlPercentage: number
   }>
+  
+  // 移动止损指标
+  trailingStopEnabled?: boolean                    // 是否启用移动止损
+  trailingStopActivationRatio?: number            // 移动止损激活盈亏比
+  trailingStopDistance?: number                   // 移动止损跟踪距离（ATR倍数）
+  trailingStopUpdateInterval?: number             // 移动止损更新间隔秒数
+  lastTrailingStopPrice?: number                  // 最后一次移动止损价格
+  lastTrailingStopUpdateTime?: number             // 最后一次移动止损更新时间
+  trailingStopCount?: number                      // 移动止损总次数
   
   // 创建时间
   createdAt: number

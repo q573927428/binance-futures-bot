@@ -141,10 +141,14 @@ export class PositionValidator {
       // 如果有策略分析器，生成分析指标
       if (strategyAnalyzer) {
         try {
+          // 获取移动止损数据
+          const trailingStopData = position.trailingStopData
+          
           const metrics = await strategyAnalyzer.generateAnalysisMetrics(
             exitPrice,
             reason,
-            closeTime
+            closeTime,
+            trailingStopData
           )
           logger.success('策略分析', `补偿平仓分析指标已生成: ${position.symbol} MFE=${metrics.mfe.toFixed(2)}, MAE=${metrics.mae.toFixed(2)}`)
         } catch (error: any) {

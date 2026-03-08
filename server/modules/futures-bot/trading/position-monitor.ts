@@ -223,14 +223,17 @@ export class PositionMonitor {
 
       logger.success('移动止损', '新止损单已创建', newStopOrder)
 
-      // 3. 更新持仓信息
+      // 3. 记录移动止损数据
+      this.recordTrailingStopData(position, newStopLoss, reason)
+
+      // 4. 更新持仓信息
       position.stopLoss = newStopLoss
       position.stopLossOrderId = newStopOrder.orderId
       position.stopLossOrderStopPrice = newStopOrder.stopPrice
       position.stopLossOrderTimestamp = newStopOrder.timestamp
       position.lastStopLossUpdate = Date.now()
 
-      // 4. 更新状态到state
+      // 5. 更新状态到state
       if (this.state.currentPosition) {
         this.state.currentPosition = position
         await saveBotState(this.state)
@@ -239,6 +242,40 @@ export class PositionMonitor {
       logger.success('移动止损', `止损已更新至 ${newStopLoss.toFixed(2)}`)
     } catch (error: any) {
       logger.error('移动止损', '更新失败', error.message)
+      throw error
+    }
+  }
+
+  /**
+   * 记录移动止损数据
+   */
+  private recordTrailingStopData(
+    position: Position,
+    newStopLoss: number,
+    reason: string
+  ): void {
+    try {
+      const now = Date.now()
+      
+      // 初始化移动止损数据
+      if (!position.trailingStopData) {
+        position.trailingStopData = {
+          enabled: this.config.trailingStopConfig.enabled,
+          activationRatio: this.config.trailingStopConfig.activationRatio,
+          trailingDistance: this.config.trailingStopConfig.trailingDistance,
+          updateIntervalSeconds: this.config.trailingStopConfig.updateIntervalSeconds,
+          trailingStopCount: 0
+        }
+      }
+
+      // 更新移动止损数据
+      position.trailingStopData.lastTrailingStopPrice = newStopLoss
+      position.trailingStopData.lastTrailingStopUpdateTime = now
+      position.trailingStopData.trailingStopCount += 1
+
+      logger.info('移动止损数据', `记录移动止损: 价格 ${newStopLoss.toFixed(2)}, 次数 ${position.trailingStopData.trailingStopCount}`)
+    } catch (error: any) {
+      logger.error('移动止损数据', '记录失败', error.message)
       throw error
     }
   }
