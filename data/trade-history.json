@@ -1,5 +1,33 @@
 [
   {
+    "id": "1773039852906-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "LONG",
+    "entryPrice": 628.48,
+    "exitPrice": 622.26,
+    "quantity": 0.18,
+    "leverage": 6,
+    "pnl": -1.1196000000000048,
+    "pnlPercentage": -5.938136456211838,
+    "openTime": 1773035034181,
+    "closeTime": 1773039852906,
+    "reason": "止损触发"
+  },
+  {
+    "id": "1772999304461-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "SHORT",
+    "entryPrice": 66923,
+    "exitPrice": 67420.2,
+    "quantity": 0.002,
+    "leverage": 6,
+    "pnl": -0.9943999999999942,
+    "pnlPercentage": -4.457660296161233,
+    "openTime": 1772988040867,
+    "closeTime": 1772999304461,
+    "reason": "止损触发"
+  },
+  {
     "id": "1772946387182-BTC/USDT",
     "symbol": "BTC/USDT",
     "direction": "SHORT",

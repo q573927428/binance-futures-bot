@@ -68,6 +68,30 @@
 
                 <el-divider />
 
+                <div class="script-actions">
+                  <el-button
+                    type="warning"
+                    size="large"
+                    :loading="isGeneratingScript"
+                    @click="handleGenerateScript"
+                  >
+                    <el-icon style="margin-right: 8px"><ElIconDocumentAdd  /></el-icon>
+                    生成Pine脚本
+                  </el-button>
+
+                  <el-button
+                    type="success"
+                    size="large"
+                    :loading="isCopyingScript"
+                    @click="handleCopyPineScript"
+                  >
+                    <el-icon style="margin-right: 8px"><ElIconDocumentCopy  /></el-icon>
+                    复制Pine脚本
+                  </el-button>
+                </div>
+
+                <el-divider />
+
                 <div class="stats">
                   <div class="stat-item">
                     <span class="stat-label">总交易次数</span>
@@ -373,6 +397,7 @@
             <el-option label="ETH/USDT" value="ETH/USDT" />
             <el-option label="BNB/USDT" value="BNB/USDT" />
             <el-option label="SOL/USDT" value="SOL/USDT" />
+            <el-option label="XAU/USDT" value="XAU/USDT" />
             <el-option label="HYPE/USDT" value="HYPE/USDT" />
             <el-option label="DOGE/USDT" value="DOGE/USDT" />
           </el-select>
@@ -644,6 +669,10 @@ let stopPolling: (() => void) | null = null
 const currentPage = ref(1)
 const pageSize = ref(20)
 
+// 脚本相关状态
+const isGeneratingScript = ref(false)
+const isCopyingScript = ref(false)
+
 // 强制平仓时间字符串，用于时间选择器
 const forceLiquidateTime = computed({
   get: () => {
@@ -789,6 +818,87 @@ function formatCooldownTime(seconds: number): string {
   }
 }
 
+// 生成Pine脚本
+async function handleGenerateScript() {
+  isGeneratingScript.value = true
+  try {
+    const result = await botStore.generatePineScript()
+    
+    if (result.success) {
+      ElMessage.success(result.message || 'Pine脚本生成成功')
+      console.log('脚本生成成功:', result.data)
+    } else {
+      ElMessage.error(result.message || '生成失败')
+      if (result.error) {
+        console.error('脚本生成失败:', result.error)
+      }
+    }
+  } catch (error: any) {
+    ElMessage.error('生成脚本时发生错误: ' + (error.message || String(error)))
+    console.error('生成脚本错误:', error)
+  } finally {
+    isGeneratingScript.value = false
+  }
+}
+
+// 复制Pine脚本到剪贴板
+async function handleCopyPineScript() {
+  isCopyingScript.value = true
+  try {
+    const result = await botStore.getPineScriptContent()
+    
+    if (result.success && result.content) {
+      // 复制到剪贴板 - 使用兼容性更好的方法
+      try {
+        // 方法1: 使用现代Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(result.content)
+        } else {
+          // 方法2: 使用传统的execCommand方法作为备选
+          const textArea = document.createElement('textarea')
+          textArea.value = result.content
+          textArea.style.position = 'fixed'
+          textArea.style.left = '-999999px'
+          textArea.style.top = '-999999px'
+          document.body.appendChild(textArea)
+          textArea.focus()
+          textArea.select()
+          const successful = document.execCommand('copy')
+          document.body.removeChild(textArea)
+          
+          if (!successful) {
+            // 方法3: 如果前两种方法都失败，显示内容让用户手动复制
+            ElMessage.warning('自动复制失败，请手动复制以下内容')
+            console.log('Pine脚本内容:', result.content)
+            return
+          }
+        }
+        
+        ElMessage.success('Pine脚本已复制到剪贴板')
+        console.log('脚本复制成功，文件大小:', result.fileInfo?.size, '字节')
+      } catch (copyError: any) {
+        // 如果复制失败，显示内容让用户手动复制
+        ElMessage.warning('自动复制失败，请手动复制以下内容')
+        console.log('Pine脚本内容:', result.content)
+        console.error('复制错误:', copyError)
+      }
+    } else {
+      ElMessage.error(result.message || '获取脚本失败')
+      if (result.suggestion) {
+        ElMessage.info(result.suggestion)
+      }
+      if (result.error) {
+        console.error('获取脚本失败:', result.error)
+      }
+    }
+  } catch (error: any) {
+    ElMessage.error('复制脚本时发生错误: ' + (error.message || String(error)))
+    console.error('复制脚本错误:', error)
+  } finally {
+    isCopyingScript.value = false
+  }
+}
+
   // 页面加载时获取状态
   onMounted(async () => {
     await botStore.fetchStatus()
@@ -860,6 +970,10 @@ onUnmounted(() => {
 }
 
 .control-panel {
+  padding: 10px 0;
+}
+
+.script-actions {
   padding: 10px 0;
 }
 

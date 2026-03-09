@@ -13,6 +13,23 @@ import type {
   PaginationInfo
 } from '../../types'
 
+// 脚本API响应类型
+interface ScriptResponse {
+  success: boolean
+  message?: string
+  error?: string
+  stdout?: string
+  outputPath?: string
+  suggestion?: string
+  content?: string
+  fileInfo?: {
+    path: string
+    size: number
+    modified: Date
+    created: Date
+  }
+}
+
 export const useBotStore = defineStore('bot', {
   state: () => ({
     state: null as BotState | null,
@@ -174,6 +191,79 @@ export const useBotStore = defineStore('bot', {
       }, pollInterval)
 
       return () => clearInterval(timer)
+    },
+
+    // 生成Pine脚本
+    async generatePineScript() {
+      try {
+        this.isLoading = true
+        this.error = null
+
+        const response = await $fetch<ScriptResponse>('/api/scripts/generate-tv', {
+          method: 'POST'
+        })
+        
+        if (response.success) {
+          return {
+            success: true,
+            message: response.message || 'Pine脚本生成成功',
+            data: response
+          }
+        } else {
+          this.error = response.message || '生成失败'
+          return {
+            success: false,
+            message: response.message || '生成失败',
+            error: response.error
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || '生成脚本时发生错误'
+        return {
+          success: false,
+          message: '生成脚本时发生错误',
+          error: error.message || String(error)
+        }
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    // 获取Pine脚本内容
+    async getPineScriptContent() {
+      try {
+        this.isLoading = true
+        this.error = null
+
+        const response = await $fetch<ScriptResponse>('/api/scripts/get-pine')
+        
+        if (response.success) {
+          return {
+            success: true,
+            message: response.message || '获取Pine脚本成功',
+            content: response.content,
+            fileInfo: response.fileInfo,
+            data: response
+          }
+        } else {
+          this.error = response.message || '获取脚本失败'
+          return {
+            success: false,
+            message: response.message || '获取脚本失败',
+            error: response.error,
+            suggestion: response.suggestion
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || '获取脚本时发生错误'
+        return {
+          success: false,
+          message: '获取脚本时发生错误',
+          error: error.message || String(error)
+        }
+      } finally {
+        this.isLoading = false
+      }
     },
   },
 })

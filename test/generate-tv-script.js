@@ -106,6 +106,7 @@ for i = 0 to array.size(openTimes) - 1
             entryPrice,
             sym + "\\n" +
             dir + " 开仓" + "\\n" +
+            "价格: " + str.tostring(entryPrice) + "\\n" +
             "Lev: " + str.tostring(lev) + "\\n" +
             "RSI: " + str.tostring(entryRSI, "#.##") + "\\n" +
             "ADX: " + str.tostring(entryADX, "#.##") + "\\n" +
@@ -126,6 +127,7 @@ for i = 0 to array.size(openTimes) - 1
             bar_index,
             exitPrice,
             sym + "\\n平仓\\n" +
+            "价格: " + str.tostring(exitPrice) + "\\n" +
             "PnL: " + str.tostring(p) + "%\\n" +
             exitReason,
             style = label.style_label_left,

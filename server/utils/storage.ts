@@ -208,7 +208,7 @@ export async function getTodayTradeHistory(): Promise<TradeHistory[]> {
  */
 export function getDefaultConfig(): BotConfig {
   return {
-    symbols: ['BTC/USDT','ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'HYPE/USDT', 'DOGE/USDT'],
+    symbols: ['BTC/USDT','ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XAU/USDT', 'HYPE/USDT', 'DOGE/USDT'],
     leverage: 10,                     //杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
     maxRiskPercentage: 20,           //单笔最大风险比例
     stopLossATRMultiplier: 2,      //止损ATR倍数
