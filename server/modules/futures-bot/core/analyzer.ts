@@ -68,29 +68,32 @@ export class MarketAnalyzer {
         return null
       }
 
-      // 获取15分钟K线数据（用于AI分析、价格变化计算和入场条件检查）
-      const candles15m = await this.binance.fetchOHLCV(symbol, '15m', 20)
+      // 根据策略模式选择K线周期
+      const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
       
-      // 检查candles15m是否为空
-      if (candles15m.length === 0) {
+      // 获取主K线数据（用于AI分析、价格变化计算和入场条件检查）
+      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, 20)
+      
+      // 检查mainCandles是否为空
+      if (mainCandles.length === 0) {
         this.logAnalysisResult(symbol, false, 'K线数据为空')
         return null
       }
       
-      const firstCandle = candles15m[0]!
-      const lastCandle = candles15m[candles15m.length - 1]!
+      const firstCandle = mainCandles[0]!
+      const lastCandle = mainCandles[mainCandles.length - 1]!
       const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
 
       // 获取成交量历史数据（用于成交量确认）
-      const volumeHistory = candles15m.map(candle => candle.volume)
+      const volumeHistory = mainCandles.map(candle => candle.volume)
       
       // 检查入场条件
       let entryResult: any = null
 
       if (trendResult.direction === 'LONG') {
-        entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, candles15m)
+        entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
       } else if (trendResult.direction === 'SHORT') {
-        entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory, candles15m)
+        entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
       }
 
       const entryOk = entryResult?.passed || false

@@ -294,6 +294,7 @@ export class BinanceService {
           quantity: Number(Math.abs(Number(Number(p.contracts || p.info?.positionAmt || 0).toFixed(5))).toFixed(5)),
           leverage: Number(Number(p.leverage || 1).toFixed(5)),
           stopLoss: 0,
+          initialStopLoss: 0,
           takeProfit1: 0,
           takeProfit2: 0,
           openTime: Date.now(),
