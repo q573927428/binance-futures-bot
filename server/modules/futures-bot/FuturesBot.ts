@@ -273,7 +273,8 @@ export class FuturesBot {
     
     try {
       // 使用指标缓存服务获取出场指标
-      const indicatorsCache = new IndicatorsCache(this.binance)
+      const config = this.stateManager.getConfig()
+      const indicatorsCache = new IndicatorsCache(this.binance, config)
       const exitIndicators = await indicatorsCache.getIndicators(position.symbol)
       
       // 记录出场指标到策略分析器

@@ -48,7 +48,7 @@ export class MarketAnalyzer {
       const price = await this.binance.fetchPrice(symbol)
 
       // 计算技术指标
-      const indicators = await calculateIndicators(this.binance, symbol)
+      const indicators = await calculateIndicators(this.binance, symbol, this.config)
 
       // 保存ADX15m用于后续比较（按symbol记录）
       // 更新当前symbol的ADX值

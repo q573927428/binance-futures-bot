@@ -1,4 +1,5 @@
 {
+  "strategyMode": "short_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",

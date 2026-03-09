@@ -94,7 +94,7 @@ export class PositionMonitor {
       
       let indicators = null
       if (now - lastIndicatorTime > 300000 || priceChangedSignificantly) { // 5分钟或价格变化大
-        indicators = await calculateIndicators(this.binance, position.symbol)
+        indicators = await calculateIndicators(this.binance, position.symbol, this.config)
         this.state.lastIndicatorUpdate = now
         this.state.lastPrice = price
         

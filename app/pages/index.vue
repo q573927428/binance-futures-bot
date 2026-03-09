@@ -552,6 +552,15 @@
           <el-input-number v-model="editConfig.riskConfig.dailyTradeLimit" :min="1" :max="50" />
         </el-form-item>
 
+        <el-divider>策略模式配置</el-divider>
+
+        <el-form-item label="策略模式">
+          <el-radio-group v-model="editConfig.strategyMode">
+            <el-radio label="short_term">短期</el-radio>
+            <el-radio label="medium_term">中长期</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
         <el-divider>技术指标配置</el-divider>
 
         <el-form-item label="15分钟ADX阈值">

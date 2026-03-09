@@ -7,63 +7,86 @@ import { BinanceService } from './binance'
  */
 export async function calculateIndicators(
   binance: BinanceService,
-  symbol: string
+  symbol: string,
+  config?: BotConfig
 ): Promise<TechnicalIndicators> {
   try {
+    // 获取策略模式，默认为短期
+    const strategyMode = config?.strategyMode || 'short_term'
+    
+    // 根据策略模式选择K线周期
+    const mainTF = strategyMode === 'medium_term' ? '1h' : '15m'
+    const secondaryTF = strategyMode === 'medium_term' ? '4h' : '1h'
+    const tertiaryTF = strategyMode === 'medium_term' ? '1d' : '4h'
+    
+    // 根据策略模式选择EMA周期
+    const emaFast = strategyMode === 'medium_term' ? 50 : 20
+    const emaMedium = strategyMode === 'medium_term' ? 100 : 30
+    const emaSlow = strategyMode === 'medium_term' ? 200 : 60
+
     // 获取不同周期的K线数据
-    const candles15m = await binance.fetchOHLCV(symbol, '15m', 96)
-    const candles1h = await binance.fetchOHLCV(symbol, '1h', 96)
-    const candles4h = await binance.fetchOHLCV(symbol, '4h', 96)
+    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, 96)
+    const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, 96)
+    const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, 96)
 
-    const closes15m = candles15m.map(c => c.close)
-    const highs15m = candles15m.map(c => c.high)
-    const lows15m = candles15m.map(c => c.low)
+    const closesMain = candlesMain.map(c => c.close)
+    const highsMain = candlesMain.map(c => c.high)
+    const lowsMain = candlesMain.map(c => c.low)
 
-    // 计算EMA（基于15分钟）
-    const ema20Values = EMA.calculate({ period: 20, values: closes15m })
-    const ema30Values = EMA.calculate({ period: 30, values: closes15m })
-    const ema60Values = EMA.calculate({ period: 60, values: closes15m })
+    // 计算EMA（基于主周期）
+    const emaFastValues = EMA.calculate({ period: emaFast, values: closesMain })
+    const emaMediumValues = EMA.calculate({ period: emaMedium, values: closesMain })
+    const emaSlowValues = EMA.calculate({ period: emaSlow, values: closesMain })
 
-    // 计算RSI（基于15分钟）
-    const rsiValues = RSI.calculate({ period: 14, values: closes15m })
+    // 计算RSI（基于主周期）
+    const rsiValues = RSI.calculate({ period: 14, values: closesMain })
 
-    // 计算ATR（基于15分钟）
-    const atrInput = candles15m.map(c => ({
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }))
-    const atrValues = ATR.calculate({ period: 14, high: highs15m, low: lows15m, close: closes15m })
+    // 计算ATR（基于主周期）
+    const atrValues = ATR.calculate({ period: 14, high: highsMain, low: lowsMain, close: closesMain })
 
     // 计算ADX（多周期）
-    const adx15mValues = ADX.calculate({
-      high: candles15m.map(c => c.high),
-      low: candles15m.map(c => c.low),
-      close: candles15m.map(c => c.close),
+    const adxMainValues = ADX.calculate({
+      high: candlesMain.map(c => c.high),
+      low: candlesMain.map(c => c.low),
+      close: candlesMain.map(c => c.close),
       period: 14,
     })
 
-    const adx1hValues = ADX.calculate({
-      high: candles1h.map(c => c.high),
-      low: candles1h.map(c => c.low),
-      close: candles1h.map(c => c.close),
+    const adxSecondaryValues = ADX.calculate({
+      high: candlesSecondary.map(c => c.high),
+      low: candlesSecondary.map(c => c.low),
+      close: candlesSecondary.map(c => c.close),
       period: 14,
     })
 
-    const adx4hValues = ADX.calculate({
-      high: candles4h.map(c => c.high),
-      low: candles4h.map(c => c.low),
-      close: candles4h.map(c => c.close),
+    const adxTertiaryValues = ADX.calculate({
+      high: candlesTertiary.map(c => c.high),
+      low: candlesTertiary.map(c => c.low),
+      close: candlesTertiary.map(c => c.close),
       period: 14,
     })
+
+    // 根据策略模式映射ADX字段
+    let adx15m, adx1h, adx4h
+    if (strategyMode === 'medium_term') {
+      // 中长期策略：1h为主周期，4h为次要周期，1d为第三周期
+      adx15m = adxMainValues[adxMainValues.length - 1]?.adx || 0      // 1h
+      adx1h = adxSecondaryValues[adxSecondaryValues.length - 1]?.adx || 0  // 4h
+      adx4h = adxTertiaryValues[adxTertiaryValues.length - 1]?.adx || 0    // 1d
+    } else {
+      // 短期策略：15m为主周期，1h为次要周期，4h为第三周期
+      adx15m = adxMainValues[adxMainValues.length - 1]?.adx || 0      // 15m
+      adx1h = adxSecondaryValues[adxSecondaryValues.length - 1]?.adx || 0  // 1h
+      adx4h = adxTertiaryValues[adxTertiaryValues.length - 1]?.adx || 0    // 4h
+    }
 
     return {
-      ema20: ema20Values[ema20Values.length - 1] || 0,
-      ema30: ema30Values[ema30Values.length - 1] || 0,
-      ema60: ema60Values[ema60Values.length - 1] || 0,
-      adx15m: adx15mValues[adx15mValues.length - 1]?.adx || 0,
-      adx1h: adx1hValues[adx1hValues.length - 1]?.adx || 0,
-      adx4h: adx4hValues[adx4hValues.length - 1]?.adx || 0,
+      ema20: emaFastValues[emaFastValues.length - 1] || 0,
+      ema30: emaMediumValues[emaMediumValues.length - 1] || 0,
+      ema60: emaSlowValues[emaSlowValues.length - 1] || 0,
+      adx15m,
+      adx1h,
+      adx4h,
       rsi: rsiValues[rsiValues.length - 1] || 0,
       atr: atrValues[atrValues.length - 1] || 0,
     }

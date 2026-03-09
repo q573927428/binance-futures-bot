@@ -1,4 +1,4 @@
-import type { TechnicalIndicators } from '../../../../types'
+import type { TechnicalIndicators, BotConfig } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculateIndicators } from '../../../utils/indicators'
 
@@ -7,11 +7,20 @@ import { calculateIndicators } from '../../../utils/indicators'
  */
 export class IndicatorsCache {
   private binance: BinanceService
+  private config?: BotConfig
   private cache: Map<string, { indicators: TechnicalIndicators; timestamp: number }> = new Map()
   private readonly CACHE_TTL = 60000 // 1分钟缓存过期时间
 
-  constructor(binance: BinanceService) {
+  constructor(binance: BinanceService, config?: BotConfig) {
     this.binance = binance
+    this.config = config
+  }
+
+  /**
+   * 更新配置
+   */
+  updateConfig(config: BotConfig): void {
+    this.config = config
   }
 
   /**
@@ -28,7 +37,7 @@ export class IndicatorsCache {
 
     // 否则重新计算并更新缓存
     try {
-      const indicators = await calculateIndicators(this.binance, symbol)
+      const indicators = await calculateIndicators(this.binance, symbol, this.config)
       this.cache.set(symbol, { indicators, timestamp: now })
       return indicators
     } catch (error: any) {

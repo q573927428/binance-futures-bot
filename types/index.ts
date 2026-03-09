@@ -4,6 +4,9 @@ export type Direction = 'LONG' | 'SHORT' | 'IDLE'
 // 风险等级
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH'
 
+// 策略模式
+export type StrategyMode = 'short_term' | 'medium_term'
+
 // 仓位状态
 export enum PositionStatus {
   IDLE = 'IDLE',           // 空仓
@@ -114,6 +117,9 @@ export interface BotConfig {
   
   // 交易冷却时间间隔（秒）- 两次交易之间的最小间隔时间
   tradeCooldownInterval: number
+  
+  // 策略模式
+  strategyMode: StrategyMode
   
   // AI分析配置
   aiConfig: AIConfig
