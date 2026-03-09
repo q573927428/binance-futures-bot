@@ -62,7 +62,7 @@ export class MarketAnalyzer {
       }
 
       // 判断趋势方向
-      const trendResult = getTrendDirection(price, indicators)
+      const trendResult = getTrendDirection(price, indicators, this.config)
       if (trendResult.direction === 'IDLE') {
         this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`)
         return null
@@ -114,7 +114,8 @@ export class MarketAnalyzer {
           indicators.rsi,
           lastCandle.volume,
           priceChange24h,
-          indicators
+          indicators,
+          this.config
         )
 
         // 检查AI分析条件

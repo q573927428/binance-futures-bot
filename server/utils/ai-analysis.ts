@@ -1,4 +1,4 @@
-import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators } from '../../types'
+import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig } from '../../types'
 
 interface AIAnalysisCache {
   data: AIAnalysis
@@ -170,8 +170,22 @@ function buildAIPrompt(
   rsi: number,
   volume: number,
   priceChange24h: number,
-  indicators?: TechnicalIndicators
+  indicators?: TechnicalIndicators,
+  config?: BotConfig
 ): string {
+  // 获取策略模式，默认为短期
+  const strategyMode = config?.strategyMode || 'short_term'
+  
+  // 根据策略模式选择指标名称
+  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
+  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
+  const emaSlowName = strategyMode === 'medium_term' ? 'EMA200' : 'EMA60'
+  
+  // 根据策略模式选择ADX周期名称
+  const adxMainName = strategyMode === 'medium_term' ? '1小时ADX' : '15分钟ADX'
+  const adxSecondaryName = strategyMode === 'medium_term' ? '4小时ADX' : '1小时ADX'
+  const adxTertiaryName = strategyMode === 'medium_term' ? '日线ADX' : '4小时ADX'
+  
   // 基础市场数据
   let prompt = `作为专业的加密货币期货交易分析师，请对${symbol}进行全面的技术分析并提供交易建议。
 
@@ -182,9 +196,9 @@ function buildAIPrompt(
 - RSI(14): ${rsi.toFixed(2)}
 
 ## 趋势分析：
-- EMA20: ${ema20.toFixed(4)} ${price > ema20 ? '✓ 价格在EMA20之上' : '✗ 价格在EMA20之下'}
-- EMA60: ${ema60.toFixed(4)} ${price > ema60 ? '✓ 价格在EMA60之上' : '✗ 价格在EMA60之下'}
-- EMA排列: ${ema20 > ema60 ? '多头排列 (EMA20 > EMA60)' : '空头排列 (EMA20 < EMA60)'}`
+- ${emaFastName}: ${ema20.toFixed(4)} ${price > ema20 ? '✓ 价格在' + emaFastName + '之上' : '✗ 价格在' + emaFastName + '之下'}
+- ${emaSlowName}: ${ema60.toFixed(4)} ${price > ema60 ? '✓ 价格在' + emaSlowName + '之上' : '✗ 价格在' + emaSlowName + '之下'}
+- EMA排列: ${ema20 > ema60 ? '多头排列 (' + emaFastName + ' > ' + emaSlowName + ')' : '空头排列 (' + emaFastName + ' < ' + emaSlowName + ')'}`
 
   // 如果提供了完整的技术指标，添加更多分析维度
   if (indicators) {
@@ -195,19 +209,19 @@ function buildAIPrompt(
 
 ## 多时间框架技术指标：
 ### ADX趋势强度（数值越高趋势越强）：
-- 15分钟ADX: ${indicators.adx15m.toFixed(2)} ${indicators.adx15m >= 25 ? '✓ 强趋势' : indicators.adx15m >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
-- 1小时ADX: ${indicators.adx1h.toFixed(2)} ${indicators.adx1h >= 25 ? '✓ 强趋势' : indicators.adx1h >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
-- 4小时ADX: ${indicators.adx4h.toFixed(2)} ${indicators.adx4h >= 25 ? '✓ 强趋势' : indicators.adx4h >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
+- ${adxMainName}: ${indicators.adx15m.toFixed(2)} ${indicators.adx15m >= 25 ? '✓ 强趋势' : indicators.adx15m >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
+- ${adxSecondaryName}: ${indicators.adx1h.toFixed(2)} ${indicators.adx1h >= 25 ? '✓ 强趋势' : indicators.adx1h >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
+- ${adxTertiaryName}: ${indicators.adx4h.toFixed(2)} ${indicators.adx4h >= 25 ? '✓ 强趋势' : indicators.adx4h >= 20 ? '○ 中等趋势' : '✗ 弱趋势'}
 - 平均ADX: ${adxScore.toFixed(2)} ${adxScore >= 30 ? '✓ 强趋势市场' : adxScore >= 20 ? '○ 中等趋势市场' : '✗ 震荡市场'}
 
 ### 其他关键指标：
-- EMA30: ${indicators.ema30.toFixed(4)} ${Math.abs(price - indicators.ema30) / indicators.ema30 <= 0.005 ? '⚠️ 价格接近EMA30（潜在支撑/阻力）' : ''}
+- ${emaMediumName}: ${indicators.ema30.toFixed(4)} ${Math.abs(price - indicators.ema30) / indicators.ema30 <= 0.005 ? '⚠️ 价格接近' + emaMediumName + '（潜在支撑/阻力）' : ''}
 - ATR: ${indicators.atr.toFixed(4)} (${(normalizedATR * 100).toFixed(2)}%) ${normalizedATR <= 0.01 ? '✓ 低波动性' : normalizedATR >= 0.03 ? '⚠️ 高波动性' : '○ 正常波动性'}
 
 ## 多时间框架一致性分析：
 - ADX一致性：${indicators.adx15m >= 20 && indicators.adx1h >= 22 && indicators.adx4h >= 25 ? '✓ 多周期趋势一致' : '✗ 多周期趋势不一致'}
 - RSI状态：${rsi >= 70 ? '⚠️ 超买区域' : rsi <= 30 ? '⚠️ 超卖区域' : rsi >= 60 ? '接近超买' : rsi <= 40 ? '接近超卖' : '✓ 中性区域'}
-- 价格与EMA关系：${(price > ema20 && ema20 > ema60) ? '✓ 多头趋势完整' : (price < ema20 && ema20 < ema60) ? '✓ 空头趋势完整' : '⚠️ 趋势不完整'}`
+- 价格与EMA关系：${(price > ema20 && ema20 > ema60) ? '✓ 多头趋势完整 (' + emaFastName + ' > ' + emaSlowName + ')' : (price < ema20 && ema20 < ema60) ? '✓ 空头趋势完整 (' + emaFastName + ' < ' + emaSlowName + ')' : '⚠️ 趋势不完整'}`
   }
 
   prompt += `
@@ -260,9 +274,10 @@ export async function analyzeMarketWithAI(
   rsi: number,
   volume: number,
   priceChange24h: number,
-  indicators?: TechnicalIndicators
+  indicators?: TechnicalIndicators,
+  config?: BotConfig
 ): Promise<AIAnalysis> {
-  const config = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig()
   
   // 检查缓存
   const cacheKey = `${symbol}_${Math.floor(Date.now() / (10 * 60 * 1000))}`
@@ -274,17 +289,17 @@ export async function analyzeMarketWithAI(
 
   try {
     // 构建优化的提示词
-    const prompt = buildAIPrompt(symbol, price, ema20, ema60, rsi, volume, priceChange24h, indicators)
+    const prompt = buildAIPrompt(symbol, price, ema20, ema60, rsi, volume, priceChange24h, indicators, config)
     
     // 构建系统提示词
     const systemPrompt = buildSystemPrompt()
     
     // 调用DeepSeek API
-    const response = await fetch(`${config.deepseekApiUrl}/chat/completions`, {
+    const response = await fetch(`${runtimeConfig.deepseekApiUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.deepseekApiKey}`,
+        'Authorization': `Bearer ${runtimeConfig.deepseekApiKey}`,
       },
       body: JSON.stringify({
         model: 'deepseek-chat',

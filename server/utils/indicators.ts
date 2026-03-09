@@ -184,9 +184,17 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
  */
 export function getTrendDirection(
   price: number,
-  indicators: TechnicalIndicators
+  indicators: TechnicalIndicators,
+  config?: BotConfig
 ) {
   const { ema20, ema60 } = indicators
+
+  // 获取策略模式，默认为短期
+  const strategyMode = config?.strategyMode || 'short_term'
+  
+  // 根据策略模式选择指标名称
+  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
+  const emaSlowName = strategyMode === 'medium_term' ? 'EMA200' : 'EMA60'
 
   const ema20AboveEma60 = ema20 > ema60
   const priceAboveEma20 = price > ema20
@@ -203,19 +211,19 @@ export function getTrendDirection(
 
   if (isLong) {
     direction = 'LONG'
-    reason = `EMA20(${ema20.toFixed(2)}) > EMA60(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) > EMA20`
+    reason = `${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) > ${emaFastName}`
   } else if (isShort) {
     direction = 'SHORT'
-    reason = `EMA20(${ema20.toFixed(2)}) < EMA60(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) < EMA20`
+    reason = `${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) < ${emaFastName}`
   } else {
     reason = '趋势条件不满足'
     
     if (ema20AboveEma60 && !priceAboveEma20) {
-      reason = `EMA20(${ema20.toFixed(2)}) > EMA60(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≤ EMA20`
+      reason = `${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≤ ${emaFastName}`
     } else if (!ema20AboveEma60 && !priceBelowEma20) {
-      reason = `EMA20(${ema20.toFixed(2)}) < EMA60(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≥ EMA20`
+      reason = `${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≥ ${emaFastName}`
     } else {
-      reason = `EMA20(${ema20.toFixed(2)}) ≈ EMA60(${ema60.toFixed(2)}) 或 价格(${price.toFixed(2)}) ≈ EMA20`
+      reason = `${emaFastName}(${ema20.toFixed(2)}) ≈ ${emaSlowName}(${ema60.toFixed(2)}) 或 价格(${price.toFixed(2)}) ≈ ${emaFastName}`
     }
   }
 
