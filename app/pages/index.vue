@@ -428,7 +428,7 @@
         </el-form-item>
 
         <el-form-item label="持仓超时时间(小时)">
-          <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="24" />
+          <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="720" />
         </el-form-item>
 
         <el-form-item label="交易冷却时间间隔(秒)">
