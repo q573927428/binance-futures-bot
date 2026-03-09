@@ -141,6 +141,7 @@ export interface RiskConfig {
   
   // 强制平仓时间
   forceLiquidateTime: {
+    enabled: boolean    // 是否启用强制平仓
     hour: number    // 小时（0-23）
     minute: number  // 分钟（0-59）
   }

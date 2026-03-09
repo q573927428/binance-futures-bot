@@ -31,6 +31,7 @@
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {
+      "enabled": true,
       "hour": 23,
       "minute": 55
     },

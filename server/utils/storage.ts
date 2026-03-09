@@ -231,6 +231,7 @@ export function getDefaultConfig(): BotConfig {
         consecutiveLossesThreshold: 3, // 连续止损阈值（次）
       },
       forceLiquidateTime: {
+        enabled: true,    // 是否启用强制平仓
         hour: 23,    // 小时（0-23）
         minute: 30,  // 分钟（0-59）
       },

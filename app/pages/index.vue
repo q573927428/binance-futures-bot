@@ -511,6 +511,10 @@
           <el-input-number v-model="editConfig.riskConfig.circuitBreaker.consecutiveLossesThreshold" :min="1" :max="10" />
         </el-form-item>
 
+        <el-form-item label="启用强制平仓">
+          <el-switch v-model="editConfig.riskConfig.forceLiquidateTime.enabled" />
+        </el-form-item>
+
         <el-form-item label="强制平仓时间">
           <el-time-picker
             v-model="forceLiquidateTime"
@@ -550,16 +554,16 @@
 
         <el-divider>技术指标配置</el-divider>
 
+        <el-form-item label="15分钟ADX阈值">
+          <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
+        </el-form-item>
+
         <el-form-item label="1小时ADX阈值">
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx1hThreshold" :min="10" :max="50" />
         </el-form-item>
 
         <el-form-item label="4小时ADX阈值">
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx4hThreshold" :min="10" :max="50" />
-        </el-form-item>
-
-        <el-form-item label="15分钟ADX阈值">
-          <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
         </el-form-item>
 
         <el-form-item label="ADX15m > 1h检查">
@@ -687,7 +691,9 @@ const forceLiquidateTime = computed({
     const hour = parseInt(parts[0]!, 10)
     const minute = parseInt(parts[1]!, 10)
     if (isNaN(hour) || isNaN(minute)) return
-    editConfig.value.riskConfig.forceLiquidateTime = { hour, minute }
+    // 保留现有的 enabled 属性
+    const enabled = editConfig.value.riskConfig.forceLiquidateTime.enabled
+    editConfig.value.riskConfig.forceLiquidateTime = { enabled, hour, minute }
   }
 })
 

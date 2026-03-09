@@ -55,6 +55,11 @@ export function shouldResetDailyState(lastResetDate: string): boolean {
  * 检查是否到了强制平仓时间
  */
 export function shouldForceLiquidate(riskConfig: BotConfig['riskConfig']): boolean {
+  // 首先检查开关是否启用
+  if (!riskConfig.forceLiquidateTime.enabled) {
+    return false
+  }
+  
   const now = dayjs()
   const hour = now.hour()
   const minute = now.minute()
