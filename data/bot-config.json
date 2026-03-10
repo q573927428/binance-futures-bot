@@ -1,5 +1,5 @@
 {
-  "strategyMode": "short_term",
+  "strategyMode": "medium_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -10,11 +10,11 @@
     "DOGE/USDT"
   ],
   "leverage": 10,
-  "maxRiskPercentage": 10,
-  "stopLossATRMultiplier": 2,
+  "maxRiskPercentage": 20,
+  "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 12,
-  "scanInterval": 180,
+  "positionTimeoutHours": 72,
+  "scanInterval": 300,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 3600,
   "aiConfig": {
@@ -32,27 +32,27 @@
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {
-      "enabled": true,
+      "enabled": false,
       "hour": 23,
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 3,
-      "tp2MinProfitRatio": 0.5,
+      "tp1RiskRewardRatio": 3,
+      "tp2RiskRewardRatio": 5,
+      "tp2MinProfitRatio": 1,
       "rsiExtreme": {
-        "long": 80,
-        "short": 20
+        "long": 75,
+        "short": 25
       },
-      "adxDecreaseThreshold": 5
+      "adxDecreaseThreshold": 10
     },
     "dailyTradeLimit": 8
   },
   "dynamicLeverageConfig": {
-    "enabled": true,
+    "enabled": false,
     "minLeverage": 2,
     "maxLeverage": 20,
-    "baseLeverage": 7,
+    "baseLeverage": 8,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,
@@ -61,34 +61,34 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.8,
+    "activationRatio": 0.6,
     "trailingDistance": 1,
     "updateIntervalSeconds": 60
   },
   "indicatorsConfig": {
     "adxTrend": {
       "adx1hThreshold": 20,
-      "adx4hThreshold": 16,
-      "adx15mThreshold": 30,
+      "adx4hThreshold": 18,
+      "adx15mThreshold": 25,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
       "emaDeviationThreshold": 0.02,
-      "rsiMin": 30,
-      "rsiMax": 70,
-      "candleShadowThreshold": 0.005,
-      "volumeConfirmation": true,
-      "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 0.8
-    },
-    "shortEntry": {
-      "emaDeviationThreshold": 0.02,
-      "rsiMin": 30,
-      "rsiMax": 70,
+      "rsiMin": 35,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1
+    },
+    "shortEntry": {
+      "emaDeviationThreshold": 0.02,
+      "rsiMin": 35,
+      "rsiMax": 65,
+      "candleShadowThreshold": 0.005,
+      "volumeConfirmation": true,
+      "volumeEMAPeriod": 12,
+      "volumeEMAMultiplier": 1.2
     },
     "priceBreakout": {
       "enabled": true,

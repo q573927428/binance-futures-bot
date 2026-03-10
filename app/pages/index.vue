@@ -563,19 +563,19 @@
 
         <el-divider>技术指标配置</el-divider>
 
-        <el-form-item label="15分钟ADX阈值">
+        <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1小时' : '15分钟'}ADX阈值`">
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
         </el-form-item>
 
-        <el-form-item label="1小时ADX阈值">
+        <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '4小时' : '1小时'}ADX阈值`">
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx1hThreshold" :min="10" :max="50" />
         </el-form-item>
 
-        <el-form-item label="4小时ADX阈值">
+        <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1天' : '4小时'}ADX阈值`">
           <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx4hThreshold" :min="10" :max="50" />
         </el-form-item>
 
-        <el-form-item label="ADX15m > 1h检查">
+        <el-form-item :label="`ADX${editConfig.strategyMode === 'medium_term' ? '1h' : '15m'} > ${editConfig.strategyMode === 'medium_term' ? '4h' : '1h'}检查`">
           <el-switch v-model="editConfig.indicatorsConfig.adxTrend.enableAdx15mVs1hCheck" />
         </el-form-item>
 

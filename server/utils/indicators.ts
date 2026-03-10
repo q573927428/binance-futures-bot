@@ -109,6 +109,21 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
   const adx15mThreshold = config?.indicatorsConfig?.adxTrend?.adx15mThreshold || 30
   const enableAdx15mVs1hCheck = config?.indicatorsConfig?.adxTrend?.enableAdx15mVs1hCheck ?? true
   
+  // 获取策略模式，默认为短期
+  const strategyMode = config?.strategyMode || 'short_term'
+  
+  // 根据策略模式确定周期标签
+  let period1Label = '15m'
+  let period2Label = '1h'
+  let period3Label = '4h'
+  
+  if (strategyMode === 'medium_term') {
+    // 中长期策略：1h为主周期，4h为次要周期，1d为第三周期
+    period1Label = '1h'
+    period2Label = '4h'
+    period3Label = '1d'
+  }
+  
   // 三个绝对阈值条件
   const pass15m = adx15m >= adx15mThreshold
   const pass1h = adx1h >= adx1hThreshold
@@ -125,12 +140,12 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
   if (passed) {
     // 根据具体满足的条件显示不同的原因
     const conditions: string[] = []
-    conditions.push(`15m ADX(${adx15m.toFixed(2)}) >= ${adx15mThreshold}`)
-    conditions.push(`1h ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}`)
-    conditions.push(`4h ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}`)
+    conditions.push(`${period1Label} ADX(${adx15m.toFixed(2)}) >= ${adx15mThreshold}`)
+    conditions.push(`${period2Label} ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}`)
+    conditions.push(`${period3Label} ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}`)
     
     if (enableAdx15mVs1hCheck) {
-      conditions.push(`15m ADX(${adx15m.toFixed(2)}) > 1h ADX(${adx1h.toFixed(2)})`)
+      conditions.push(`${period1Label} ADX(${adx15m.toFixed(2)}) > ${period2Label} ADX(${adx1h.toFixed(2)})`)
     }
     
     reason = conditions.join(' 且 ') + '（趋势全面确认）'
@@ -138,16 +153,16 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
     // 根据具体不满足的条件显示不同的原因
     const reasons: string[] = []
     if (!pass15m) {
-      reasons.push(`15m ADX(${adx15m.toFixed(2)}) < ${adx15mThreshold}`)
+      reasons.push(`${period1Label} ADX(${adx15m.toFixed(2)}) < ${adx15mThreshold}`)
     }
     if (!pass1h) {
-      reasons.push(`1h ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold}`)
+      reasons.push(`${period2Label} ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold}`)
     }
     if (!pass4h) {
-      reasons.push(`4h ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
+      reasons.push(`${period3Label} ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
     }
     if (enableAdx15mVs1hCheck && !pass15mVs1h) {
-      reasons.push(`15m ADX(${adx15m.toFixed(2)}) ≤ 1h ADX(${adx1h.toFixed(2)})`)
+      reasons.push(`${period1Label} ADX(${adx15m.toFixed(2)}) ≤ ${period2Label} ADX(${adx1h.toFixed(2)})`)
     }
     reason = reasons.join('，')
   }
@@ -159,6 +174,12 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
       adx15m,
       adx1h,
       adx4h,
+      periodLabels: {
+        period1: period1Label,
+        period2: period2Label,
+        period3: period3Label,
+        strategyMode
+      },
       required: {
         adx15m: adx15mThreshold,
         adx1h: adx1hThreshold,

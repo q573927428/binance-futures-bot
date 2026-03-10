@@ -4,18 +4,21 @@
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1773039852966,
-    "dailyLoss": 1.1344332971734952,
-    "consecutiveLosses": 2
+    "timestamp": 1773072157590,
+    "dailyLoss": 0,
+    "consecutiveLosses": 0
   },
-  "todayTrades": 2,
-  "dailyPnL": -2.113999999999999,
-  "lastResetDate": "2026-03-09",
+  "todayTrades": 0,
+  "dailyPnL": 0,
+  "lastResetDate": "2026-03-10",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
     "BNB/USDT",
-    "SOL/USDT"
+    "SOL/USDT",
+    "XAU/USDT",
+    "HYPE/USDT",
+    "DOGE/USDT"
   ],
   "isRunning": true,
   "currentPrice": 623.11,
