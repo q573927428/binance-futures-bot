@@ -96,8 +96,9 @@ for i = 0 to array.size(openTimes) - 1
     avgATR = array.get(averageATRs, i)
     exitReason = array.get(exitReasons, i)
 
-    openCond = time >= openTime and time[1] < openTime
-    closeCond = time >= closeTime and time[1] < closeTime
+    tf = timeframe.in_seconds() * 1000
+    openCond =openTime >= time and openTime < time + tf
+    closeCond =closeTime >= time and closeTime < time + tf
 
     if openCond
 

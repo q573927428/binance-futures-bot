@@ -331,12 +331,12 @@
                 <el-table-column prop="reason" label="原因" min-width="120" />
                 <el-table-column prop="openTime" label="开仓时间" width="160"> 
                   <template #default="scope">
-                    {{ dayjs(scope.row.openTime).format('YYYY-MM-DD HH:mm') }}
+                    {{ dayjs(scope.row.openTime).format('MM-DD HH:mm') }}
                   </template>
                 </el-table-column>
                 <el-table-column prop="closeTime" label="平仓时间" width="160"> 
                   <template #default="scope">
-                    {{ dayjs(scope.row.closeTime).format('YYYY-MM-DD HH:mm') }}
+                    {{ dayjs(scope.row.closeTime).format('MM-DD HH:mm') }}
                   </template>
                 </el-table-column>
               </el-table>
