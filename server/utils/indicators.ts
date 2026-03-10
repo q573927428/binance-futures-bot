@@ -24,19 +24,37 @@ export async function calculateIndicators(
     const emaMedium = strategyMode === 'medium_term' ? 100 : 30
     const emaSlow = strategyMode === 'medium_term' ? 200 : 60
 
+    // 根据策略模式确定需要的K线数量
+    // 中长期策略需要更多K线数据来计算EMA200
+    const requiredCandles = strategyMode === 'medium_term' ? 300 : 96
+    
     // 获取不同周期的K线数据
-    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, 96)
-    const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, 96)
-    const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, 96)
+    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, requiredCandles)
+    const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, requiredCandles)
+    const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, requiredCandles)
 
     const closesMain = candlesMain.map(c => c.close)
     const highsMain = candlesMain.map(c => c.high)
     const lowsMain = candlesMain.map(c => c.low)
 
+    // 检查是否有足够的数据计算EMA
+    if (closesMain.length < emaSlow) {
+      throw new Error(`K线数据不足，需要至少${emaSlow}根K线来计算EMA${emaSlow}，当前只有${closesMain.length}根`)
+    }
+
     // 计算EMA（基于主周期）
     const emaFastValues = EMA.calculate({ period: emaFast, values: closesMain })
     const emaMediumValues = EMA.calculate({ period: emaMedium, values: closesMain })
     const emaSlowValues = EMA.calculate({ period: emaSlow, values: closesMain })
+
+    // 获取EMA值，如果计算失败则使用最后一个收盘价作为替代
+    const getEMAValue = (emaValues: number[], defaultValue: number) => {
+      if (emaValues.length === 0) {
+        // 如果EMA计算失败，使用最后一个收盘价作为替代
+        return closesMain[closesMain.length - 1] || defaultValue
+      }
+      return emaValues[emaValues.length - 1] || defaultValue
+    }
 
     // 计算RSI（基于主周期）
     const rsiValues = RSI.calculate({ period: 14, values: closesMain })
@@ -80,10 +98,15 @@ export async function calculateIndicators(
       adx4h = adxTertiaryValues[adxTertiaryValues.length - 1]?.adx || 0    // 4h
     }
 
+    // 使用getEMAValue函数获取EMA值
+    const ema20Value = getEMAValue(emaFastValues, closesMain[closesMain.length - 1] || 0)
+    const ema30Value = getEMAValue(emaMediumValues, closesMain[closesMain.length - 1] || 0)
+    const ema60Value = getEMAValue(emaSlowValues, closesMain[closesMain.length - 1] || 0)
+
     return {
-      ema20: emaFastValues[emaFastValues.length - 1] || 0,
-      ema30: emaMediumValues[emaMediumValues.length - 1] || 0,
-      ema60: emaSlowValues[emaSlowValues.length - 1] || 0,
+      ema20: ema20Value,
+      ema30: ema30Value,
+      ema60: ema60Value,
       adx15m,
       adx1h,
       adx4h,
@@ -280,6 +303,13 @@ export function checkLongEntry(
 ) {
   const { ema20, ema30, rsi } = indicators
 
+  // 获取策略模式，默认为短期
+  const strategyMode = config?.strategyMode || 'short_term'
+  
+  // 根据策略模式选择EMA名称
+  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
+  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
+
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
   const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
@@ -289,12 +319,12 @@ export function checkLongEntry(
   const volumeEMAPeriod = config?.indicatorsConfig?.longEntry?.volumeEMAPeriod || 10
   const volumeEMAMultiplier = config?.indicatorsConfig?.longEntry?.volumeEMAMultiplier || 1.2
 
-  // 价格回踩 EMA20/EMA30（±阈值）
+  // 价格回踩 EMA（±阈值）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= emaDeviationThreshold
   
   const nearEMA = nearEMA20 || nearEMA30
-  const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
+  const nearEMAType = nearEMA20 ? emaFastName : nearEMA30 ? emaMediumName : 'none'
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -351,7 +381,14 @@ export function checkLongEntry(
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
-      reasons.push(`价格未回踩EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+      // 安全计算百分比，避免除以0
+      const calculatePercentage = (value: number, base: number) => {
+        if (base === 0) return 'N/A'
+        return ((value - base) / base * 100).toFixed(2)
+      }
+      const ema20Percent = calculatePercentage(price, ema20)
+      const ema30Percent = calculatePercentage(price, ema30)
+      reasons.push(`价格未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
     }
     if (!rsiInRange) {
       reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
@@ -431,6 +468,13 @@ export function checkShortEntry(
 ) {
   const { ema20, ema30, rsi } = indicators
 
+  // 获取策略模式，默认为短期
+  const strategyMode = config?.strategyMode || 'short_term'
+  
+  // 根据策略模式选择EMA名称
+  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
+  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
+
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
   const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
@@ -440,12 +484,12 @@ export function checkShortEntry(
   const volumeEMAPeriod = config?.indicatorsConfig?.shortEntry?.volumeEMAPeriod || 10
   const volumeEMAMultiplier = config?.indicatorsConfig?.shortEntry?.volumeEMAMultiplier || 1.2
 
-  // 价格反弹至 EMA20/EMA30（±阈值）
+  // 价格反弹至 EMA（±阈值）
   const nearEMA20 = Math.abs(price - ema20) / ema20 <= emaDeviationThreshold
   const nearEMA30 = Math.abs(price - ema30) / ema30 <= emaDeviationThreshold
   
   const nearEMA = nearEMA20 || nearEMA30
-  const nearEMAType = nearEMA20 ? 'EMA20' : nearEMA30 ? 'EMA30' : 'none'
+  const nearEMAType = nearEMA20 ? emaFastName : nearEMA30 ? emaMediumName : 'none'
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -502,7 +546,14 @@ export function checkShortEntry(
   } else {
     const reasons: string[] = []
     if (!nearEMA) {
-      reasons.push(`价格未反弹EMA（距离EMA20: ${((price - ema20) / ema20 * 100).toFixed(2)}%，EMA30: ${((price - ema30) / ema30 * 100).toFixed(2)}%）`)
+      // 安全计算百分比，避免除以0
+      const calculatePercentage = (value: number, base: number) => {
+        if (base === 0) return 'N/A'
+        return ((value - base) / base * 100).toFixed(2)
+      }
+      const ema20Percent = calculatePercentage(price, ema20)
+      const ema30Percent = calculatePercentage(price, ema30)
+      reasons.push(`价格未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
     }
     if (!rsiInRange) {
       reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
