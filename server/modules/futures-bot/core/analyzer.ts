@@ -57,14 +57,14 @@ export class MarketAnalyzer {
       // 检查ADX趋势条件（多周期）
       const adxResult = checkADXTrend(indicators, this.config)
       if (!adxResult.passed) {
-        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`)
+        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
         return null
       }
 
       // 判断趋势方向
       const trendResult = getTrendDirection(price, indicators, this.config)
       if (trendResult.direction === 'IDLE') {
-        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`)
+        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`, price)
         return null
       }
 
@@ -76,7 +76,7 @@ export class MarketAnalyzer {
       
       // 检查mainCandles是否为空
       if (mainCandles.length === 0) {
-        this.logAnalysisResult(symbol, false, 'K线数据为空')
+        this.logAnalysisResult(symbol, false, 'K线数据为空', price)
         return null
       }
       
@@ -99,7 +99,7 @@ export class MarketAnalyzer {
       const entryOk = entryResult?.passed || false
 
       if (!entryOk) {
-        this.logAnalysisResult(symbol, false, `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`)
+        this.logAnalysisResult(symbol, false, `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`, price)
         return null
       }
 
@@ -121,7 +121,7 @@ export class MarketAnalyzer {
         // 检查AI分析条件
         const aiConditionsPassed = checkAIAnalysisConditions(aiAnalysis, this.config.aiConfig.minConfidence, this.config.aiConfig.maxRiskLevel)
         if (!aiConditionsPassed) {
-          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`)
+          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
           return null
         }
       }
@@ -139,7 +139,7 @@ export class MarketAnalyzer {
       }
 
       // 记录最终分析结果
-      this.logAnalysisResult(symbol, true, '所有条件满足，生成交易信号')
+      this.logAnalysisResult(symbol, true, '所有条件满足，生成交易信号', price)
       
       return signal
     } catch (error: any) {
@@ -150,17 +150,36 @@ export class MarketAnalyzer {
   }
 
   /**
+   * 格式化价格显示
+   * 根据价格大小自动调整小数位数
+   */
+  private formatPrice(price: number): string {
+    if (price >= 1) {
+      // 大于等于1，保留2位小数 (如 BTC: 67890.50, ETH: 3456.78)
+      return price.toFixed(2)
+    } else if (price >= 0.01) {
+      // 0.01-1之间，保留3位小数 (如 DOGE: 0.123)
+      return price.toFixed(3)
+    } else {
+      // 小于0.01，保留6位小数 (如 SHIB: 0.000023)
+      return price.toFixed(6)
+    }
+  }
+
+  /**
    * 记录分析结果
    */
   private logAnalysisResult(
     symbol: string,
     passed: boolean,
-    summary: string
+    summary: string,
+    price?: number
   ): void {
+    const priceStr = price ? ` @${this.formatPrice(price)}` : ''
     if (passed) {
-      logger.success('分析结果', `${symbol} 分析通过，生成交易信号`)
+      logger.success('分析结果', `${symbol}${priceStr} 分析通过，生成交易信号`)
     } else {
-      logger.info('分析结果', `${symbol} 分析未通过: ${summary}`)
+      logger.info('分析结果', `${symbol}${priceStr} 分析未通过: ${summary}`)
     }
   }
 }
