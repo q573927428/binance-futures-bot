@@ -1,4 +1,4 @@
-import type { Position, BotConfig, BotState } from '../../../../types'
+import type { Position, BotConfig, BotState, Order } from '../../../../types'
 import { PositionStatus } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculatePnL, checkCircuitBreaker } from '../../../utils/risk'
@@ -37,6 +37,169 @@ export class PositionValidator {
   }
 
   /**
+   * 检测手动平仓
+   */
+  private async detectManualClose(position: Position): Promise<{
+    isManualClose: boolean
+    exitPrice?: number
+    closeTime?: number
+    orderId?: string
+  }> {
+    try {
+      logger.info('手动平仓检测', `开始检测 ${position.symbol} 是否手动平仓`)
+      
+      // 查询最近5分钟内的订单（300000毫秒）
+      const since = Date.now() - 300000
+      const recentOrders = await this.binance.fetchRecentOrders(position.symbol, since, 20)
+      
+      // 查找可能的平仓订单
+      // 手动平仓通常是市价单或限价单，方向与持仓方向相反
+      const expectedSide = position.direction === 'LONG' ? 'SELL' : 'BUY'
+      
+      for (const order of recentOrders) {
+        // 检查是否是平仓订单（市价单或限价单）
+        if ((order.type === 'MARKET' || order.type === 'LIMIT') && 
+            order.side === expectedSide && 
+            (order.status === 'closed' || order.status === 'filled')) {
+          
+          // 检查订单数量是否与持仓数量接近（允许微小差异）
+          const orderQuantity = Math.abs(order.quantity)
+          const positionQuantity = Math.abs(position.quantity)
+          const quantityDiff = Math.abs(orderQuantity - positionQuantity) / positionQuantity
+          
+          if (quantityDiff <= 0.1) { // 允许10%的差异
+            const exitPrice = order.average || order.price || await this.binance.fetchPrice(position.symbol)
+            logger.info('手动平仓检测', `检测到手动平仓订单: ${order.orderId}, 成交价: ${exitPrice}`)
+            return {
+              isManualClose: true,
+              exitPrice,
+              closeTime: order.timestamp || Date.now(),
+              orderId: order.orderId
+            }
+          }
+        }
+      }
+      
+      // 如果没有找到匹配的订单，检查止损订单状态
+      if (position.stopLossOrderId) {
+        try {
+          const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
+          
+          // 如果止损订单已成交，说明是止损触发，不是手动平仓
+          if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
+            const exitPrice = stopOrder.average || stopOrder.price || position.stopLoss || await this.binance.fetchPrice(position.symbol)
+            logger.info('手动平仓检测', `检测到止损订单已成交: ${stopOrder.status}, 成交价: ${exitPrice}`)
+            return {
+              isManualClose: false,
+              exitPrice,
+              closeTime: stopOrder.timestamp || Date.now(),
+              orderId: stopOrder.orderId
+            }
+          }
+        } catch (error: any) {
+          // 查询止损订单失败，继续其他检测
+          logger.warn('手动平仓检测', `查询止损订单失败: ${error.message}`)
+        }
+      }
+      
+      logger.info('手动平仓检测', `未检测到手动平仓，可能是其他原因平仓`)
+      return {
+        isManualClose: false
+      }
+    } catch (error: any) {
+      logger.error('手动平仓检测', `检测失败: ${error.message}`)
+      return {
+        isManualClose: false
+      }
+    }
+  }
+
+  /**
+   * 处理手动平仓
+   */
+  private async handleManualClose(
+    position: Position, 
+    manualCloseInfo: { exitPrice: number; closeTime: number; orderId?: string },
+    strategyAnalyzer?: any
+  ): Promise<void> {
+    try {
+      logger.info('手动平仓处理', `开始处理手动平仓: ${position.symbol}`)
+
+      const { exitPrice, closeTime } = manualCloseInfo
+
+      // 如果有策略分析器，生成分析指标
+      if (strategyAnalyzer) {
+        try {
+          // 获取移动止损数据
+          const trailingStopData = position.trailingStopData
+          
+          const metrics = await strategyAnalyzer.generateAnalysisMetrics(
+            exitPrice,
+            '手动平仓',
+            closeTime,
+            trailingStopData
+          )
+          logger.success('策略分析', `手动平仓分析指标已生成: ${position.symbol} MFE=${metrics.mfe.toFixed(2)}, MAE=${metrics.mae.toFixed(2)}`)
+        } catch (error: any) {
+          logger.error('策略分析', `手动平仓生成分析指标失败: ${error.message}`)
+        }
+      }
+
+      // 取消止损单（如果存在）
+      if (position.stopLossOrderId) {
+        try {
+          await this.binance.cancelOrder(position.stopLossOrderId, position.symbol, { trigger: true })
+          logger.info('手动平仓处理', `成功取消止损订单: ${position.stopLossOrderId}`)
+        } catch (error: any) {
+          logger.warn('手动平仓处理', `取消止损订单失败: ${error.message}`)
+        }
+      }
+
+      // 计算盈亏
+      const { pnl, pnlPercentage } = calculatePnL(exitPrice, position)
+
+      // 记录交易历史并更新状态（手动平仓）
+      const updatedState = await recordTrade(position, exitPrice, '手动平仓')
+      if (updatedState) {
+        this.state = updatedState
+      }
+
+      // 更新每日盈亏（手动平仓影响每日盈亏）
+      this.state.dailyPnL += pnl
+
+      // 手动平仓不计入连续止损次数，不影响熔断机制
+      // 只有当实际亏损且是系统止损时才计入连续止损
+
+      // 检查熔断条件（只检查每日亏损，不计入连续止损）
+      const account = await this.binance.fetchBalance()
+      const breaker = checkCircuitBreaker(
+        this.state.dailyPnL, 
+        this.state.circuitBreaker.consecutiveLosses, // 保持原有连续止损次数
+        account.balance, 
+        this.config.riskConfig
+      )
+
+      this.state.circuitBreaker = breaker
+      this.state.currentPosition = null
+      this.state.status = breaker.isTriggered ? PositionStatus.HALTED : PositionStatus.MONITORING
+      this.state.lastTradeTime = closeTime
+      
+      // 如果触发熔断，停止运行
+      if (breaker.isTriggered) {
+        this.state.isRunning = false
+        logger.error('熔断', breaker.reason)
+      }
+
+      await saveBotState(this.state)
+
+      logger.success('手动平仓处理完成', `盈亏: ${pnl.toFixed(2)} USDT (${pnlPercentage.toFixed(2)}%)，原因: 手动平仓`)
+    } catch (error: any) {
+      logger.error('手动平仓处理', '处理手动平仓失败', error.message)
+      throw error
+    }
+  }
+
+  /**
    * 检查持仓一致性（新增方法）
    * 验证本地持仓状态与交易所实际状态是否一致
    */
@@ -58,23 +221,61 @@ export class PositionValidator {
     if (!hasPositionOnExchange) {
       logger.warn(
         '状态同步',
-        `检测到 ${position.symbol} 仓位已不存在（可能已止损/平仓），开始补偿平仓流程`
+        `检测到 ${position.symbol} 仓位已不存在（可能已止损/平仓），开始检测平仓原因`
       )
   
       try {
         // 获取策略分析器
         const strategyAnalyzer = this.getStrategyAnalyzer ? this.getStrategyAnalyzer() : undefined
         
-        // 尝试查询止损订单状态
-        if (position.stopLossOrderId) {
-          await this.handleCompensatedClose(position, '止损触发', strategyAnalyzer)
+        // 1. 检测是否是手动平仓
+        const manualCloseInfo = await this.detectManualClose(position)
+        
+        if (manualCloseInfo.isManualClose && manualCloseInfo.exitPrice !== undefined && manualCloseInfo.closeTime !== undefined) {
+          // 手动平仓处理
+          const closeInfo = {
+            exitPrice: manualCloseInfo.exitPrice!, // 使用非空断言，因为我们已经检查过不为undefined
+            closeTime: manualCloseInfo.closeTime!, // 使用非空断言，因为我们已经检查过不为undefined
+            orderId: manualCloseInfo.orderId
+          }
+          await this.handleManualClose(position, closeInfo, strategyAnalyzer)
+        } else if (manualCloseInfo.isManualClose) {
+          // 如果检测到手動平倉但缺少必要信息，使用默认值
+          logger.warn('手动平仓处理', `检测到手动平仓但缺少必要信息，使用默认值`)
+          const currentPrice = await this.binance.fetchPrice(position.symbol)
+          const closeInfo = {
+            exitPrice: currentPrice,
+            closeTime: Date.now(),
+            orderId: manualCloseInfo.orderId
+          }
+          await this.handleManualClose(position, closeInfo, strategyAnalyzer)
         } else {
-          // 如果没有止损订单ID，可能是其他原因平仓
-          await this.handleCompensatedClose(position, '未知原因平仓', strategyAnalyzer)
+          // 2. 如果不是手动平仓，继续原有补偿平仓逻辑
+          let reason = '止损触发'
+          
+          // 检查止损订单状态来确定具体原因
+          if (position.stopLossOrderId) {
+            try {
+              const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
+              if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
+                reason = '止损触发'
+              } else {
+                // 止损订单未成交，可能是其他原因平仓
+                reason = '未知原因'
+              }
+            } catch (error: any) {
+              logger.warn('补偿平仓', `查询止损订单失败，使用默认原因: ${error.message}`)
+              reason = '止损触发'
+            }
+          } else {
+            reason = '未知原因'
+          }
+          
+          await this.handleCompensatedClose(position, reason, strategyAnalyzer)
         }
       } catch (error: any) {
-        logger.error('补偿平仓', '补偿平仓流程失败', error.message)
-        // 即使补偿流程失败，也要清空本地状态
+        logger.error('持仓一致性检查', '处理平仓流程失败', error.message)
+        // 即使处理失败，也要清空本地状态
         this.state.currentPosition = null
         this.state.status = PositionStatus.MONITORING
         await saveBotState(this.state)

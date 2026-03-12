@@ -394,7 +394,7 @@ export interface StrategyAnalysisMetrics {
   pnl: number
   pnlPercentage: number
   exitReason: string
-  exitReasonCategory: 'TP1' | 'TP2' | 'STOP_LOSS' | 'TIMEOUT' | 'FORCE_LIQUIDATE' | 'TRAILING_STOP' | 'OTHER'
+  exitReasonCategory: 'TP1' | 'TP2' | 'STOP_LOSS' | 'TIMEOUT' | 'FORCE_LIQUIDATE' | 'TRAILING_STOP' | 'MANUAL_CLOSE' | 'OTHER'
   
   // 时间特征
   tradeHour: number  // 交易小时（0-23）

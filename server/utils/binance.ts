@@ -407,4 +407,93 @@ export class BinanceService {
     }
   }
 
+  /**
+   * 查询最近订单（使用私有实例）
+   * @param symbol 交易对
+   * @param since 开始时间戳（毫秒）
+   * @param limit 限制数量
+   */
+  async fetchRecentOrders(symbol: string, since?: number, limit: number = 20): Promise<Order[]> {
+    try {
+      const orders = await this.privateExchange.fetchOrders(symbol, since, limit)
+      
+      return orders.map((order: any) => {
+        // 映射订单类型
+        const mapOrderType = (ccxtType: string | undefined): Order['type'] => {
+          if (!ccxtType) return 'MARKET'
+          const type = ccxtType.toLowerCase()
+          if (type.includes('market')) return 'MARKET'
+          if (type.includes('limit')) return 'LIMIT'
+          if (type.includes('stop_market') || type.includes('stop')) return 'STOP_MARKET'
+          if (type.includes('take_profit_market') || type.includes('take_profit')) return 'TAKE_PROFIT_MARKET'
+          return 'MARKET'
+        }
+        
+        const side = order.side ? order.side.toUpperCase() as 'BUY' | 'SELL' : 'BUY'
+        const orderType = mapOrderType(order.type)
+        
+        return {
+          orderId: order.id,
+          symbol: order.symbol,
+          side,
+          type: orderType,
+          quantity: order.amount,
+          price: order.price,
+          average: order.average || order.price,
+          stopPrice: order.stopPrice,
+          status: order.status || 'unknown',
+          timestamp: order.timestamp || Date.now(),
+          info: order.info,
+        }
+      })
+    } catch (error: any) {
+      // 如果查询失败，返回空数组
+      console.warn(`查询最近订单失败: ${error.message}`)
+      return []
+    }
+  }
+
+  /**
+   * 查询特定订单的历史状态（使用私有实例）
+   * @param orderId 订单ID
+   * @param symbol 交易对
+   */
+  async fetchOrderHistory(orderId: string, symbol: string): Promise<Order | null> {
+    try {
+      const order = await this.privateExchange.fetchOrder(orderId, symbol)
+      
+      // 映射订单类型
+      const mapOrderType = (ccxtType: string | undefined): Order['type'] => {
+        if (!ccxtType) return 'MARKET'
+        const type = ccxtType.toLowerCase()
+        if (type.includes('market')) return 'MARKET'
+        if (type.includes('limit')) return 'LIMIT'
+        if (type.includes('stop_market') || type.includes('stop')) return 'STOP_MARKET'
+        if (type.includes('take_profit_market') || type.includes('take_profit')) return 'TAKE_PROFIT_MARKET'
+        return 'MARKET'
+      }
+      
+      const side = order.side ? order.side.toUpperCase() as 'BUY' | 'SELL' : 'BUY'
+      const orderType = mapOrderType(order.type)
+      
+      return {
+        orderId: order.id,
+        symbol: order.symbol,
+        side,
+        type: orderType,
+        quantity: order.amount,
+        price: order.price,
+        average: order.average || order.price,
+        stopPrice: order.stopPrice,
+        status: order.status || 'unknown',
+        timestamp: order.timestamp || Date.now(),
+        info: order.info,
+      }
+    } catch (error: any) {
+      // 如果查询失败，返回null
+      console.warn(`查询订单历史失败: ${error.message}`)
+      return null
+    }
+  }
+
 }

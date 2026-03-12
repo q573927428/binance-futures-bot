@@ -344,7 +344,7 @@ export class StrategyAnalyzer {
   /**
    * 分类退出原因
    */
-  private categorizeExitReason(reason: string): 'TP1' | 'TP2' | 'STOP_LOSS' | 'TIMEOUT' | 'FORCE_LIQUIDATE' | 'TRAILING_STOP' | 'OTHER' {
+  private categorizeExitReason(reason: string): 'TP1' | 'TP2' | 'STOP_LOSS' | 'TIMEOUT' | 'FORCE_LIQUIDATE' | 'TRAILING_STOP' | 'MANUAL_CLOSE' | 'OTHER' {
     const lowerReason = reason.toLowerCase()
     
     if (lowerReason.includes('tp1') || lowerReason.includes('止盈1')) {
@@ -359,6 +359,8 @@ export class StrategyAnalyzer {
       return 'FORCE_LIQUIDATE'
     } else if (lowerReason.includes('移动止损') || lowerReason.includes('trailing stop')) {
       return 'TRAILING_STOP'
+    } else if (lowerReason.includes('手动平仓') || lowerReason.includes('manual close')) {
+      return 'MANUAL_CLOSE'
     } else {
       return 'OTHER'
     }
