@@ -1,5 +1,47 @@
 [
   {
+    "id": "1773293144328-HYPE/USDT",
+    "symbol": "HYPE/USDT",
+    "direction": "LONG",
+    "entryPrice": 35.9220587,
+    "exitPrice": 41.641568886213996,
+    "quantity": 10.05,
+    "leverage": 10,
+    "pnl": 5.7480101,
+    "pnlPercentage": 15.922,
+    "openTime": 1773283201220,
+    "closeTime": 1773293144328,
+    "reason": "手动平仓"
+  },
+  {
+    "id": "1773226895447-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "LONG",
+    "entryPrice": 646.32,
+    "exitPrice": 635.42,
+    "quantity": 0.58,
+    "leverage": 10,
+    "pnl": -6.3220000000000525,
+    "pnlPercentage": -16.86471097908171,
+    "openTime": 1773144934910,
+    "closeTime": 1773226895447,
+    "reason": "止损触发"
+  },
+  {
+    "id": "1773141324994-BTC/USDT",
+    "symbol": "BTC/USDT",
+    "direction": "LONG",
+    "entryPrice": 70279.6,
+    "exitPrice": 70555,
+    "quantity": 0.005,
+    "leverage": 10,
+    "pnl": 1.376999999999971,
+    "pnlPercentage": 3.9186335721887167,
+    "openTime": 1773127282267,
+    "closeTime": 1773141324994,
+    "reason": "止损触发"
+  },
+  {
     "id": "1773039852906-BNB/USDT",
     "symbol": "BNB/USDT",
     "direction": "LONG",

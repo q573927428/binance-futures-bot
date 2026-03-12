@@ -1,4 +1,4 @@
-{ 
+{
   "strategyMode": "medium_term",
   "symbols": [
     "BTC/USDT",
@@ -13,7 +13,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 72,
+  "positionTimeoutHours": 38,
   "scanInterval": 300,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 3600,
@@ -37,16 +37,16 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 3,
-      "tp2RiskRewardRatio": 5,
+      "tp1RiskRewardRatio": 2,
+      "tp2RiskRewardRatio": 3,
       "tp2MinProfitRatio": 1,
       "rsiExtreme": {
-        "long": 75,
-        "short": 25
+        "long": 65,
+        "short": 35
       },
-      "adxDecreaseThreshold": 10
+      "adxDecreaseThreshold": 6
     },
-    "dailyTradeLimit": 8
+    "dailyTradeLimit": 5
   },
   "dynamicLeverageConfig": {
     "enabled": false,
@@ -61,25 +61,25 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.6,
-    "trailingDistance": 1,
-    "updateIntervalSeconds": 60
+    "activationRatio": 0.8,
+    "trailingDistance": 2,
+    "updateIntervalSeconds": 300
   },
   "indicatorsConfig": {
     "adxTrend": {
       "adx1hThreshold": 20,
-      "adx4hThreshold": 18,
+      "adx4hThreshold": 15,
       "adx15mThreshold": 25,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.02,
+      "emaDeviationThreshold": 0.03,
       "rsiMin": 35,
       "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1
+      "volumeEMAPeriod": 6,
+      "volumeEMAMultiplier": 0.8
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
@@ -87,11 +87,11 @@
       "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAPeriod": 6,
+      "volumeEMAMultiplier": 1
     },
     "priceBreakout": {
-      "enabled": true,
+      "enabled": false,
       "period": 5,
       "requireConfirmation": true,
       "confirmationCandles": 1
