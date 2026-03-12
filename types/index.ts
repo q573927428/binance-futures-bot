@@ -278,6 +278,8 @@ export interface Position {
   takeProfit1: number
   takeProfit2: number
   openTime: number
+  highestPrice?: number    // 持仓期间的最高价（多头追踪止损使用）
+  lowestPrice?: number     // 持仓期间的最低价（空头追踪止损使用）
   orderId?: string
   stopLossOrderId?: string
   takeProfitOrderId?: string

@@ -268,6 +268,9 @@ export class PositionOpener {
         takeProfit1,
         takeProfit2,
         openTime: Date.now(),
+        // 初始化极值价格，用于追踪止损
+        highestPrice: signal.price,  // 多头：初始最高价 = 入场价
+        lowestPrice: signal.price,   // 空头：初始最低价 = 入场价
         orderId: order.orderId,
         stopLossOrderId: stopOrder.orderId,
         //添加一个止损订单symbol

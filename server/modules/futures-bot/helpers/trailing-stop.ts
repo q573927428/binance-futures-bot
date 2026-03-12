@@ -3,6 +3,10 @@ import { logger } from '../../../utils/logger'
 
 /**
  * 计算移动止损价格
+ * 
+ * 重要：止损基于持仓期间的最高价（多头）或最低价（空头）计算，
+ * 而不是基于当前价格。这样可以确保止损只会向有利方向移动，
+ * 不会因为价格回调而降低止损保护。
  */
 export function calculateTrailingStopLoss(
   currentPrice: number,
@@ -14,6 +18,8 @@ export function calculateTrailingStopLoss(
   shouldUpdate: boolean
   reason: string
   data: any
+  updatedHighestPrice?: number  // 返回更新后的最高价（多头）
+  updatedLowestPrice?: number   // 返回更新后的最低价（空头）
 } {
   const { entryPrice, stopLoss, direction } = position
   
@@ -58,14 +64,23 @@ export function calculateTrailingStopLoss(
   // 计算跟踪距离
   const trailingDistance = atr * config.trailingDistance
   
-  // 计算新止损价格
+  // 计算新止损价格 - 基于最高价/最低价，而不是当前价格
   let newStopLoss: number
+  let updatedHighestPrice: number | undefined
+  let updatedLowestPrice: number | undefined
+  
   if (direction === 'LONG') {
-    // 多头：新止损 = 当前价 - 跟踪距离
-    newStopLoss = currentPrice - trailingDistance
+    // 多头：更新最高价，然后基于最高价计算止损
+    const previousHighest = position.highestPrice || entryPrice
+    updatedHighestPrice = Math.max(previousHighest, currentPrice)
+    // 新止损 = 最高价 - 跟踪距离
+    newStopLoss = updatedHighestPrice - trailingDistance
   } else {
-    // 空头：新止损 = 当前价 + 跟踪距离
-    newStopLoss = currentPrice + trailingDistance
+    // 空头：更新最低价，然后基于最低价计算止损
+    const previousLowest = position.lowestPrice || entryPrice
+    updatedLowestPrice = Math.min(previousLowest, currentPrice)
+    // 新止损 = 最低价 + 跟踪距离
+    newStopLoss = updatedLowestPrice + trailingDistance
   }
   
   // 确保新止损不会低于当前止损（只向有利方向移动）
@@ -98,6 +113,8 @@ export function calculateTrailingStopLoss(
       direction,
       currentPrice,
       entryPrice,
+      highestPrice: updatedHighestPrice,
+      lowestPrice: updatedLowestPrice,
       oldStopLoss: stopLoss,
       newStopLoss,
       trailingDistance,
@@ -106,7 +123,9 @@ export function calculateTrailingStopLoss(
       profitRiskRatio,
       stopLossMove,
       stopLossMovePercent
-    }
+    },
+    updatedHighestPrice,
+    updatedLowestPrice
   }
 }
 

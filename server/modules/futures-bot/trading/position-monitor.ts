@@ -129,6 +129,9 @@ export class PositionMonitor {
         return { shouldClose: true, reason: 'TP1止盈' }
       }
 
+      // 更新极值价格（无论是否计算指标，都需要持续追踪最高/最低价）
+      this.updateExtremePrice(price, position)
+
       // 检查移动止损（需要ATR指标）
       if (indicators) {
         await this.checkAndUpdateTrailingStop(price, position, indicators.atr)
@@ -168,6 +171,14 @@ export class PositionMonitor {
         atr,
         this.config.trailingStopConfig
       )
+
+      // 更新极值价格到 position（即使不更新止损也要保存最新的最高/最低价）
+      if (result.updatedHighestPrice !== undefined) {
+        position.highestPrice = result.updatedHighestPrice
+      }
+      if (result.updatedLowestPrice !== undefined) {
+        position.lowestPrice = result.updatedLowestPrice
+      }
 
       // 如果需要更新止损
       if (result.shouldUpdate && result.newStopLoss) {
@@ -243,6 +254,40 @@ export class PositionMonitor {
     } catch (error: any) {
       logger.error('移动止损', '更新失败', error.message)
       throw error
+    }
+  }
+
+  /**
+   * 更新极值价格（最高价/最低价）
+   * 这个方法在每次监控时都会调用，确保不会错过任何极值
+   */
+  private updateExtremePrice(currentPrice: number, position: Position): void {
+    let updated = false
+    
+    if (position.direction === 'LONG') {
+      // 多头：追踪最高价
+      const previousHighest = position.highestPrice || position.entryPrice
+      const newHighest = Math.max(previousHighest, currentPrice)
+      if (newHighest > previousHighest) {
+        position.highestPrice = newHighest
+        updated = true
+        logger.info('极值追踪', `${position.symbol} 多头最高价更新: ${previousHighest.toFixed(3)} → ${newHighest.toFixed(3)}`)
+      }
+    } else if (position.direction === 'SHORT') {
+      // 空头：追踪最低价
+      const previousLowest = position.lowestPrice || position.entryPrice
+      const newLowest = Math.min(previousLowest, currentPrice)
+      if (newLowest < previousLowest) {
+        position.lowestPrice = newLowest
+        updated = true
+        logger.info('极值追踪', `${position.symbol} 空头最低价更新: ${previousLowest.toFixed(3)} → ${newLowest.toFixed(3)}`)
+      }
+    }
+
+    // 如果有更新，保存到状态
+    if (updated && this.state.currentPosition) {
+      this.state.currentPosition = position
+      // 注意：这里不调用 saveBotState，因为 monitorPosition 会在稍后保存
     }
   }
 
