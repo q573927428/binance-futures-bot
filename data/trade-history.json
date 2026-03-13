@@ -1,5 +1,19 @@
 [
   {
+    "id": "1773396537902-DOGE/USDT",
+    "symbol": "DOGE/USDT",
+    "direction": "LONG",
+    "entryPrice": 0.09643,
+    "exitPrice": 0.09879,
+    "quantity": 3859,
+    "leverage": 10,
+    "pnl": 9.107240000000004,
+    "pnlPercentage": 24.473711500570374,
+    "openTime": 1773377192581,
+    "closeTime": 1773396537902,
+    "reason": "手动平仓"
+  },
+  {
     "id": "1773293144328-HYPE/USDT",
     "symbol": "HYPE/USDT",
     "direction": "LONG",

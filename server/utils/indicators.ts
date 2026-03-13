@@ -337,18 +337,36 @@ export function checkLongEntry(
   
   const candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
 
-  // 成交量确认（使用EMA）
+  // 成交量确认（使用EMA，带时间加权预测）
   let volumePassed = true
   let volumeReason = ''
+  let predictedVolume: number | null = null
+  let elapsedRatio: number | null = null
+  
   if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumeEMAPeriod) {
     const currentVolume = lastCandle.volume
     
-    // 计算成交量EMA
+    // 计算成交量EMA（使用历史已完成K线的成交量）
     const volumeEMAValues = EMA.calculate({ period: volumeEMAPeriod, values: volumeHistory })
     const volumeEMA = volumeEMAValues[volumeEMAValues.length - 1] || 0
     
-    volumePassed = currentVolume >= volumeEMA * volumeEMAMultiplier
-    volumeReason = `当前成交量: ${currentVolume.toFixed(2)}，${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}，要求: ≥${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
+    // 计算当前K线已过去的时间比例
+    const candleStartTime = lastCandle.timestamp
+    const currentTime = Date.now()
+    // 根据策略模式确定时间框架（中长期1小时=3600000ms，短期15分钟=900000ms）
+    const timeframeMs = strategyMode === 'medium_term' ? 60 * 60 * 1000 : 15 * 60 * 1000
+    elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
+    
+    if (elapsedRatio < 0.1) {
+      // 前10%时间成交量不稳定，直接跳过成交量检查
+      volumePassed = true
+      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，跳过成交量检查`
+    } else {
+      // 按时间比例预测完整K线成交量
+      predictedVolume = currentVolume / elapsedRatio
+      volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
+      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}`
+    }
   } else if (volumeConfirmation) {
     volumePassed = false
     volumeReason = '成交量数据不足，无法计算EMA'
@@ -502,18 +520,36 @@ export function checkShortEntry(
   
   const candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
 
-  // 成交量确认（使用EMA）
+  // 成交量确认（使用EMA，带时间加权预测）
   let volumePassed = true
   let volumeReason = ''
+  let predictedVolume: number | null = null
+  let elapsedRatio: number | null = null
+  
   if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumeEMAPeriod) {
     const currentVolume = lastCandle.volume
     
-    // 计算成交量EMA
+    // 计算成交量EMA（使用历史已完成K线的成交量）
     const volumeEMAValues = EMA.calculate({ period: volumeEMAPeriod, values: volumeHistory })
     const volumeEMA = volumeEMAValues[volumeEMAValues.length - 1] || 0
     
-    volumePassed = currentVolume >= volumeEMA * volumeEMAMultiplier
-    volumeReason = `当前成交量: ${currentVolume.toFixed(2)}，${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}，要求: ≥${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
+    // 计算当前K线已过去的时间比例
+    const candleStartTime = lastCandle.timestamp
+    const currentTime = Date.now()
+    // 根据策略模式确定时间框架（中长期1小时=3600000ms，短期15分钟=900000ms）
+    const timeframeMs = strategyMode === 'medium_term' ? 60 * 60 * 1000 : 15 * 60 * 1000
+    elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
+    
+    if (elapsedRatio < 0.1) {
+      // 前10%时间成交量不稳定，直接跳过成交量检查
+      volumePassed = true
+      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，跳过成交量检查`
+    } else {
+      // 按时间比例预测完整K线成交量
+      predictedVolume = currentVolume / elapsedRatio
+      volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
+      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}`
+    }
   } else if (volumeConfirmation) {
     volumePassed = false
     volumeReason = '成交量数据不足，无法计算EMA'
