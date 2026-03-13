@@ -40,7 +40,7 @@
                   size="large"
                   :loading="botStore.isLoading"
                   :disabled="botStore.isRunning"
-                  @click="handleStart"
+                  @click="handleEditConfig"
                 >
                   <el-icon style="margin-right: 8px"><ElIconVideoPlay /></el-icon>
                   启动
@@ -51,7 +51,7 @@
                   size="large"
                   :loading="botStore.isLoading"
                   :disabled="!botStore.isRunning"
-                  @click="handleStop"
+                  @click="handleEditConfig"
                 >
                   <el-icon style="margin-right: 8px"><ElIconVideoPause  /></el-icon>
                   停止
@@ -65,30 +65,6 @@
                   <el-icon style="margin-right: 8px"><ElIconTrendCharts  /></el-icon>
                   分析
                 </el-button>
-
-                <el-divider />
-
-                <div class="script-actions">
-                  <el-button
-                    type="warning"
-                    size="large"
-                    :loading="isGeneratingScript"
-                    @click="handleGenerateScript"
-                  >
-                    <el-icon style="margin-right: 8px"><ElIconDocumentAdd  /></el-icon>
-                    生成Pine脚本
-                  </el-button>
-
-                  <el-button
-                    type="success"
-                    size="large"
-                    :loading="isCopyingScript"
-                    @click="handleCopyPineScript"
-                  >
-                    <el-icon style="margin-right: 8px"><ElIconDocumentCopy  /></el-icon>
-                    复制Pine脚本
-                  </el-button>
-                </div>
 
                 <el-divider />
 
@@ -391,6 +367,53 @@
       :close-on-click-modal="false"
     >
       <el-form v-if="editConfig" :model="editConfig" label-width="150px">
+        <!-- 系统控制区域 -->
+        <el-divider>系统控制</el-divider>
+        
+        <div class="system-control-buttons">
+          <el-button
+            type="primary"
+            :loading="botStore.isLoading"
+            :disabled="botStore.isRunning"
+            @click="handleStart"
+          >
+            <el-icon style="margin-right: 8px"><ElIconVideoPlay /></el-icon>
+            启动
+          </el-button>
+
+          <el-button
+            type="danger"
+            :loading="botStore.isLoading"
+            :disabled="!botStore.isRunning"
+            @click="handleStop"
+          >
+            <el-icon style="margin-right: 8px"><ElIconVideoPause /></el-icon>
+            停止
+          </el-button>
+        </div>
+
+        <div class="system-control-buttons" style="margin-top: 12px;">
+          <el-button
+            type="warning"
+            :loading="isGeneratingScript"
+            @click="handleGenerateScript"
+          >
+            <el-icon style="margin-right: 8px"><ElIconDocumentAdd /></el-icon>
+            生成Pine
+          </el-button>
+
+          <el-button
+            type="success"
+            :loading="isCopyingScript"
+            @click="handleCopyPineScript"
+          >
+            <el-icon style="margin-right: 8px"><ElIconDocumentCopy /></el-icon>
+            复制Pine
+          </el-button>
+        </div>
+
+        <el-divider>交易配置</el-divider>
+        
         <el-form-item label="交易对">
           <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 100%">
             <el-option label="BTC/USDT" value="BTC/USDT" />
@@ -1271,6 +1294,19 @@ async function handleCopyPineScript() {
   justify-content: center;
 }
 
+/* 系统控制按钮样式 */
+.system-control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.system-control-buttons .el-button {
+  flex: 1;
+  min-width: 120px;
+}
+
 @media (max-width: 768px) {
   .header h1 {
     font-size: 16px;
@@ -1282,6 +1318,15 @@ async function handleCopyPineScript() {
   
   .balance-card {
     margin-bottom: 8px;
+  }
+  
+  .system-control-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .system-control-buttons .el-button {
+    width: 100%;
   }
 }
 </style>
