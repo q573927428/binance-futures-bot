@@ -1177,7 +1177,7 @@ async function handleCopyPineScript() {
 }
 
 .logs-container {
-  max-height: 300px;
+  max-height: 445px;
   overflow-y: auto;
   padding: 10px;
   background: #fafafa;

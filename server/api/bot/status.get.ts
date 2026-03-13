@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
     
     const state = bot.getState()
     const botConfig = bot.getConfig()
-    const logs = logger.getRecentLogs(50)
+    const logs = logger.getRecentLogs(200)
     
     // 获取加密货币余额
     let cryptoBalances: CryptoBalance[] = []
