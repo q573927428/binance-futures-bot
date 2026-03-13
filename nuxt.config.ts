@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     binanceSecret: process.env.BINANCE_SECRET || '',
     deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
     deepseekApiUrl: process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com',
+    configEditPassword: process.env.CONFIG_EDIT_PASSWORD || '',
     
     // 公开配置（客户端和服务端都可用）
     public: {

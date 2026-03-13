@@ -179,7 +179,7 @@
                   <el-button
                     text
                     type="primary"
-                    @click="configDialogVisible = true"
+                    @click="handleEditConfig"
                   >
                     <el-icon><ElIconSetting  /></el-icon>
                     编辑
@@ -663,6 +663,42 @@
         <el-button type="primary" @click="handleSaveConfig">保存配置</el-button>
       </template>
     </el-dialog>
+
+    <!-- 密码输入对话框 -->
+    <el-dialog
+      v-model="passwordDialogVisible"
+      title="密码验证"
+      width="350px"
+      :close-on-click-modal="false"
+    >
+      <div class="password-dialog">
+        <p style="margin-bottom: 20px; color: #606266;">
+          编辑系统配置需要输入密码进行验证
+        </p>
+        <el-form>
+          <el-form-item label="密码">
+            <el-input
+              v-model="passwordInput"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+              @keyup.enter="verifyPassword"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button 
+          type="primary" 
+          @click="verifyPassword"
+          :loading="isVerifyingPassword"
+        >
+          验证
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -677,6 +713,13 @@ const botStore = useBotStore()
 const configDialogVisible = ref(false)
 const editConfig = ref<BotConfig | null>(null)
 let stopPolling: (() => void) | null = null
+
+// 密码保护相关
+const passwordDialogVisible = ref(false)
+const passwordInput = ref('')
+const isVerifyingPassword = ref(false)
+const requiresPassword = ref(false)
+const isPasswordVerified = ref(false)
 
 // 分页相关
 const currentPage = ref(1)
@@ -914,6 +957,66 @@ async function handleCopyPineScript() {
   }
 }
 
+  // 处理编辑配置按钮点击
+  async function handleEditConfig() {
+    // 检查是否需要密码验证
+    try {
+      const response = await $fetch<{ success: boolean; requiresPassword: boolean }>('/api/bot/check-password')
+      if (response.success) {
+        requiresPassword.value = response.requiresPassword
+        
+        if (requiresPassword.value && !isPasswordVerified.value) {
+          // 需要密码验证，显示密码输入对话框
+          passwordDialogVisible.value = true
+          return
+        }
+      }
+    } catch (error) {
+      console.error('检查密码配置失败:', error)
+    }
+    
+    // 不需要密码验证或已经验证通过，直接打开配置对话框
+    openConfigDialog()
+  }
+
+  // 打开配置对话框
+  function openConfigDialog() {
+    if (botStore.config) {
+      editConfig.value = JSON.parse(JSON.stringify(botStore.config))
+      configDialogVisible.value = true
+    }
+  }
+
+  // 验证密码
+  async function verifyPassword() {
+    if (!passwordInput.value.trim()) {
+      ElMessage.warning('请输入密码')
+      return
+    }
+    
+    isVerifyingPassword.value = true
+    try {
+      const response = await $fetch<{ success: boolean; message?: string; requiresPassword: boolean }>('/api/bot/verify-password', {
+        method: 'POST',
+        body: { password: passwordInput.value }
+      })
+      
+      if (response.success) {
+        isPasswordVerified.value = true
+        passwordDialogVisible.value = false
+        passwordInput.value = ''
+        ElMessage.success('密码验证成功')
+        openConfigDialog()
+      } else {
+        ElMessage.error(response.message || '密码错误')
+      }
+    } catch (error: any) {
+      ElMessage.error('密码验证失败: ' + (error.message || String(error)))
+    } finally {
+      isVerifyingPassword.value = false
+    }
+  }
+
   // 页面加载时获取状态
   onMounted(async () => {
     await botStore.fetchStatus()
@@ -928,12 +1031,12 @@ async function handleCopyPineScript() {
     }
   })
 
-// 页面卸载时停止轮询
-onUnmounted(() => {
-  if (stopPolling) {
-    stopPolling()
-  }
-})
+  // 页面卸载时停止轮询
+  onUnmounted(() => {
+    if (stopPolling) {
+      stopPolling()
+    }
+  })
 </script>
 
 <style scoped>
