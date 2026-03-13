@@ -365,7 +365,8 @@ export function checkLongEntry(
       // 按时间比例预测完整K线成交量
       predictedVolume = currentVolume / elapsedRatio
       volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
-      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}`
+      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA(x${volumeEMAMultiplier}): ${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
+
     }
   } else if (volumeConfirmation) {
     volumePassed = false
@@ -548,7 +549,8 @@ export function checkShortEntry(
       // 按时间比例预测完整K线成交量
       predictedVolume = currentVolume / elapsedRatio
       volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
-      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA: ${volumeEMA.toFixed(2)}`
+      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA(x${volumeEMAMultiplier}): ${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
+
     }
   } else if (volumeConfirmation) {
     volumePassed = false
