@@ -358,9 +358,9 @@ export function checkLongEntry(
     elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
     
     if (elapsedRatio < 0.1) {
-      // 前10%时间成交量不稳定，直接跳过成交量检查
-      volumePassed = true
-      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，跳过成交量检查`
+      // 前10%时间成交量不稳定，不通过成交量检查
+      volumePassed = false
+      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，成交量数据不稳定，不通过`
     } else {
       // 按时间比例预测完整K线成交量
       predictedVolume = currentVolume / elapsedRatio
@@ -542,9 +542,9 @@ export function checkShortEntry(
     elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
     
     if (elapsedRatio < 0.1) {
-      // 前10%时间成交量不稳定，直接跳过成交量检查
-      volumePassed = true
-      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，跳过成交量检查`
+      // 前10%时间成交量不稳定，不通过成交量检查
+      volumePassed = false
+      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，成交量数据不稳定，不通过`
     } else {
       // 按时间比例预测完整K线成交量
       predictedVolume = currentVolume / elapsedRatio

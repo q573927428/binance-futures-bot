@@ -13,10 +13,10 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 38,
+  "positionTimeoutHours": 36,
   "scanInterval": 180,
   "positionScanInterval": 60,
-  "tradeCooldownInterval": 3600,
+  "tradeCooldownInterval": 7200,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -78,7 +78,7 @@
       "rsiMax": 75,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 6,
+      "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
@@ -87,7 +87,7 @@
       "rsiMax": 60,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
-      "volumeEMAPeriod": 6,
+      "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.2
     },
     "priceBreakout": {

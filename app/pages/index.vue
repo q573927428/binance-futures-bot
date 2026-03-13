@@ -1294,19 +1294,6 @@ async function handleCopyPineScript() {
   justify-content: center;
 }
 
-/* 系统控制按钮样式 */
-.system-control-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.system-control-buttons .el-button {
-  flex: 1;
-  min-width: 120px;
-}
-
 @media (max-width: 768px) {
   .header h1 {
     font-size: 16px;
@@ -1320,13 +1307,5 @@ async function handleCopyPineScript() {
     margin-bottom: 8px;
   }
   
-  .system-control-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .system-control-buttons .el-button {
-    width: 100%;
-  }
 }
 </style>
