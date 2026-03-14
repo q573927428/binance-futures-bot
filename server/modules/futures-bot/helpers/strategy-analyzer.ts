@@ -1,4 +1,4 @@
-import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis, TrailingStopData } from '../../../../types'
+import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis, TrailingStopData, StrategyMode } from '../../../../types'
 import { calculatePnL } from '../../../utils/risk'
 import { saveStrategyAnalysisMetrics } from '../../../utils/analysis-storage'
 import { logger } from '../../../utils/logger'
@@ -67,12 +67,16 @@ export class StrategyAnalyzer {
 
   /**
    * 记录入场指标
+   * @param indicators 技术指标
+   * @param strategyMode 策略模式（short_term显示ADX15m，medium_term显示ADX1h，但都使用ADX15m的值）
    */
-  recordEntryIndicators(indicators: TechnicalIndicators): void {
+  recordEntryIndicators(indicators: TechnicalIndicators, strategyMode: StrategyMode = 'short_term'): void {
     this.entryIndicators = indicators
     this.atrHistory.push(indicators.atr)
     
-    logger.info('策略分析', `记录入场指标: ${this.symbol} RSI=${indicators.rsi}, ADX15m=${indicators.adx15m}`)
+    const adxValue = indicators.adx15m  // 两种模式都使用ADX15m的值
+    const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
+    logger.info('策略分析', `记录入场指标: ${this.symbol} RSI=${indicators.rsi}, ${adxLabel}=${adxValue}`)
   }
 
   /**

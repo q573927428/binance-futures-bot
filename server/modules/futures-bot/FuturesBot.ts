@@ -248,8 +248,12 @@ export class FuturesBot {
       
       // 如果有入场指标，记录到策略分析器中
       if (entryIndicators) {
-        this.strategyAnalyzer.recordEntryIndicators(entryIndicators)
-        logger.info('策略分析', `入场指标已记录: ${position.symbol} RSI=${entryIndicators.rsi}, ADX15m=${entryIndicators.adx15m}`)
+        const config = this.stateManager.getConfig()
+        const strategyMode = config.strategyMode || 'short_term'
+        this.strategyAnalyzer.recordEntryIndicators(entryIndicators, strategyMode)
+        const adxValue = entryIndicators.adx15m  // 两种模式都使用ADX15m的值
+        const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
+        logger.info('策略分析', `入场指标已记录: ${position.symbol} RSI=${entryIndicators.rsi}, ${adxLabel}=${adxValue}`)
       }
       
       // 如果有AI分析指标，记录到策略分析器中
@@ -279,7 +283,10 @@ export class FuturesBot {
       
       // 记录出场指标到策略分析器
       this.strategyAnalyzer.recordExitIndicators(exitIndicators)
-      logger.info('策略分析', `出场指标已记录: ${position.symbol} RSI=${exitIndicators.rsi}, ADX15m=${exitIndicators.adx15m}`)
+      const strategyMode = config.strategyMode || 'short_term'
+      const adxValue = exitIndicators.adx15m  // 两种模式都使用ADX15m的值
+      const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
+      logger.info('策略分析', `出场指标已记录: ${position.symbol} RSI=${exitIndicators.rsi}, ${adxLabel}=${adxValue}`)
     } catch (error: any) {
       logger.error('策略分析', `记录出场指标失败: ${error.message}`)
     }
