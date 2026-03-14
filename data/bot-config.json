@@ -28,7 +28,7 @@
   },
   "riskConfig": {
     "circuitBreaker": {
-      "dailyLossThreshold": 5,
+      "dailyLossThreshold": 10,
       "consecutiveLossesThreshold": 3
     },
     "forceLiquidateTime": {

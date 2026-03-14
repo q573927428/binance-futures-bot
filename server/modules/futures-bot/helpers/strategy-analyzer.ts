@@ -1,4 +1,4 @@
-import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis, TrailingStopData, StrategyMode } from '../../../../types'
+import type { Position, TechnicalIndicators, StrategyAnalysisMetrics, AIAnalysis, TrailingStopData, StrategyMode, StrategyAnalyzerData } from '../../../../types'
 import { calculatePnL } from '../../../utils/risk'
 import { saveStrategyAnalysisMetrics } from '../../../utils/analysis-storage'
 import { logger } from '../../../utils/logger'
@@ -421,5 +421,138 @@ export class StrategyAnalyzer {
       lowestPrice: this.lowestPrice,
       priceRangePercentage: (this.highestPrice - this.lowestPrice) / this.entryPrice * 100
     }
+  }
+
+  /**
+   * 序列化为持久化数据
+   */
+  serialize(): StrategyAnalyzerData {
+    return {
+      tradeId: this.tradeId,
+      symbol: this.symbol,
+      direction: this.direction as any,
+      entryPrice: this.entryPrice,
+      openTime: this.openTime,
+      stopLossPrice: this.stopLossPrice,
+      takeProfit1Price: this.takeProfit1Price,
+      takeProfit2Price: this.takeProfit2Price,
+      quantity: this.quantity,
+      leverage: this.leverage,
+      
+      // MFE/MAE跟踪
+      maxFavorableExcursion: this.maxFavorableExcursion,
+      maxFavorableExcursionPercentage: this.maxFavorableExcursionPercentage,
+      maxAdverseExcursion: this.maxAdverseExcursion,
+      maxAdverseExcursionPercentage: this.maxAdverseExcursionPercentage,
+      
+      // 最高价和最低价跟踪
+      highestPrice: this.highestPrice,
+      lowestPrice: this.lowestPrice,
+      lastPrice: this.lastPrice,
+      
+      // 入场指标
+      entryIndicators: this.entryIndicators ? {
+        rsi: this.entryIndicators.rsi,
+        adx15m: this.entryIndicators.adx15m,
+        adx1h: this.entryIndicators.adx1h,
+        adx4h: this.entryIndicators.adx4h,
+        ema20: this.entryIndicators.ema20,
+        ema60: this.entryIndicators.ema60,
+        atr: this.entryIndicators.atr
+      } : undefined,
+      
+      // AI分析指标
+      aiAnalysis: this.aiAnalysis ? {
+        confidence: this.aiAnalysis.confidence,
+        score: this.aiAnalysis.score,
+        riskLevel: this.aiAnalysis.riskLevel,
+        reasoning: this.aiAnalysis.reasoning,
+        support: this.aiAnalysis.technicalData.support,
+        resistance: this.aiAnalysis.technicalData.resistance
+      } : undefined,
+      
+      // ATR历史记录
+      atrHistory: [...this.atrHistory],
+      
+      // 更新时间
+      lastUpdateTime: Date.now()
+    }
+  }
+
+  /**
+   * 从持久化数据恢复
+   */
+  static deserialize(data: StrategyAnalyzerData): StrategyAnalyzer {
+    // 创建基础仓位对象
+    const position: Position = {
+      symbol: data.symbol,
+      direction: data.direction,
+      entryPrice: data.entryPrice,
+      quantity: data.quantity,
+      leverage: data.leverage,
+      stopLoss: data.stopLossPrice,
+      initialStopLoss: data.stopLossPrice,
+      takeProfit1: data.takeProfit1Price,
+      takeProfit2: data.takeProfit2Price,
+      openTime: data.openTime
+    }
+    
+    // 创建策略分析器实例
+    const analyzer = new StrategyAnalyzer(position)
+    
+    // 恢复MFE/MAE数据
+    analyzer.maxFavorableExcursion = data.maxFavorableExcursion
+    analyzer.maxFavorableExcursionPercentage = data.maxFavorableExcursionPercentage
+    analyzer.maxAdverseExcursion = data.maxAdverseExcursion
+    analyzer.maxAdverseExcursionPercentage = data.maxAdverseExcursionPercentage
+    
+    // 恢复价格跟踪数据
+    analyzer.highestPrice = data.highestPrice
+    analyzer.lowestPrice = data.lowestPrice
+    analyzer.lastPrice = data.lastPrice
+    
+    // 恢复ATR历史记录
+    analyzer.atrHistory = [...data.atrHistory]
+    
+    // 恢复入场指标（如果存在）
+    if (data.entryIndicators) {
+      analyzer.entryIndicators = {
+        rsi: data.entryIndicators.rsi,
+        adx15m: data.entryIndicators.adx15m,
+        adx1h: data.entryIndicators.adx1h,
+        adx4h: data.entryIndicators.adx4h,
+        ema20: data.entryIndicators.ema20,
+        ema30: 0, // 这个字段在持久化数据中没有，设为0
+        ema60: data.entryIndicators.ema60,
+        atr: data.entryIndicators.atr
+      }
+    }
+    
+    // 恢复AI分析指标（如果存在）
+    if (data.aiAnalysis) {
+      analyzer.aiAnalysis = {
+        symbol: data.symbol,
+        timestamp: data.lastUpdateTime,
+        direction: data.direction,
+        confidence: data.aiAnalysis.confidence,
+        score: data.aiAnalysis.score,
+        riskLevel: data.aiAnalysis.riskLevel,
+        isBullish: data.direction === 'LONG',
+        reasoning: data.aiAnalysis.reasoning,
+        technicalData: {
+          price: data.entryPrice,
+          ema20: data.entryIndicators?.ema20 || 0,
+          ema60: data.entryIndicators?.ema60 || 0,
+          rsi: data.entryIndicators?.rsi || 0,
+          volume: 0, // 这个字段在持久化数据中没有，设为0
+          support: data.aiAnalysis.support,
+          resistance: data.aiAnalysis.resistance
+        }
+      }
+    }
+    
+    logger.info('策略分析', `策略分析器已从持久化数据恢复: ${data.symbol}`)
+    
+    return analyzer
   }
 }

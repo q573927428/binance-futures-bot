@@ -45,7 +45,7 @@ export class FuturesBot {
       this.binance, 
       defaultConfig, 
       defaultState,
-      (position, entryIndicators, aiAnalysis) => this.initializeStrategyAnalyzer(position, entryIndicators, aiAnalysis)
+      async (position, entryIndicators, aiAnalysis) => await this.initializeStrategyAnalyzer(position, entryIndicators, aiAnalysis)
     )
     this.positionMonitor = new PositionMonitor(
       this.binance,
@@ -96,6 +96,9 @@ export class FuturesBot {
         // 启动扫描循环以恢复运行
         this.scanner.startScanLoop()
       }
+
+      // 恢复策略分析器数据（如果存在）
+      await this.restoreStrategyAnalyzer()
 
       this.isInitialized = true
       logger.success('系统', '交易机器人初始化完成')
@@ -231,6 +234,15 @@ export class FuturesBot {
         // 更新ADX值到分析器
         const indicators = await this.binance.fetchPositions(position.symbol)
         // 这里简化处理，ADX更新在分析器的analyzeSymbol中完成
+        
+        // 定期保存策略分析器数据（每15分钟保存一次，减少IO操作）
+        const now = Date.now()
+        const state = this.stateManager.getState()
+        const lastUpdateTime = state.strategyAnalyzerData?.lastUpdateTime || 0
+        
+        if (now - lastUpdateTime > 5 * 60 * 1000) { // 5分钟
+          await this.saveStrategyAnalyzerData()
+        }
       }
     } catch (error: any) {
       logger.error('持仓监控', '监控失败', error.message)
@@ -240,7 +252,7 @@ export class FuturesBot {
   /**
    * 初始化策略分析器（当开仓时调用）
    */
-  initializeStrategyAnalyzer(position: any, entryIndicators?: TechnicalIndicators, aiAnalysis?: any): void {
+  async initializeStrategyAnalyzer(position: any, entryIndicators?: TechnicalIndicators, aiAnalysis?: any): Promise<void> {
     if (!position) return
     
     try {
@@ -263,6 +275,9 @@ export class FuturesBot {
       }
       
       logger.info('策略分析', `策略分析器已初始化: ${position.symbol}`)
+      
+      // 立即保存策略分析器数据
+      await this.saveStrategyAnalyzerData()
     } catch (error: any) {
       logger.error('策略分析', '初始化策略分析器失败', error.message)
       this.strategyAnalyzer = null
@@ -318,9 +333,14 @@ export class FuturesBot {
       
       // 重置策略分析器
       this.strategyAnalyzer = null
+      
+      // 清理持久化数据
+      await this.cleanupStrategyAnalyzerData()
     } catch (error: any) {
       logger.error('策略分析', '生成分析指标失败', error.message)
       this.strategyAnalyzer = null
+      // 即使生成失败，也尝试清理数据
+      await this.cleanupStrategyAnalyzerData()
     }
   }
 
@@ -445,5 +465,87 @@ export class FuturesBot {
    */
   getBinanceService(): BinanceService {
     return this.binance
+  }
+
+  /**
+   * 保存策略分析器数据到状态
+   */
+  private async saveStrategyAnalyzerData(): Promise<void> {
+    if (!this.strategyAnalyzer) {
+      // 如果没有策略分析器，清除状态中的相关数据
+      const state = this.stateManager.getState()
+      if (state.strategyAnalyzerData) {
+        state.strategyAnalyzerData = undefined
+        this.stateManager.setState(state)
+        await saveBotState(state)
+      }
+      return
+    }
+
+    try {
+      // 序列化策略分析器数据
+      const strategyAnalyzerData = this.strategyAnalyzer.serialize()
+      
+      // 保存到状态中
+      const state = this.stateManager.getState()
+      state.strategyAnalyzerData = strategyAnalyzerData
+      this.stateManager.setState(state)
+      
+      // 保存到文件
+      await saveBotState(state)
+      
+      logger.info('策略分析', `策略分析器数据已保存: ${strategyAnalyzerData.symbol}`)
+    } catch (error: any) {
+      logger.error('策略分析', '保存策略分析器数据失败', error.message)
+    }
+  }
+
+  /**
+   * 从状态恢复策略分析器数据
+   */
+  private async restoreStrategyAnalyzer(): Promise<void> {
+    const state = this.stateManager.getState()
+    
+    // 如果没有持仓，不需要恢复策略分析器
+    if (!state.currentPosition) {
+      return
+    }
+
+    // 如果没有持久化的策略分析器数据，不需要恢复
+    if (!state.strategyAnalyzerData) {
+      return
+    }
+
+    try {
+      // 检查持久化数据是否与当前持仓匹配
+      const position = state.currentPosition
+      const data = state.strategyAnalyzerData
+      
+      if (data.symbol !== position.symbol || data.direction !== position.direction) {
+        logger.warn('策略分析', `持久化数据不匹配: 数据(${data.symbol}/${data.direction}) vs 持仓(${position.symbol}/${position.direction})`)
+        return
+      }
+
+      // 从持久化数据恢复策略分析器
+      this.strategyAnalyzer = StrategyAnalyzer.deserialize(data)
+      
+      logger.success('策略分析', `策略分析器已从持久化数据恢复: ${data.symbol}`)
+    } catch (error: any) {
+      logger.error('策略分析', '恢复策略分析器数据失败', error.message)
+      this.strategyAnalyzer = null
+    }
+  }
+
+  /**
+   * 清理策略分析器数据
+   */
+  private async cleanupStrategyAnalyzerData(): Promise<void> {
+    const state = this.stateManager.getState()
+    if (state.strategyAnalyzerData) {
+      state.strategyAnalyzerData = undefined
+      this.stateManager.setState(state)
+      await saveBotState(state)
+      logger.info('策略分析', '策略分析器数据已清理')
+    }
   }
 }

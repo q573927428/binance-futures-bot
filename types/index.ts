@@ -34,6 +34,58 @@ export interface TrailingStopConfig {
   updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
 }
 
+// 策略分析器持久化数据（用于项目重启时恢复）
+export interface StrategyAnalyzerData {
+  tradeId: string
+  symbol: string
+  direction: Direction
+  entryPrice: number
+  openTime: number
+  stopLossPrice: number
+  takeProfit1Price: number
+  takeProfit2Price: number
+  quantity: number
+  leverage: number
+  
+  // MFE/MAE跟踪
+  maxFavorableExcursion: number
+  maxFavorableExcursionPercentage: number
+  maxAdverseExcursion: number
+  maxAdverseExcursionPercentage: number
+  
+  // 最高价和最低价跟踪
+  highestPrice: number
+  lowestPrice: number
+  lastPrice: number
+  
+  // 入场指标（可选，因为可能在记录前重启）
+  entryIndicators?: {
+    rsi: number
+    adx15m: number
+    adx1h: number
+    adx4h: number
+    ema20: number
+    ema60: number
+    atr: number
+  }
+  
+  // AI分析指标（可选）
+  aiAnalysis?: {
+    confidence: number
+    score: number
+    riskLevel: RiskLevel
+    reasoning: string
+    support?: number
+    resistance?: number
+  }
+  
+  // ATR历史记录
+  atrHistory: number[]
+  
+  // 更新时间
+  lastUpdateTime: number
+}
+
 // 移动止损数据（简化版，只保存最后一次移动止损信息）
 export interface TrailingStopData {
   enabled: boolean                    // 是否启用移动止损
@@ -455,6 +507,8 @@ export interface BotState {
   // 优化相关字段
   lastIndicatorUpdate?: number  // 上次指标计算时间
   lastPrice?: number           // 上次计算指标时的价格
+  // 策略分析器持久化数据（用于项目重启时恢复）
+  strategyAnalyzerData?: StrategyAnalyzerData
 }
 
 // 加密货币余额
