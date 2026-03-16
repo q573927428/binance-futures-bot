@@ -225,8 +225,8 @@
                     </el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item label="入场价">
-                    {{ botStore.state.currentPosition.entryPrice.toFixed(2) }}
-                    <span class="text-secondary">({{ botStore.state.currentPrice?.toFixed(2) || '--' }})</span>
+                    {{ botStore.state.currentPosition.entryPrice.toFixed(3) }}
+                    <span class="text-secondary">({{ botStore.state.currentPrice?.toFixed(3) || '--' }})</span>
                   </el-descriptions-item>
                   <el-descriptions-item label="数量">
                     {{ botStore.state.currentPosition.quantity }}
@@ -235,7 +235,7 @@
                     {{ botStore.state.currentPosition.leverage }}x
                   </el-descriptions-item>
                   <el-descriptions-item label="止损价">
-                    {{ botStore.state.currentPosition.stopLoss.toFixed(2) }}
+                    {{ botStore.state.currentPosition.stopLoss.toFixed(3) }}
                   </el-descriptions-item>
                   <el-descriptions-item label="当前盈亏">
                     <span :class="botStore.state.currentPnL && botStore.state.currentPnL >= 0 ? 'text-success' : 'text-danger'">
@@ -246,10 +246,10 @@
                     </span>)
                   </el-descriptions-item>
                   <el-descriptions-item label="止盈TP1">
-                    {{ botStore.state.currentPosition.takeProfit1.toFixed(2) }}
+                    {{ botStore.state.currentPosition.takeProfit1.toFixed(3) }}
                   </el-descriptions-item>
                   <el-descriptions-item label="止盈TP2">
-                    {{ botStore.state.currentPosition.takeProfit2.toFixed(2) }}
+                    {{ botStore.state.currentPosition.takeProfit2.toFixed(3) }}
                   </el-descriptions-item>
                 </el-descriptions>
               </div>
@@ -280,14 +280,14 @@
                 </el-table-column>
                 <el-table-column prop="leverage" label="杠杆" width="80"> 
                 </el-table-column>
-                <el-table-column prop="entryPrice" label="入场价" width="100">
+                <el-table-column prop="entryPrice" label="入场价" width="110">
                   <template #default="scope">
-                    {{ scope.row.entryPrice.toFixed(2) }}
+                    {{ scope.row.entryPrice.toFixed(3) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="exitPrice" label="出场价" width="100">
+                <el-table-column prop="exitPrice" label="出场价" width="110">
                   <template #default="scope">
-                    {{ scope.row.exitPrice.toFixed(2) }}
+                    {{ scope.row.exitPrice.toFixed(3) }}
                   </template>
                 </el-table-column>
                 <el-table-column prop="pnl" label="盈亏(U)" width="100">
@@ -304,7 +304,7 @@
                     </span>
                   </template>
                 </el-table-column>
-                <el-table-column prop="reason" label="原因" min-width="120" />
+                <el-table-column prop="reason" label="原因" min-width="100" />
                 <el-table-column prop="openTime" label="开仓时间" width="160"> 
                   <template #default="scope">
                     {{ dayjs(scope.row.openTime).format('YYYY-MM-DD HH:mm') }}
@@ -343,8 +343,8 @@
 
               <div class="logs-container">
                 <div
-                  v-for="log in botStore.logs"
-                  :key="log.timestamp"
+                  v-for="(log, index) in botStore.logs"
+                  :key="`${log.timestamp}-${index}`"
                   :class="['log-item', `log-${log.level.toLowerCase()}`]"
                 >
                   <span class="log-time">{{ formatTime(log.timestamp) }}</span>
