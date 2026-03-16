@@ -235,7 +235,7 @@ export class FuturesBot {
         const indicators = await this.binance.fetchPositions(position.symbol)
         // 这里简化处理，ADX更新在分析器的analyzeSymbol中完成
         
-        // 定期保存策略分析器数据（每15分钟保存一次，减少IO操作）
+        // 定期保存策略分析器数据（每5分钟保存一次，减少IO操作）
         const now = Date.now()
         const state = this.stateManager.getState()
         const lastUpdateTime = state.strategyAnalyzerData?.lastUpdateTime || 0
