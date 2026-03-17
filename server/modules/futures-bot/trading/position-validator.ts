@@ -38,6 +38,8 @@ export class PositionValidator {
 
   /**
    * 检测手动平仓
+   * 注意：必须先检查止损订单状态，再检查市价/限价订单
+   * 因为止损触发后会产生市价订单，如果先检查市价订单会被错误识别为手动平仓
    */
   private async detectManualClose(position: Position): Promise<{
     isManualClose: boolean
@@ -48,6 +50,29 @@ export class PositionValidator {
     try {
       logger.info('手动平仓检测', `开始检测 ${position.symbol} 是否手动平仓`)
       
+      // 1. 优先检查止损订单状态（条件单触发不是手动平仓）
+      if (position.stopLossOrderId) {
+        try {
+          const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
+          
+          // 如果止损订单已成交，说明是止损触发，不是手动平仓
+          if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
+            const exitPrice = stopOrder.average || stopOrder.price || position.stopLoss || await this.binance.fetchPrice(position.symbol)
+            logger.info('手动平仓检测', `检测到止损订单已成交: ${stopOrder.status}, 成交价: ${exitPrice}，非手动平仓`)
+            return {
+              isManualClose: false,
+              exitPrice,
+              closeTime: stopOrder.timestamp || Date.now(),
+              orderId: stopOrder.orderId
+            }
+          }
+        } catch (error: any) {
+          // 查询止损订单失败，继续其他检测
+          logger.warn('手动平仓检测', `查询止损订单失败: ${error.message}`)
+        }
+      }
+      
+      // 2. 止损订单未成交或不存在，再检查是否有手动市价/限价平仓订单
       // 查询最近5分钟内的订单（300000毫秒）
       const since = Date.now() - 300000
       const recentOrders = await this.binance.fetchRecentOrders(position.symbol, since, 20)
@@ -77,28 +102,6 @@ export class PositionValidator {
               orderId: order.orderId
             }
           }
-        }
-      }
-      
-      // 如果没有找到匹配的订单，检查止损订单状态
-      if (position.stopLossOrderId) {
-        try {
-          const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
-          
-          // 如果止损订单已成交，说明是止损触发，不是手动平仓
-          if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
-            const exitPrice = stopOrder.average || stopOrder.price || position.stopLoss || await this.binance.fetchPrice(position.symbol)
-            logger.info('手动平仓检测', `检测到止损订单已成交: ${stopOrder.status}, 成交价: ${exitPrice}`)
-            return {
-              isManualClose: false,
-              exitPrice,
-              closeTime: stopOrder.timestamp || Date.now(),
-              orderId: stopOrder.orderId
-            }
-          }
-        } catch (error: any) {
-          // 查询止损订单失败，继续其他检测
-          logger.warn('手动平仓检测', `查询止损订单失败: ${error.message}`)
         }
       }
       
