@@ -1,9 +1,16 @@
 import fs from "fs"
 
 const input = "./data/strategy-analysis.json"
+const configPath = "./data/bot-config.json"
 const output = "./test/trade-history.pine"
 
 const trades = JSON.parse(fs.readFileSync(input, "utf8"))
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"))
+
+// 根据 strategyMode 确定 EMA 参数
+const isMediumTerm = config.strategyMode === "medium_term"
+const emaFast = isMediumTerm ? 50 : 20
+const emaSlow = isMediumTerm ? 200 : 60
 
 const openTimes = []
 const closeTimes = []
@@ -52,6 +59,15 @@ for (const t of trades) {
 
 const pine = `//@version=6
 indicator("Trade History Dashboard", overlay=true, max_labels_count=500, max_lines_count=500)
+
+// EMA 移动平均线 (根据 strategyMode 配置: ${isMediumTerm ? 'medium_term' : 'short_term'})
+emaFastPeriod = ${emaFast}
+emaSlowPeriod = ${emaSlow}
+emaFastLine = ta.ema(close, emaFastPeriod)
+emaSlowLine = ta.ema(close, emaSlowPeriod)
+
+plot(emaFastLine, "EMA ${emaFast}", color=color.blue, linewidth=2)
+plot(emaSlowLine, "EMA ${emaSlow}", color=color.orange, linewidth=2)
 
 var int[] openTimes = array.from(${openTimes.join(",")})
 var int[] closeTimes = array.from(${closeTimes.join(",")})

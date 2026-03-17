@@ -37,8 +37,9 @@ export class StrategyAnalyzer {
   // 出场指标
   private exitIndicators: TechnicalIndicators | null = null
   
-  // ATR历史记录（用于计算平均ATR）
-  private atrHistory: number[] = []
+  // ATR增量计算（用于计算平均ATR，优化存储）
+  private atrSum: number = 0
+  private atrCount: number = 0
   
   // 最高价和最低价跟踪
   private highestPrice: number = 0
@@ -72,7 +73,9 @@ export class StrategyAnalyzer {
    */
   recordEntryIndicators(indicators: TechnicalIndicators, strategyMode: StrategyMode = 'short_term'): void {
     this.entryIndicators = indicators
-    this.atrHistory.push(indicators.atr)
+    // 记录ATR（增量计算）
+    this.atrSum += indicators.atr
+    this.atrCount++
     
     const adxValue = indicators.adx15m  // 两种模式都使用ADX15m的值
     const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
@@ -119,10 +122,11 @@ export class StrategyAnalyzer {
   }
 
   /**
-   * 记录ATR值（用于计算平均ATR）
+   * 记录ATR值（用于计算平均ATR，增量计算）
    */
   recordATR(atr: number): void {
-    this.atrHistory.push(atr)
+    this.atrSum += atr
+    this.atrCount++
   }
 
   /**
@@ -173,9 +177,9 @@ export class StrategyAnalyzer {
     // 计算最大回撤百分比
     const maxDrawdownPercentage = Math.abs(this.maxAdverseExcursionPercentage)
     
-    // 计算平均ATR
-    const averageATR = this.atrHistory.length > 0 
-      ? this.atrHistory.reduce((sum, atr) => sum + atr, 0) / this.atrHistory.length
+    // 计算平均ATR（使用增量计算）
+    const averageATR = this.atrCount > 0 
+      ? this.atrSum / this.atrCount
       : 0
     
     // 计算入场价格与EMA的偏离度
@@ -471,8 +475,9 @@ export class StrategyAnalyzer {
         resistance: this.aiAnalysis.technicalData.resistance
       } : undefined,
       
-      // ATR历史记录
-      atrHistory: [...this.atrHistory],
+      // ATR增量计算数据
+      atrSum: this.atrSum,
+      atrCount: this.atrCount,
       
       // 更新时间
       lastUpdateTime: Date.now()
@@ -511,8 +516,9 @@ export class StrategyAnalyzer {
     analyzer.lowestPrice = data.lowestPrice
     analyzer.lastPrice = data.lastPrice
     
-    // 恢复ATR历史记录
-    analyzer.atrHistory = [...data.atrHistory]
+    // 恢复ATR增量计算数据
+    analyzer.atrSum = data.atrSum
+    analyzer.atrCount = data.atrCount
     
     // 恢复入场指标（如果存在）
     if (data.entryIndicators) {

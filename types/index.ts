@@ -79,8 +79,9 @@ export interface StrategyAnalyzerData {
     resistance?: number
   }
   
-  // ATR历史记录
-  atrHistory: number[]
+  // ATR增量计算数据（用于计算平均ATR）
+  atrSum: number
+  atrCount: number
   
   // 更新时间
   lastUpdateTime: number
