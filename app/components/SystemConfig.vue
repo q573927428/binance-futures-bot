@@ -419,8 +419,6 @@
 import { ref, computed } from 'vue'
 import { useBotStore } from '../stores/bot'
 import type { BotConfig } from '../../types'
-import { ElMessage } from 'element-plus'
-
 
 const botStore = useBotStore()
 const configDialogVisible = ref(false)

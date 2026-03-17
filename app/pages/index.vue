@@ -172,7 +172,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
-import { ElMessage } from 'element-plus'
 
 // 导入组件
 import TradeHistory from '../components/TradeHistory.vue'
