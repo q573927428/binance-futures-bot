@@ -227,7 +227,6 @@ export class PositionOpener {
       logger.success('开仓', `开仓订单已提交`, order)
 
       // 二次确认持仓建立（关键优化）
-      logger.info('持仓确认', '开始二次确认持仓建立...')
       const positionConfirmed = await waitAndConfirmPosition(this.binance, signal.symbol)
       
       if (!positionConfirmed) {
@@ -297,7 +296,6 @@ export class PositionOpener {
           if (result instanceof Promise) {
             await result
           }
-          logger.info('策略分析', `策略分析器初始化通知已发送: ${position.symbol}`)
         } catch (error: any) {
           logger.error('策略分析', `初始化策略分析器通知失败: ${error.message}`)
         }

@@ -263,15 +263,11 @@ export class FuturesBot {
         const config = this.stateManager.getConfig()
         const strategyMode = config.strategyMode || 'short_term'
         this.strategyAnalyzer.recordEntryIndicators(entryIndicators, strategyMode)
-        const adxValue = entryIndicators.adx15m  // 两种模式都使用ADX15m的值
-        const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
-        logger.info('策略分析', `入场指标已记录: ${position.symbol} RSI=${entryIndicators.rsi}, ${adxLabel}=${adxValue}`)
       }
       
       // 如果有AI分析指标，记录到策略分析器中
       if (aiAnalysis) {
         this.strategyAnalyzer.recordAIAnalysis(aiAnalysis)
-        logger.info('策略分析', `AI分析指标已记录: ${position.symbol} 置信度=${aiAnalysis.confidence}, 评分=${aiAnalysis.score}`)
       }
       
       logger.info('策略分析', `策略分析器已初始化: ${position.symbol}`)
@@ -494,7 +490,6 @@ export class FuturesBot {
       // 保存到文件
       await saveBotState(state)
       
-      logger.info('策略分析', `策略分析器数据已保存: ${strategyAnalyzerData.symbol}`)
     } catch (error: any) {
       logger.error('策略分析', '保存策略分析器数据失败', error.message)
     }
