@@ -5,6 +5,7 @@ import { calculatePnL, checkCircuitBreaker } from '../../../utils/risk'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { recordTrade } from '../helpers/trade-recorder'
+import { IndicatorsCache } from '../services/indicators-cache'
 
 /**
  * 持仓验证器
@@ -130,9 +131,14 @@ export class PositionValidator {
 
       const { exitPrice, closeTime } = manualCloseInfo
 
-      // 如果有策略分析器，生成分析指标
+      // 如果有策略分析器，获取出场指标并生成分析指标
       if (strategyAnalyzer) {
         try {
+          // 获取并记录出场指标
+          const indicatorsCache = new IndicatorsCache(this.binance, this.config)
+          const exitIndicators = await indicatorsCache.getIndicators(position.symbol)
+          strategyAnalyzer.recordExitIndicators(exitIndicators)
+          
           // 获取移动止损数据
           const trailingStopData = position.trailingStopData
           
@@ -342,9 +348,14 @@ export class PositionValidator {
         logger.info('补偿平仓', `重新获取的价格: ${exitPrice}`)
       }
 
-      // 如果有策略分析器，生成分析指标
+      // 如果有策略分析器，获取出场指标并生成分析指标
       if (strategyAnalyzer) {
         try {
+          // 获取并记录出场指标
+          const indicatorsCache = new IndicatorsCache(this.binance, this.config)
+          const exitIndicators = await indicatorsCache.getIndicators(position.symbol)
+          strategyAnalyzer.recordExitIndicators(exitIndicators)
+          
           // 获取移动止损数据
           const trailingStopData = position.trailingStopData
           
