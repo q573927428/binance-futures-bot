@@ -178,7 +178,7 @@ export class MarketScanner {
       }
     }
 
-    logger.info('扫描', `开始扫描交易机会 [${this.config.symbols.join(', ')}]`, {
+    logger.warn('扫描', `开始扫描交易机会 [${this.config.symbols.join(', ')}]`, {
       今日交易次数: this.state.todayTrades,
       限制次数: this.config.riskConfig.dailyTradeLimit,
       冷却时间: this.config.tradeCooldownInterval,
