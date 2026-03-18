@@ -359,14 +359,15 @@ export class StrategyAnalyzer {
       return 'TP1'
     } else if (lowerReason.includes('tp2') || lowerReason.includes('止盈2')) {
       return 'TP2'
-    } else if (lowerReason.includes('止损') || lowerReason.includes('stop loss')) {
+    } else if (lowerReason.includes('移动止损') || lowerReason.includes('trailing stop')) {
+      return 'TRAILING_STOP'
+    } else if (lowerReason.includes('止损') || lowerReason.includes('stop loss') || lowerReason.includes('初始止损')) {
+      // 注意：这个判断要放在移动止损之后，因为移动止损也包含"止损"二字
       return 'STOP_LOSS'
     } else if (lowerReason.includes('超时') || lowerReason.includes('timeout')) {
       return 'TIMEOUT'
     } else if (lowerReason.includes('强制平仓') || lowerReason.includes('force liquidate')) {
       return 'FORCE_LIQUIDATE'
-    } else if (lowerReason.includes('移动止损') || lowerReason.includes('trailing stop')) {
-      return 'TRAILING_STOP'
     } else if (lowerReason.includes('手动平仓') || lowerReason.includes('manual close')) {
       return 'MANUAL_CLOSE'
     } else {

@@ -254,21 +254,27 @@ export class PositionValidator {
           await this.handleManualClose(position, closeInfo, strategyAnalyzer)
         } else {
           // 2. 如果不是手动平仓，继续原有补偿平仓逻辑
-          let reason = '止损触发'
+          let reason = '初始止损'
           
           // 检查止损订单状态来确定具体原因
           if (position.stopLossOrderId) {
             try {
               const stopOrder = await this.binance.fetchOrder(position.stopLossOrderId, position.symbol, { trigger: true })
               if (stopOrder.status === 'closed' || stopOrder.status === 'filled') {
-                reason = '止损触发'
+                // 判断是否是移动止损：检查是否有移动止损数据且移动止损次数大于0
+                const isTrailingStop = position.trailingStopData && 
+                                      position.trailingStopData.trailingStopCount > 0
+                reason = isTrailingStop ? '移动止损' : '初始止损'
               } else {
                 // 止损订单未成交，可能是其他原因平仓
                 reason = '未知原因'
               }
             } catch (error: any) {
               logger.warn('补偿平仓', `查询止损订单失败，使用默认原因: ${error.message}`)
-              reason = '止损触发'
+              // 查询失败时也尝试判断是否是移动止损
+              const isTrailingStop = position.trailingStopData && 
+                                    position.trailingStopData.trailingStopCount > 0
+              reason = isTrailingStop ? '移动止损' : '初始止损'
             }
           } else {
             reason = '未知原因'
