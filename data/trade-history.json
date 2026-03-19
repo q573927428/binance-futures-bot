@@ -1,5 +1,19 @@
 [
   {
+    "id": "1773807519714-SOL/USDT",
+    "symbol": "SOL/USDT",
+    "direction": "LONG",
+    "entryPrice": 94.08,
+    "exitPrice": 94.46,
+    "quantity": 4.3,
+    "leverage": 10,
+    "pnl": 1.6339999999999804,
+    "pnlPercentage": 4.0391156462584545,
+    "openTime": 1773754643954,
+    "closeTime": 1773807519714,
+    "reason": "移动止损"
+  },
+  {
     "id": "1773744564690-BNB/USDT",
     "symbol": "BNB/USDT",
     "direction": "LONG",
@@ -11,7 +25,7 @@
     "pnlPercentage": -19.619910032675406,
     "openTime": 1773641330754,
     "closeTime": 1773744564690,
-    "reason": "止损触发"
+    "reason": "初始止损"
   },
   {
     "id": "1773632029404-DOGE/USDT",
@@ -123,7 +137,7 @@
     "pnlPercentage": -16.86471097908171,
     "openTime": 1773144934910,
     "closeTime": 1773226895447,
-    "reason": "止损触发"
+    "reason": "初始止损"
   },
   {
     "id": "1773141324994-BTC/USDT",
@@ -137,7 +151,7 @@
     "pnlPercentage": 3.9186335721887167,
     "openTime": 1773127282267,
     "closeTime": 1773141324994,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1773039852906-BNB/USDT",
@@ -151,7 +165,7 @@
     "pnlPercentage": -5.938136456211838,
     "openTime": 1773035034181,
     "closeTime": 1773039852906,
-    "reason": "止损触发"
+    "reason": "初始止损"
   },
   {
     "id": "1772999304461-BTC/USDT",
@@ -165,7 +179,7 @@
     "pnlPercentage": -4.457660296161233,
     "openTime": 1772988040867,
     "closeTime": 1772999304461,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772946387182-BTC/USDT",
@@ -179,7 +193,7 @@
     "pnlPercentage": 2.43852195953507,
     "openTime": 1772938255914,
     "closeTime": 1772946387182,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772934462716-BTC/USDT",
@@ -193,7 +207,7 @@
     "pnlPercentage": -2.522689895075513,
     "openTime": 1772933739894,
     "closeTime": 1772934462716,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772929402693-BTC/USDT",
@@ -207,7 +221,7 @@
     "pnlPercentage": -2.6447956023744994,
     "openTime": 1772923078394,
     "closeTime": 1772929402693,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772799548967-BTC/USDT",
@@ -221,7 +235,7 @@
     "pnlPercentage": 2.955946260686746,
     "openTime": 1772797432479,
     "closeTime": 1772799548967,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772664912015-SOL/USDT",
@@ -235,7 +249,7 @@
     "pnlPercentage": -19.657659597373197,
     "openTime": 1772657925080,
     "closeTime": 1772664912015,
-    "reason": "止损触发"
+    "reason": "初始止损"
   },
   {
     "id": "1772649793830-SOL/USDT",
@@ -277,7 +291,7 @@
     "pnlPercentage": -8.779395862952784,
     "openTime": 1772380745024,
     "closeTime": 1772383817141,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772375024815-BNB/USDT",
@@ -291,7 +305,7 @@
     "pnlPercentage": 2.191394611219658,
     "openTime": 1772363641585,
     "closeTime": 1772375024815,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772355214422-BTC/USDT",
@@ -305,7 +319,7 @@
     "pnlPercentage": -8.81202259523518,
     "openTime": 1772350655269,
     "closeTime": 1772355214422,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772342760238-ETH/USDT",
@@ -347,7 +361,7 @@
     "pnlPercentage": -9.566719442734907,
     "openTime": 1772274384548,
     "closeTime": 1772286611508,
-    "reason": "止损触发"
+    "reason": "移动止损"
   },
   {
     "id": "1772255712115-SOL/USDT",
