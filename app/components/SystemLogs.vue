@@ -8,7 +8,7 @@
 
     <div class="logs-container">
       <div
-        v-for="(log, index) in botStore.logs"
+        v-for="(log, index) in reversedLogs"
         :key="`${log.timestamp}-${index}`"
         :class="['log-item', `log-${log.level.toLowerCase()}`]"
       >
@@ -22,10 +22,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 
 const botStore = useBotStore()
+
+// 倒序显示日志，最新的在最上面
+const reversedLogs = computed(() => [...botStore.logs].reverse())
 
 function formatTime(timestamp: number): string {
   return dayjs(timestamp).format('HH:mm:ss')
