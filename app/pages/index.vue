@@ -92,7 +92,7 @@
                 </div>
               </div>
             </el-card>
-
+            
             <!-- 加密货币余额 -->
             <el-card class="card" shadow="hover" style="margin-top: 20px">
               <template #header>
@@ -156,6 +156,9 @@
             <!-- 当前持仓组件 -->
             <CurrentPositions />
 
+            <!-- 盈亏与胜率走势图 -->
+            <PnLTrendChart />
+
             <!-- 交易历史组件 -->
             <TradeHistory :has-position="botStore.hasPosition" />
 
@@ -178,6 +181,7 @@ import TradeHistory from '../components/TradeHistory.vue'
 import SystemLogs from '../components/SystemLogs.vue'
 import SystemConfig from '../components/SystemConfig.vue'
 import CurrentPositions from '../components/CurrentPositions.vue'
+import PnLTrendChart from '../components/PnLTrendChart.vue'
 
 const botStore = useBotStore()
 let stopPolling: (() => void) | null = null

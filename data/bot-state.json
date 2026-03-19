@@ -1,5 +1,5 @@
 {
-  "status": "MONITORING",
+  "status": "IDLE",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
@@ -20,7 +20,7 @@
     "HYPE/USDT",
     "DOGE/USDT"
   ],
-  "isRunning": true,
+  "isRunning": false,
   "currentPrice": 94.52,
   "currentPnL": 1.8919999999999901,
   "currentPnLPercentage": 4.6768707482992955,

@@ -23,18 +23,6 @@
         </el-tag>
       </div>
       <div class="config-item">
-        <span>动态杠杆:</span>
-        <el-tag :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'">
-          {{ botStore.config.dynamicLeverageConfig.enabled ? '已启用' : '未启用' }}
-        </el-tag>
-      </div>
-      <div class="config-item">
-        <span>移动止损:</span>
-        <el-tag :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'">
-          {{ botStore.config.trailingStopConfig.enabled ? '已启用' : '未启用' }}
-        </el-tag>
-      </div>
-      <div class="config-item">
         <span>市场扫描间隔:</span>
         <span>{{ botStore.config.scanInterval }}秒</span>
       </div>
