@@ -8,6 +8,7 @@
             <el-option label="最近10笔" :value="10" />
             <el-option label="最近20笔" :value="20" />
             <el-option label="最近50笔" :value="50" />
+            <el-option label="最近100笔" :value="100" />
           </el-select>
           <el-button text type="primary" @click="refreshData">
             <el-icon><ElIconRefresh /></el-icon>
@@ -27,7 +28,7 @@
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-box">
-            <span class="stat-label">总交易次数</span>
+            <span class="stat-label">交易次数</span>
             <span class="stat-value">{{ totalTrades }}</span>
           </div>
         </el-col>
@@ -69,7 +70,7 @@ const chartRef = ref<HTMLDivElement>()
 let chartInstance: any = null
 
 // 滚动窗口大小（用于计算滚动胜率）
-const rollingWindow = ref(50)
+const rollingWindow = ref(20)
 
 // 是否有数据
 const hasData = computed(() => botStore.history && botStore.history.length > 0)
@@ -287,7 +288,7 @@ const chartOption = computed<EChartsOption>(() => {
 
 // 刷新数据
 async function refreshData() {
-  await botStore.fetchHistory(1, 100) // 获取最近100笔用于图表展示
+  await botStore.fetchHistory(1, rollingWindow.value)
   ElMessage.success('数据已刷新')
 }
 
@@ -360,7 +361,7 @@ watch(chartOption, () => {
 // 组件挂载时确保有数据并初始化图表
 onMounted(async () => {
   if (!botStore.history || botStore.history.length === 0) {
-    await botStore.fetchHistory(1, 100)
+    await botStore.fetchHistory(1, rollingWindow.value)
   }
   
   // 延迟初始化图表，确保DOM已渲染

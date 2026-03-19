@@ -20,7 +20,7 @@
       <el-main class="main">
         <el-row :gutter="20">
           <!-- 左侧 - 控制面板 -->
-          <el-col :xs="24" :sm="24" :md="8" :lg="8">
+          <el-col :xs="24" :sm="24" :md="6" :lg="6">
             <el-card class="card" shadow="hover">
               <template #header>
                 <div class="card-header">
@@ -71,7 +71,10 @@
                 <div class="stats">
                   <div class="stat-item">
                     <span class="stat-label">总交易次数</span>
-                    <span class="stat-value">{{ botStore.state?.totalTrades || 0 }}（今日：{{ botStore.state?.todayTrades || 0 }}）</span>
+                    <span class="stat-value">
+                      {{ botStore.state?.totalTrades || 0 }}
+                      <span class="today-trades">今日：{{ botStore.state?.todayTrades || 0 }}</span>
+                    </span>
                   </div>
                   <div class="stat-item">
                     <span class="stat-label">今日盈亏</span>
@@ -89,62 +92,20 @@
                     <span class="stat-label">总胜率</span>
                     <span class="stat-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</span>
                   </div>
-                </div>
-              </div>
-            </el-card>
-            
-            <!-- 加密货币余额 -->
-            <el-card class="card" shadow="hover" style="margin-top: 20px">
-              <template #header>
-                <div class="card-header">
-                  <span>账户余额</span>
-                  <el-button
-                    text
-                    type="primary"
-                    @click="handleRefreshBalances"
-                  >
-                    <el-icon><ElIconRefresh /></el-icon>
-                    刷新
-                  </el-button>
-                </div>
-              </template>
-
-              <div v-if="botStore.cryptoBalances.length > 0" class="crypto-balances">
-                <el-row :gutter="12">
-                  <el-col 
-                    v-for="balance in botStore.cryptoBalances" 
-                    :key="balance.asset"
-                    :xs="12" 
-                    :sm="12" 
-                    :md="8" 
-                    :lg="6"
-                    style="margin-bottom: 12px"
-                  >
-                    <el-card shadow="never" class="balance-card">
-                      <div class="balance-content">
-                        <div class="balance-header">
-                          <span class="balance-asset">{{ balance.asset }}</span>
-                          <el-tag 
-                            v-if="balance.asset === 'USDT' || balance.asset === 'USDC'" 
-                            type="success" 
-                            size="small"
-                          >
-                            稳定币
-                          </el-tag>
-                        </div>
-                        <div class="balance-amount">
-                          <span class="balance-total">{{ formatBalance(balance.total) }}</span>
-                          <span class="balance-free">可用: {{ formatBalance(balance.free) }}</span>
-                        </div>
-                        <div class="balance-details">
-                          <span class="balance-locked">锁定: {{ formatBalance(balance.locked) }}</span>
-                        </div>
+                  <div class="stat-item">
+                    <span class="stat-label">USDT余额</span>
+                    <div class="balance-details">
+                      <div class="balance-compact">
+                        <span class="balance-total">总: {{ formatBalance(usdtBalance?.total || 0) }}</span>
+                        <span class="balance-separator">/</span>
+                        <span class="balance-free">可用: {{ formatBalance(usdtBalance?.free || 0) }}</span>
+                        <span class="balance-separator">/</span>
+                        <span class="balance-locked">锁定: {{ formatBalance(usdtBalance?.locked || 0) }}</span>
                       </div>
-                    </el-card>
-                  </el-col>
-                </el-row>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <el-empty v-else description="暂无余额数据" />
             </el-card>
 
             <!-- 系统配置组件 -->
@@ -152,7 +113,7 @@
           </el-col>
 
           <!-- 中间 - 持仓和交易历史 -->
-          <el-col :xs="24" :sm="24" :md="16" :lg="16">
+          <el-col :xs="24" :sm="24" :md="18" :lg="18">
             <!-- 当前持仓组件 -->
             <CurrentPositions />
 
@@ -209,6 +170,14 @@ const totalPnLClass = computed(() => {
   return totalPnL >= 0 ? 'text-success' : 'text-danger'
 })
 
+// 获取USDT余额
+const usdtBalance = computed(() => {
+  if (!botStore.cryptoBalances || botStore.cryptoBalances.length === 0) {
+    return null
+  }
+  return botStore.cryptoBalances.find(balance => balance.asset === 'USDT')
+})
+
 function formatPnL(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)} USDT`
 }
@@ -230,7 +199,7 @@ function formatBalance(value: number): string {
   } else if (value < 1) {
     return value.toFixed(4)
   } else if (value < 1000) {
-    return value.toFixed(3)
+    return value.toFixed(2)
   } else {
     return value.toFixed(2)
   }
@@ -259,11 +228,6 @@ async function handleEditConfig() {
   
   // 不需要密码验证，直接打开配置对话框
   ElMessage.info('请点击配置面板中的"编辑"按钮打开配置对话框')
-}
-
-async function handleRefreshBalances() {
-  await botStore.fetchStatus()
-  ElMessage.success('余额已刷新')
 }
 
 // 页面加载时获取状态
@@ -335,9 +299,6 @@ onUnmounted(() => {
   padding: 10px 0;
 }
 
-.stats {
-  margin-top: 20px;
-}
 
 .stat-item {
   display: flex;
@@ -367,6 +328,24 @@ onUnmounted(() => {
 
 .text-danger {
   color: #f56c6c;
+}
+
+.today-trades {
+  font-size: 14px;
+  font-weight: normal;
+  color: #909399;
+  margin-left: 6px;
+  background: #f5f7fa;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+  transition: all 0.3s ease;
+}
+
+.today-trades:hover {
+  background: #e4e7ed;
+  border-color: #dcdfe6;
+  color: #606266;
 }
 
 .crypto-balances {
@@ -407,10 +386,7 @@ onUnmounted(() => {
 
 .balance-total {
   display: block;
-  font-size: 18px;
-  font-weight: 700;
   color: #409eff;
-  margin-bottom: 4px;
 }
 
 .balance-free,
@@ -426,8 +402,44 @@ onUnmounted(() => {
 
 .balance-details {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.balance-line {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #303133;
+}
+
+.balance-line:first-child {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.balance-compact {
+  display: flex;
   align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.balance-total {
+  color: #409eff;
+}
+
+.balance-free {
+  color: #67c23a;
+}
+
+.balance-locked {
+  color: #f56c6c;
+}
+
+.balance-separator {
+  color: #909399;
+  margin: 0 2px;
 }
 
 @media (max-width: 768px) {

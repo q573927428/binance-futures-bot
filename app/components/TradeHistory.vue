@@ -19,14 +19,14 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="quantity" label="数量" width="80" />
-      <el-table-column prop="leverage" label="杠杆" width="80" />
-      <el-table-column prop="entryPrice" label="入场价" width="110">
+      <el-table-column prop="quantity" label="数量" />
+      <el-table-column prop="leverage" label="杠杆" />
+      <el-table-column prop="entryPrice" label="入场价" width="120">
         <template #default="scope">
           {{ scope.row.entryPrice.toFixed(3) }}
         </template>
       </el-table-column>
-      <el-table-column prop="exitPrice" label="出场价" width="110">
+      <el-table-column prop="exitPrice" label="出场价" width="120">
         <template #default="scope">
           {{ scope.row.exitPrice.toFixed(3) }}
         </template>

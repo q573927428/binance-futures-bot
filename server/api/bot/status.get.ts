@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
       // 从balance实例中提取代币余额信息
       if (balance && typeof balance === 'object') {
         // 定义我们感兴趣的加密货币
-        const targetAssets = ['USDT','BTC', 'ETH', 'BNB', 'SOL', 'DOGE']
+        const targetAssets = ['USDT']
         
         for (const asset of targetAssets) {
           const assetBalance = balance[asset]
@@ -36,8 +36,8 @@ export default defineEventHandler(async (event) => {
             const free = Number(Number(assetBalance.free || 0).toFixed(5))
             const locked = Number(Number(assetBalance.used || 0).toFixed(5))
             const total = Number((free + locked).toFixed(5))
-            
-            if (total > 0) {
+
+            if (total > 1) {
               cryptoBalances.push({
                 asset,
                 free,
