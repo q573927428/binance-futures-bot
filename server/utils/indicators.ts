@@ -255,19 +255,19 @@ export function getTrendDirection(
 
   if (isLong) {
     direction = 'LONG'
-    reason = `${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) > ${emaFastName}`
+    reason = `${emaFastName}(${ema20.toFixed(3)}) > ${emaSlowName}(${ema60.toFixed(3)}) 且 价格(${price.toFixed(3)}) > ${emaFastName}`
   } else if (isShort) {
     direction = 'SHORT'
-    reason = `${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) 且 价格(${price.toFixed(2)}) < ${emaFastName}`
+    reason = `${emaFastName}(${ema20.toFixed(3)}) < ${emaSlowName}(${ema60.toFixed(3)}) 且 价格(${price.toFixed(3)}) < ${emaFastName}`
   } else {
     reason = '趋势条件不满足'
     
     if (ema20AboveEma60 && !priceAboveEma20) {
-      reason = `${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≤ ${emaFastName}`
+      reason = `${emaFastName}(${ema20.toFixed(3)}) > ${emaSlowName}(${ema60.toFixed(3)}) 但 价格(${price.toFixed(3)}) ≤ ${emaFastName}`
     } else if (!ema20AboveEma60 && !priceBelowEma20) {
-      reason = `${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) 但 价格(${price.toFixed(2)}) ≥ ${emaFastName}`
+      reason = `${emaFastName}(${ema20.toFixed(3)}) < ${emaSlowName}(${ema60.toFixed(3)}) 但 价格(${price.toFixed(3)}) ≥ ${emaFastName}`
     } else {
-      reason = `${emaFastName}(${ema20.toFixed(2)}) ≈ ${emaSlowName}(${ema60.toFixed(2)}) 或 价格(${price.toFixed(2)}) ≈ ${emaFastName}`
+      reason = `${emaFastName}(${ema20.toFixed(3)}) ≈ ${emaSlowName}(${ema60.toFixed(3)}) 或 价格(${price.toFixed(3)}) ≈ ${emaFastName}`
     }
   }
 
