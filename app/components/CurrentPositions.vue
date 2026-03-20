@@ -68,32 +68,28 @@
               class="price-label-top stop-loss" 
               :style="getStopLossStyle()"
             >
-              <div class="label-icon">🛑</div>
-              <div class="label-text">止损</div>
+              <div class="label-text">🛑 止损</div>
             </div>
             
             <div 
               class="price-label-top entry" 
               :style="getEntryPriceStyle()"
             >
-              <div class="label-icon">🚀</div>
-              <div class="label-text">入场</div>
+              <div class="label-text">🚀 入场</div>
             </div>
             
             <div 
               class="price-label-top take-profit1" 
               :style="getTakeProfit1Style()"
             >
-              <div class="label-icon">🎯</div>
-              <div class="label-text">TP1止盈</div>
+              <div class="label-text">🎯 TP1</div>
             </div>
             
             <div 
               class="price-label-top take-profit2" 
               :style="getTakeProfit2Style()"
             >
-              <div class="label-icon">🏆</div>
-              <div class="label-text">TP2止盈</div>
+              <div class="label-text">🏆 TP2</div>
             </div>
           </div>
           
@@ -418,10 +414,6 @@ async function executeClosePositionWithPassword(password: string) {
   gap: 10px;
 }
 
-.position-info {
-  padding: 10px 0;
-}
-
 /* 仪表盘布局样式 */
 .dashboard-layout {
   display: flex;
@@ -534,7 +526,7 @@ async function executeClosePositionWithPassword(password: string) {
 
 .price-range-bar {
   position: relative;
-  height: 140px;
+  height: 120px;
   padding: 0 20px;
 }
 
@@ -585,7 +577,7 @@ async function executeClosePositionWithPassword(password: string) {
 /* 上方金额区域 */
 .price-values-top {
   position: absolute;
-  top: 45px;
+  top: 25px;
   left: 20px;
   right: 20px;
   height: 30px;
@@ -607,7 +599,7 @@ async function executeClosePositionWithPassword(password: string) {
 /* 线性进度条 */
 .price-range-track {
   position: absolute;
-  top: 70px;
+  top: 50px;
   left: 20px;
   right: 20px;
   height: 40px;

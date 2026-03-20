@@ -37,7 +37,6 @@
               <div class="control-panel">
                 <el-button
                   type="primary"
-                  size="large"
                   :loading="botStore.isLoading"
                   :disabled="botStore.isRunning"
                   @click="handleEditConfig"
@@ -48,7 +47,6 @@
 
                 <el-button
                   type="danger"
-                  size="large"
                   :loading="botStore.isLoading"
                   :disabled="!botStore.isRunning"
                   @click="handleEditConfig"
@@ -59,49 +57,49 @@
 
                 <el-button
                   type="info"
-                  size="large"
                   @click="goToAnalysis"
                 >
                   <el-icon style="margin-right: 8px"><ElIconTrendCharts /></el-icon>
                   分析
                 </el-button>
 
-                <el-divider />
-
-                <div class="stats">
-                  <div class="stat-item">
-                    <span class="stat-label">总交易次数</span>
-                    <span class="stat-value">
-                      {{ botStore.state?.totalTrades || 0 }}
-                      <span class="today-trades">今日：{{ botStore.state?.todayTrades || 0 }}</span>
-                    </span>
+                <!-- 紧凑统计卡片 -->
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-card-label">📊 交易</div>
+                    <div class="stat-card-value">{{ botStore.state?.totalTrades || 0 }} </div>
+                    <div class="stat-card-sub">今日 {{ botStore.state?.todayTrades || 0 }}</div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">今日盈亏</span>
-                    <span :class="['stat-value', pnlClass]">
-                      {{ formatPnL(botStore.state?.dailyPnL || 0) }}
-                    </span>
+                  <div class="stat-card">
+                    <div class="stat-card-label">📈 今日盈亏</div>
+                    <div :class="['stat-card-value', pnlClass]">{{ formatPnLShort(botStore.state?.dailyPnL || 0) }}</div>
+                    <div class="stat-card-sub">USDT</div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">总盈亏</span>
-                    <span :class="['stat-value', totalPnLClass]">
-                      {{ formatTotalPnL(botStore.state?.totalPnL || 0) }}
-                    </span>
+                  <div class="stat-card">
+                    <div class="stat-card-label">💰 总盈亏</div>
+                    <div :class="['stat-card-value', totalPnLClass]">{{ formatPnLShort(botStore.state?.totalPnL || 0) }}</div>
+                    <div class="stat-card-sub">USDT</div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">总胜率</span>
-                    <span class="stat-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</span>
+                  <div class="stat-card">
+                    <div class="stat-card-label">🎯 胜率</div>
+                    <div class="stat-card-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</div>
+                    <div class="stat-card-sub">总体</div>
                   </div>
-                  <div class="stat-item">
-                    <span class="stat-label">USDT余额</span>
-                    <div class="balance-details">
-                      <div class="balance-compact">
-                        <span class="balance-total">总: {{ formatBalance(usdtBalance?.total || 0) }}</span>
-                        <span class="balance-separator">/</span>
-                        <span class="balance-free">可用: {{ formatBalance(usdtBalance?.free || 0) }}</span>
-                        <span class="balance-separator">/</span>
-                        <span class="balance-locked">锁定: {{ formatBalance(usdtBalance?.locked || 0) }}</span>
-                      </div>
+                </div>
+                <!-- 余额信息 -->
+                <div class="balance-card-large">
+                  <div class="balance-details-large">
+                    <div class="balance-row-large">
+                      <span class="balance-label-large">总余额</span>
+                      <span class="balance-total-large">$ {{ formatBalance(usdtBalance?.total || 0) }}</span>
+                    </div>
+                    <div class="balance-row-large">
+                      <span class="balance-label-large">可用</span>
+                      <span class="balance-free-large">$ {{ formatBalance(usdtBalance?.free || 0) }}</span>
+                    </div>
+                    <div class="balance-row-large">
+                      <span class="balance-label-large">锁定</span>
+                      <span class="balance-locked-large">$ {{ formatBalance(usdtBalance?.locked || 0) }}</span>
                     </div>
                   </div>
                 </div>
@@ -183,6 +181,10 @@ function formatPnL(value: number): string {
 
 function formatTotalPnL(value: number): string {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)} USDT`
+}
+
+function formatPnLShort(value: number): string {
+  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}`
 }
 
 function formatWinRate(value: number): string {
@@ -295,30 +297,7 @@ onUnmounted(() => {
 }
 
 .control-panel {
-  padding: 10px 0;
-}
-
-
-.stat-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.stat-item:last-child {
-  border-bottom: none;
-}
-
-.stat-label {
-  color: #909399;
-  font-size: 14px;
-}
-
-.stat-value {
-  font-weight: 600;
-  font-size: 16px;
-  color: #303133;
+  padding: 4px 0;
 }
 
 .text-success {
@@ -329,116 +308,132 @@ onUnmounted(() => {
   color: #f56c6c;
 }
 
-.today-trades {
-  font-size: 14px;
-  font-weight: normal;
-  color: #909399;
-  margin-left: 6px;
-  background: #f5f7fa;
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  transition: all 0.3s ease;
+/* 紧凑统计卡片网格 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 10px;
 }
 
-.today-trades:hover {
-  background: #e4e7ed;
-  border-color: #dcdfe6;
+.stat-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 6px 4px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.stat-card-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+
+.stat-card-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.stat-card-sub {
+  font-size: 12px;
+  color: #c0c4cc;
+  margin-top: 3px;
+}
+
+/* 余额条 */
+.balance-bar {
+  display: flex;
+  justify-content: space-between;
+  background: #f5f7fa;
+  border-radius: 4px;
+  padding: 5px 6px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.balance-item {
   color: #606266;
 }
 
-.crypto-balances {
-  padding: 10px 0;
+.balance-label {
+  color: #909399;
 }
 
-.balance-card {
-  border: 1px solid #ebeef5;
+/* 大余额卡片 */
+.balance-card-large {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+  border: 1px solid #91d5ff;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  padding: 12px;
+  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(145, 213, 255, 0.15);
 }
 
-.balance-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+.balance-main-large {
+  text-align: center;
+  margin-bottom: 10px;
 }
 
-.balance-content {
-  padding: 5px;
+.balance-total-large {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1890ff;
+  line-height: 1.2;
+  padding-left: 5px;
+}
+.balance-usdt-large{
+  font-size: 16px;
+  color: #5c5e63;
+  padding-left: 5px;
 }
 
-.balance-header {
+.balance-details-large {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  padding: 8px;
 }
 
-.balance-asset {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.balance-amount {
-  margin-bottom: 6px;
-}
-
-.balance-total {
-  display: block;
-  color: #409eff;
-}
-
-.balance-free,
-.balance-locked {
-  font-size: 12px;
-  color: #909399;
-  display: block;
-}
-
-.balance-free {
-  margin-bottom: 2px;
-}
-
-.balance-details {
+.balance-row-large {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-}
-
-.balance-line {
-  font-size: 14px;
-  line-height: 1.4;
-  color: #303133;
-}
-
-.balance-line:first-child {
-  font-weight: 600;
-  color: #409eff;
-}
-
-.balance-compact {
-  display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
+  flex: 1;
 }
 
-.balance-total {
-  color: #409eff;
+.balance-label-large {
+  font-size: 13px;
+  color: #8c8c8c;
+  margin-bottom: 4px;
 }
 
-.balance-free {
-  color: #67c23a;
+.balance-total-large {
+  font-size: 16px;
+  font-weight: 600;
+  color: #3b82f6;
 }
 
-.balance-locked {
-  color: #f56c6c;
+.balance-free-large {
+  font-size: 16px;
+  font-weight: 600;
+  color: #52c41a;
 }
 
-.balance-separator {
-  color: #909399;
-  margin: 0 2px;
+.balance-locked-large {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fa8c16;
 }
 
 @media (max-width: 768px) {
@@ -450,8 +445,39 @@ onUnmounted(() => {
     padding: 10px;
   }
   
-  .balance-card {
-    margin-bottom: 8px;
+  .stats-grid {
+    gap: 4px;
+  }
+  
+  .stat-card {
+    padding: 5px 3px;
+  }
+  
+  .stat-card-value {
+    font-size: 13px;
+  }
+  
+  .balance-bar {
+    flex-wrap: wrap;
+    gap: 3px;
+    font-size: 9px;
+  }
+  
+  .balance-card-large {
+    padding: 10px;
+  }
+  
+  .balance-total-large {
+    font-size: 18px;
+  }
+  
+  .balance-free-large,
+  .balance-locked-large {
+    font-size: 12px;
+  }
+  
+  .balance-details-large {
+    padding: 6px;
   }
 }
 </style>
