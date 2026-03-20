@@ -19,7 +19,7 @@
     </template>
 
     <div v-if="hasData" class="chart-container">
-      <div ref="chartRef" style="height: 300px; width: 100%"></div>
+      <div ref="chartRef" style="height: 400px; width: 100%"></div>
     </div>
     <el-empty v-else description="暂无交易数据，无法生成走势图" />
 
@@ -397,7 +397,7 @@ onUnmounted(() => {
 
 .chart-container {
   width: 100%;
-  min-height: 300px;
+  min-height: 400px;
 }
 
 .stats-summary {

@@ -17,9 +17,33 @@
 
     <div v-if="botStore.config" class="config-info">
       <div class="config-item">
+        <span>策略模式:</span>
+        <el-tag :type="botStore.config.strategyMode ? 'success' : 'info'">
+          {{ botStore.config.strategyMode ==='short_term' ? '短期' : '中长期' }}
+        </el-tag>
+      </div>
+      <div class="config-item">
         <span>AI分析:</span>
         <el-tag :type="botStore.config.aiConfig.enabled ? 'success' : 'info'">
           {{ botStore.config.aiConfig.enabled ? '已启用' : '未启用' }}
+        </el-tag>
+      </div>
+      <div class="config-item">
+        <span>动态杠杆:</span>
+        <el-tag :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'">
+          {{ botStore.config.dynamicLeverageConfig.enabled ? '已启用' : '未启用' }}
+        </el-tag>
+      </div>
+      <div class="config-item">
+        <span>移动止损:</span>
+        <el-tag :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'">
+          {{ botStore.config.trailingStopConfig.enabled ? '已启用' : '未启用' }}
+        </el-tag>
+      </div>
+      <div class="config-item">
+        <span>价格突破指标:</span>
+        <el-tag :type="botStore.config.indicatorsConfig.priceBreakout.enabled ? 'success' : 'info'">
+          {{ botStore.config.indicatorsConfig.priceBreakout.enabled ? '已启用' : '未启用' }}
         </el-tag>
       </div>
       <div class="config-item">
@@ -33,6 +57,10 @@
       <div class="config-item">
         <span>交易冷却时间:</span>
         <span>{{ formatCooldownTime(botStore.config.tradeCooldownInterval) }}</span>
+      </div>
+      <div class="config-item">
+        <span>最大风险比例:</span>
+        <span>{{ botStore.config.maxRiskPercentage }}%</span>
       </div>
     </div>
   </el-card>

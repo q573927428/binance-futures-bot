@@ -20,7 +20,7 @@
       <el-main class="main">
         <el-row :gutter="20">
           <!-- 左侧 - 控制面板 -->
-          <el-col :xs="24" :sm="24" :md="6" :lg="6">
+          <el-col :xs="24" :sm="24" :md="8" :lg="8">
             <el-card class="card" shadow="hover">
               <template #header>
                 <div class="card-header">
@@ -112,7 +112,7 @@
           </el-col>
 
           <!-- 中间 - 持仓和交易历史 -->
-          <el-col :xs="24" :sm="24" :md="18" :lg="18">
+          <el-col :xs="24" :sm="24" :md="16" :lg="16">
 
             <!-- 盈亏与胜率走势图 -->
             <PnLTrendChart />
