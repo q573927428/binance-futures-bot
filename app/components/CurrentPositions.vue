@@ -160,7 +160,7 @@
           </div>
           
           <!-- 下方当前价格区域 -->
-          <div class="current-price-bottom">
+          <div class="current-price-bottom" :class="getCurrentPriceClass()">
             <div 
               class="current-label" 
               :style="getCurrentPriceStyle()"
@@ -576,10 +576,10 @@ async function executeClosePositionWithPassword(password: string) {
 }
 
 .price-label-top.take-profit1 .label-text {
-  color: #8b5cf6;
+  color: #10b981;
 }
 .price-label-top.take-profit2 .label-text {
-  color: #f6b85c;
+  color: #0b882a;
 }
 
 /* 上方金额区域 */
@@ -655,6 +655,11 @@ async function executeClosePositionWithPassword(password: string) {
 }
 
 .linear-marker-dot.current {
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+}
+
+.linear-marker-dot.current.price-positive {
   background: #10b981;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
@@ -665,11 +670,11 @@ async function executeClosePositionWithPassword(password: string) {
 }
 
 .linear-marker-dot.take-profit1 {
-  background: #8b5cf6;
+  background: #10b981;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 .linear-marker-dot.take-profit2 {
-  background: #f6b85c;
+  background: #0b882a;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
@@ -694,14 +699,14 @@ async function executeClosePositionWithPassword(password: string) {
 .current-label .label-icon {
   font-size: 16px;
   margin-bottom: 2px;
-  color: #10b981;
+  color: #94a3b8;
 }
 
 .current-label .label-text {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
-  color: #10b981;
+  color: #94a3b8;
 }
 
 .current-value {
@@ -711,10 +716,24 @@ async function executeClosePositionWithPassword(password: string) {
   text-align: center;
   font-size: 14px;
   font-weight: 700;
-  color: #10b981;
+  color: #94a3b8;
   white-space: nowrap;
   transition: left 0.5s ease;
   min-width: 80px;
+}
+
+/* 盈利状态 - 绿色 */
+.current-price-bottom.price-positive .current-label .label-icon,
+.current-price-bottom.price-positive .current-label .label-text,
+.current-price-bottom.price-positive .current-value {
+  color: #10b981;
+}
+
+/* 亏损状态 - 红色 */
+.current-price-bottom.price-negative .current-label .label-icon,
+.current-price-bottom.price-negative .current-label .label-text,
+.current-price-bottom.price-negative .current-value {
+  color: #ef4444;
 }
 
 .text-success {
