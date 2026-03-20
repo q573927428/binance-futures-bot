@@ -464,6 +464,20 @@ export class FuturesBot {
   }
 
   /**
+   * 手动平仓（供外部API调用）
+   * 使用内部的平仓逻辑，避免创建重复的PositionCloser实例
+   */
+  async manualClosePosition(reason: string = '手动平仓'): Promise<void> {
+    const state = this.stateManager.getState()
+    
+    if (!state.currentPosition) {
+      throw new Error('当前没有持仓')
+    }
+
+    await this.closePositionIfExists(reason)
+  }
+
+  /**
    * 保存策略分析器数据到状态
    */
   private async saveStrategyAnalyzerData(): Promise<void> {

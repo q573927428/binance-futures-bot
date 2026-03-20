@@ -20,30 +20,10 @@ export default defineEventHandler(async (event) => {
     
     // 获取机器人实例
     const bot = getFuturesBot()
-    const state = bot.getState()
     
-    // 检查是否有持仓
-    if (!state.currentPosition) {
-      return {
-        success: false,
-        message: '当前没有持仓',
-      }
-    }
-    
-    // 执行平仓
-    // 使用内部方法执行平仓，需要访问私有方法
-    // 通过调用 bot 的相关方法来执行平仓
-    const position = state.currentPosition
-    
-    // 获取 binance 服务和 positionCloser
-    const binance = bot.getBinanceService()
-    
-    // 导入平仓器
-    const { PositionCloser } = await import('../../modules/futures-bot/trading/position-closer')
-    const positionCloser = new PositionCloser(binance, bot.getConfig(), state)
-    
-    // 执行平仓
-    await positionCloser.closePosition(position, reason)
+    // 使用机器人内部的手动平仓方法，避免创建重复的PositionCloser实例
+    // 这样可以确保只记录一次交易历史
+    await bot.manualClosePosition(reason)
     
     // 重新获取最新状态
     const newState = bot.getState()
