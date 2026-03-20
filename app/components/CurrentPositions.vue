@@ -575,9 +575,11 @@ async function executeClosePositionWithPassword(password: string) {
   color: #3b82f6;
 }
 
-.price-label-top.take-profit1 .label-text,
-.price-label-top.take-profit2 .label-text {
+.price-label-top.take-profit1 .label-text {
   color: #8b5cf6;
+}
+.price-label-top.take-profit2 .label-text {
+  color: #f6b85c;
 }
 
 /* 上方金额区域 */
@@ -600,19 +602,6 @@ async function executeClosePositionWithPassword(password: string) {
   white-space: nowrap;
   transition: left 0.5s ease;
   min-width: 80px;
-}
-
-.price-value-top.stop-loss {
-  color: #ef4444;
-}
-
-.price-value-top.entry {
-  color: #3b82f6;
-}
-
-.price-value-top.take-profit1,
-.price-value-top.take-profit2 {
-  color: #8b5cf6;
 }
 
 /* 线性进度条 */
@@ -639,7 +628,6 @@ async function executeClosePositionWithPassword(password: string) {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, #ef4444 0%, #3b82f6 50%, #8b5cf6 100%);
   opacity: 0.3;
   border-radius: 3px;
 }
@@ -676,9 +664,12 @@ async function executeClosePositionWithPassword(password: string) {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
-.linear-marker-dot.take-profit1,
-.linear-marker-dot.take-profit2 {
+.linear-marker-dot.take-profit1 {
   background: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+.linear-marker-dot.take-profit2 {
+  background: #f6b85c;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
