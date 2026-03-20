@@ -15,6 +15,7 @@
 - ✅ **全自动运行**：自动分析行情、开仓、监控、平仓、撤单，无需人工干预
 - ✅ **响应式UI界面**：基于 Element Plus 的现代化界面，支持移动端和桌面端
 - ✅ **模拟交易支持**：支持币安模拟交易和真实交易一键切换
+<img width="1903" height="865" alt="image" src="https://github.com/user-attachments/assets/fd1454dd-0a2e-436f-9552-6df794b9bb78" />
 
 ## 🚀 快速开始
 
