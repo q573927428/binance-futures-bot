@@ -62,32 +62,31 @@
                   <el-icon style="margin-right: 8px"><ElIconTrendCharts /></el-icon>
                   分析
                 </el-button>
-
-                <!-- 紧凑统计卡片 -->
-                <div class="stats-grid">
-                  <div class="stat-card">
-                    <div class="stat-card-label">📊 交易</div>
-                    <div class="stat-card-value">{{ botStore.state?.totalTrades || 0 }} </div>
-                    <div class="stat-card-sub">今日 {{ botStore.state?.todayTrades || 0 }}</div>
-                  </div>
-                  <div class="stat-card">
-                    <div class="stat-card-label">📈 今日盈亏</div>
-                    <div :class="['stat-card-value', pnlClass]">{{ formatPnLShort(botStore.state?.dailyPnL || 0) }}</div>
-                    <div class="stat-card-sub">USDT</div>
-                  </div>
-                  <div class="stat-card">
-                    <div class="stat-card-label">💰 总盈亏</div>
-                    <div :class="['stat-card-value', totalPnLClass]">{{ formatPnLShort(botStore.state?.totalPnL || 0) }}</div>
-                    <div class="stat-card-sub">USDT</div>
-                  </div>
-                  <div class="stat-card">
-                    <div class="stat-card-label">🎯 总胜率</div>
-                    <div class="stat-card-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</div>
-                    <div class="stat-card-sub">总体</div>
-                  </div>
-                </div>
                 <!-- 余额信息 -->
                 <div class="balance-card-large">
+                  <!-- 紧凑统计卡片 -->
+                  <div class="stats-grid">
+                    <div class="stat-card">
+                      <div class="stat-card-label">📊 交易</div>
+                      <div class="stat-card-value">{{ botStore.state?.totalTrades || 0 }} </div>
+                      <div class="stat-card-sub">今日 {{ botStore.state?.todayTrades || 0 }}</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-card-label">📈 今日盈亏</div>
+                      <div :class="['stat-card-value', pnlClass]">{{ formatPnLShort(botStore.state?.dailyPnL || 0) }}</div>
+                      <div class="stat-card-sub">USDT</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-card-label">💰 总盈亏</div>
+                      <div :class="['stat-card-value', totalPnLClass]">{{ formatPnLShort(botStore.state?.totalPnL || 0) }}</div>
+                      <div class="stat-card-sub">USDT</div>
+                    </div>
+                    <div class="stat-card">
+                      <div class="stat-card-label">🎯 总胜率</div>
+                      <div class="stat-card-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</div>
+                      <div class="stat-card-sub">总体</div>
+                    </div>
+                  </div>
                   <div class="balance-details-large">
                     <div class="balance-row-large">
                       <span class="balance-label-large">总余额</span>
@@ -313,14 +312,13 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
-  margin-top: 10px;
 }
 
 .stat-card {
   background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
   border: 1px solid #ebeef5;
-  border-radius: 6px;
-  padding: 6px 4px;
+  border-radius: 10px;
+  padding: 12px 4px;
   text-align: center;
   transition: all 0.2s ease;
 }
@@ -403,6 +401,7 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.8);
   border-radius: 6px;
   padding: 8px;
+  margin-top: 10px;
 }
 
 .balance-row-large {
@@ -451,7 +450,7 @@ onUnmounted(() => {
   }
   
   .stat-card {
-    padding: 5px 3px;
+    padding: 8px 3px;
   }
   
   .stat-card-value {

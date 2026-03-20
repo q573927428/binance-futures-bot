@@ -646,9 +646,15 @@ async function executeClosePositionWithPassword(password: string) {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
+@keyframes pulse {
+  0%, 100% { transform: translateX(-50%) scale(0.8); }
+  50% { transform: translateX(-50%) scale(1.3); }
+}
+
 .linear-marker-dot.current {
   background: #94a3b8;
   box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .linear-marker-dot.current.price-positive {
