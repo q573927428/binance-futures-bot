@@ -107,15 +107,14 @@
                 </div>
               </div>
             </el-card>
-
+            <!-- 当前持仓组件 -->
+            <CurrentPositions />
             <!-- 系统配置组件 -->
             <SystemConfig />
           </el-col>
 
           <!-- 中间 - 持仓和交易历史 -->
           <el-col :xs="24" :sm="24" :md="18" :lg="18">
-            <!-- 当前持仓组件 -->
-            <CurrentPositions />
 
             <!-- 盈亏与胜率走势图 -->
             <PnLTrendChart />

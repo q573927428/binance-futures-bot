@@ -39,7 +39,7 @@
     "takeProfit": {
       "tp1RiskRewardRatio": 2,
       "tp2RiskRewardRatio": 3,
-      "tp2MinProfitRatio": 0.8,
+      "tp2MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 78,
         "short": 22
@@ -74,8 +74,8 @@
     },
     "longEntry": {
       "emaDeviationThreshold": 0.03,
-      "rsiMin": 40,
-      "rsiMax": 78,
+      "rsiMin": 35,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
@@ -83,8 +83,8 @@
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
-      "rsiMin": 22,
-      "rsiMax": 60,
+      "rsiMin": 35,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
