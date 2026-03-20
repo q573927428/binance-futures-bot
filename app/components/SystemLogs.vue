@@ -2,7 +2,7 @@
   <el-card class="card" shadow="hover" style="margin-top: 20px">
     <template #header>
       <div class="card-header">
-        <span>系统日志</span>
+        <span>📝 系统日志</span>
       </div>
     </template>
 

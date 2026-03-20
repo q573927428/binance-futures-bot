@@ -3,7 +3,7 @@
   <el-card class="card" shadow="hover" style="margin-top: 20px">
     <template #header>
       <div class="card-header">
-        <span>系统配置</span>
+        <span>⚙️ 系统配置</span>
         <el-button
           text
           type="primary"

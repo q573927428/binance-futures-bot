@@ -30,6 +30,13 @@ interface ScriptResponse {
   }
 }
 
+// 平仓API响应类型
+interface ClosePositionResponse {
+  success: boolean
+  message?: string
+  state?: BotState
+}
+
 export const useBotStore = defineStore('bot', {
   state: () => ({
     state: null as BotState | null,
@@ -259,6 +266,45 @@ export const useBotStore = defineStore('bot', {
         return {
           success: false,
           message: '获取脚本时发生错误',
+          error: error.message || String(error)
+        }
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    // 手动平仓
+    async closePosition(password: string, reason: string = '手动平仓') {
+      try {
+        this.isLoading = true
+        this.error = null
+
+        const response = await $fetch<ClosePositionResponse>('/api/bot/close-position', {
+          method: 'POST',
+          body: { password, reason }
+        })
+        
+        if (response.success) {
+          // 更新状态
+          if (response.state) {
+            this.state = response.state
+          }
+          return {
+            success: true,
+            message: response.message || '平仓成功'
+          }
+        } else {
+          this.error = response.message || '平仓失败'
+          return {
+            success: false,
+            message: response.message || '平仓失败'
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || '平仓时发生错误'
+        return {
+          success: false,
+          message: '平仓时发生错误',
           error: error.message || String(error)
         }
       } finally {

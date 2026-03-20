@@ -24,7 +24,7 @@
             <el-card class="card" shadow="hover">
               <template #header>
                 <div class="card-header">
-                  <span>控制面板</span>
+                  <span>🎛️ 控制面板</span>
                   <el-button
                     text
                     type="primary"

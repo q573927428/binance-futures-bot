@@ -2,7 +2,7 @@
   <el-card class="card" shadow="hover" :style="{ marginTop: hasPosition ? '20px' : '0' }">
     <template #header>
       <div class="card-header">
-        <span>交易历史记录</span>
+        <span>📋 交易历史记录</span>
         <el-button text type="primary" @click="handleRefreshHistory">
           <el-icon><ElIconRefresh /></el-icon>
           刷新
