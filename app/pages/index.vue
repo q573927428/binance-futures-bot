@@ -81,7 +81,7 @@
                     <div class="stat-card-sub">USDT</div>
                   </div>
                   <div class="stat-card">
-                    <div class="stat-card-label">🎯 胜率</div>
+                    <div class="stat-card-label">🎯 总胜率</div>
                     <div class="stat-card-value">{{ formatWinRate(botStore.state?.winRate || 0) }}</div>
                     <div class="stat-card-sub">总体</div>
                   </div>
@@ -311,7 +311,7 @@ onUnmounted(() => {
 /* 紧凑统计卡片网格 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   margin-top: 10px;
 }
@@ -446,6 +446,7 @@ onUnmounted(() => {
   }
   
   .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
     gap: 4px;
   }
   
