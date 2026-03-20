@@ -453,7 +453,7 @@ async function executeClosePositionWithPassword(password: string) {
 
 .basic-info {
   display: flex;
-  gap: 24px;
+  gap: 54px;
 }
 
 .info-item {
@@ -482,7 +482,7 @@ async function executeClosePositionWithPassword(password: string) {
   padding: 18px 22px;
   border-radius: 16px;
   text-align: center;
-  min-width: 150px;
+  min-width: 180px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
@@ -753,6 +753,9 @@ async function executeClosePositionWithPassword(password: string) {
   .pnl-display{
     min-width: 90px;
     padding: 18px 10px;
+  }
+  .basic-info {
+    gap: 24px;
   }
 }
 </style>
