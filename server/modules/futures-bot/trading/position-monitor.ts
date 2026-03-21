@@ -1,11 +1,11 @@
 import type { Position, BotConfig, BotState, TechnicalIndicators } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculatePnL, isPositionTimeout, checkTP1Condition, checkTP2Condition, getOrderSide } from '../../../utils/risk'
-import { calculateIndicators } from '../../../utils/indicators'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { calculateTrailingStopLoss, shouldUpdateTrailingStop } from '../helpers/trailing-stop'
 import { PriceService } from '../services/price-service'
+import { IndicatorsCache } from '../services/indicators-cache'
 import { StrategyAnalyzer } from '../helpers/strategy-analyzer'
 
 /**
@@ -14,6 +14,7 @@ import { StrategyAnalyzer } from '../helpers/strategy-analyzer'
 export class PositionMonitor {
   private binance: BinanceService
   private priceService: PriceService
+  private indicatorsCache: IndicatorsCache
   private config: BotConfig
   private state: BotState
   private getPreviousADX: (symbol: string) => number | undefined
@@ -23,12 +24,14 @@ export class PositionMonitor {
   constructor(
     binance: BinanceService,
     priceService: PriceService,
+    indicatorsCache: IndicatorsCache,
     config: BotConfig,
     state: BotState,
     getPreviousADX: (symbol: string) => number | undefined
   ) {
     this.binance = binance
     this.priceService = priceService
+    this.indicatorsCache = indicatorsCache
     this.config = config
     this.state = state
     this.getPreviousADX = getPreviousADX
@@ -39,6 +42,8 @@ export class PositionMonitor {
    */
   updateConfig(config: BotConfig): void {
     this.config = config
+    // 同步更新 indicatorsCache 的配置
+    this.indicatorsCache.updateConfig(config)
   }
 
   /**
@@ -87,39 +92,30 @@ export class PositionMonitor {
         strategyAnalyzer.recordPricePoint(price, now)
       }
 
-      // 减少指标计算频率：只在需要检查条件时计算
-      // 检查是否需要计算指标（每5分钟或价格变化较大时）
-      const lastIndicatorTime = this.state.lastIndicatorUpdate || 0
-      const priceChangedSignificantly = Math.abs(price - (this.state.lastPrice || 0)) / (this.state.lastPrice || price) > 0.01 // 价格变化超过1%
+      // 使用 IndicatorsCache 获取指标（内部有1分钟缓存，避免频繁API调用）
+      const indicators = await this.indicatorsCache.getIndicators(position.symbol)
       
-      let indicators = null
-      if (now - lastIndicatorTime > 300000 || priceChangedSignificantly) { // 5分钟或价格变化大
-        indicators = await calculateIndicators(this.binance, position.symbol, this.config)
-        this.state.lastIndicatorUpdate = now
-        this.state.lastPrice = price
-        
-        // 如果有策略分析器，记录ATR值
-        if (strategyAnalyzer && indicators) {
-          strategyAnalyzer.recordATR(indicators.atr)
-        }
+      // 如果有策略分析器，记录ATR值
+      if (strategyAnalyzer) {
+        strategyAnalyzer.recordATR(indicators.atr)
       }
 
       // 获取当前symbol的previous ADX值
-      const prevADX = this.getPreviousADX(position.symbol) ?? (indicators?.adx15m || 0)
+      const prevADX = this.getPreviousADX(position.symbol) ?? indicators.adx15m
+      const isADXDecreasing = prevADX > indicators.adx15m
       
-      // 检查持仓超时（需要指标）
-      if (indicators && isPositionTimeout(position, this.config.positionTimeoutHours, prevADX > indicators.adx15m)) {
-        logger.warn('风控', '持仓超时且ADX走弱')
+      // 检查持仓超时（ADX走弱时触发）
+      const isTimeout = isPositionTimeout(position, this.config.positionTimeoutHours, isADXDecreasing)
+      if (isTimeout) {
+        logger.warn('风控', `持仓超时且ADX走弱 (prevADX: ${prevADX.toFixed(2)}, currentADX: ${indicators.adx15m.toFixed(2)})`)
         return { shouldClose: true, reason: '持仓超时' }
       }
 
-      // 检查TP2条件（需要指标）
-      if (indicators) {
-        const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
-        if (tp2Result.triggered) {
-          logger.success('止盈', tp2Result.reason, tp2Result.data)
-          return { shouldClose: true, reason: 'TP2止盈' }
-        }
+      // 检查TP2条件
+      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
+      if (tp2Result.triggered) {
+        logger.success('止盈', tp2Result.reason, tp2Result.data)
+        return { shouldClose: true, reason: 'TP2止盈' }
       }
 
       // 检查TP1条件 目前 直接全部平仓（简化策略）
@@ -132,10 +128,8 @@ export class PositionMonitor {
       // 更新极值价格（无论是否计算指标，都需要持续追踪最高/最低价）
       this.updateExtremePrice(price, position)
 
-      // 检查移动止损（需要ATR指标）
-      if (indicators) {
-        await this.checkAndUpdateTrailingStop(price, position, indicators.atr)
-      }
+      // 检查移动止损（使用ATR指标）
+      await this.checkAndUpdateTrailingStop(price, position, indicators.atr)
 
       return { shouldClose: false }
     } catch (error: any) {

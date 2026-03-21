@@ -47,9 +47,14 @@ export class FuturesBot {
       defaultState,
       async (position, entryIndicators, aiAnalysis) => await this.initializeStrategyAnalyzer(position, entryIndicators, aiAnalysis)
     )
+    
+    // 创建指标缓存实例
+    const indicatorsCache = new IndicatorsCache(this.binance, defaultConfig)
+    
     this.positionMonitor = new PositionMonitor(
       this.binance,
       this.priceService,
+      indicatorsCache,
       defaultConfig,
       defaultState,
       (symbol) => this.analyzer.getPreviousADX(symbol)
