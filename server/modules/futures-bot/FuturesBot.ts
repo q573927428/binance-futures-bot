@@ -420,6 +420,10 @@ export class FuturesBot {
     this.positionCloser.updateState(state)
     this.positionValidator.updateConfig(config)
     this.positionValidator.updateState(state)
+    
+    // 更新指标缓存服务配置
+    const indicatorsCache = IndicatorsCache.getInstance(this.binance, config)
+    indicatorsCache.updateConfig(config)
   }
 
   /**
