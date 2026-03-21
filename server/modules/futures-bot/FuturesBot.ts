@@ -1,7 +1,6 @@
 import type { BotConfig, BotState, TradeHistory, TechnicalIndicators } from '../../../types'
 import { PositionStatus } from '../../../types'
 import { BinanceService } from '../../utils/binance'
-import { calculateIndicators } from '../../utils/indicators'
 import { logger } from '../../utils/logger'
 import { saveBotState, getDefaultConfig, getDefaultState, getTradeHistory } from '../../utils/storage'
 import { StateManager } from './core/state-manager'

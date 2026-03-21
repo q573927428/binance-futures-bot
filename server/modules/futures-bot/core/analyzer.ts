@@ -1,6 +1,6 @@
 import type { TradeSignal, BotConfig } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
-import { calculateIndicators, getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry } from '../../../utils/indicators'
+import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry } from '../../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../../utils/ai-analysis'
 import { logger } from '../../../utils/logger'
 import { IndicatorsCache } from '../services/indicators-cache'
@@ -11,11 +11,13 @@ import { IndicatorsCache } from '../services/indicators-cache'
 export class MarketAnalyzer {
   private binance: BinanceService
   private config: BotConfig
+  private indicatorsCache: IndicatorsCache
   private previousADXMap: Record<string, number> = {}
 
   constructor(binance: BinanceService, config: BotConfig) {
     this.binance = binance
     this.config = config
+    this.indicatorsCache = new IndicatorsCache(binance, config)
   }
 
   /**
@@ -23,6 +25,8 @@ export class MarketAnalyzer {
    */
   updateConfig(config: BotConfig): void {
     this.config = config
+    // 同步更新 indicatorsCache 的配置
+    this.indicatorsCache.updateConfig(config)
   }
 
   /**
@@ -47,8 +51,8 @@ export class MarketAnalyzer {
       // 获取当前价格
       const price = await this.binance.fetchPrice(symbol)
 
-      // 计算技术指标
-      const indicators = await calculateIndicators(this.binance, symbol, this.config)
+      // 使用指标缓存服务获取技术指标
+      const indicators = await this.indicatorsCache.getIndicators(symbol)
 
       // 保存ADX15m用于后续比较（按symbol记录）
       // 更新当前symbol的ADX值
