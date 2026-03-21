@@ -6,7 +6,7 @@
         <div class="header-content">
           <h1>
             <el-icon style="vertical-align: middle; margin-right: 8px"><ElIconTrendCharts /></el-icon>
-            币安永续合约自动交易系统
+            币安永续合约AI自动交易系统
           </h1>
           <div class="header-actions">
             <el-tag v-if="botStore.isRunning" type="success" effect="dark">运行中</el-tag>

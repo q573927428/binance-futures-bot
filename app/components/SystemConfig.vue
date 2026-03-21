@@ -1,6 +1,6 @@
 <template>
   <!-- 配置面板 -->
-  <el-card class="card" shadow="hover" style="margin-top: 20px">
+  <el-card class="config-card" shadow="hover">
     <template #header>
       <div class="card-header">
         <span>⚙️ 系统配置</span>
@@ -15,52 +15,155 @@
       </div>
     </template>
 
-    <div v-if="botStore.config" class="config-info">
-      <div class="config-item">
-        <span>策略模式:</span>
-        <el-tag :type="botStore.config.strategyMode ? 'success' : 'info'">
-          {{ botStore.config.strategyMode ==='short_term' ? '短期' : '中长期' }}
-        </el-tag>
+    <div v-if="botStore.config" class="config-container">
+      <!-- 功能开关区域 -->
+      <div class="config-section">
+        <div class="section-title">
+          <el-icon><ElIconSwitch /></el-icon>
+          <span>功能开关</span>
+        </div>
+        <div class="config-grid">
+          <div class="config-card-item">
+            <div class="item-label">
+              <el-icon class="label-icon"><ElIconTrendCharts /></el-icon>
+              策略模式
+            </div>
+            <el-tag 
+              :type="botStore.config.strategyMode === 'short_term' ? 'warning' : 'success'" 
+              size="small"
+            >
+              {{ botStore.config.strategyMode === 'short_term' ? '短期' : '中长期' }}
+            </el-tag>
+          </div>
+          <div class="config-card-item">
+            <div class="item-label">
+              <el-icon class="label-icon"><ElIconMagicStick /></el-icon>
+              AI分析
+            </div>
+            <el-tag 
+              :type="botStore.config.aiConfig.enabled ? 'success' : 'info'" 
+              size="small"
+            >
+              {{ botStore.config.aiConfig.enabled ? '启用' : '关闭' }}
+            </el-tag>
+          </div>
+          <div class="config-card-item">
+            <div class="item-label">
+              <el-icon class="label-icon"><ElIconScaleToOriginal /></el-icon>
+              动态杠杆
+            </div>
+            <el-tag 
+              :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'" 
+              size="small"
+            >
+              {{ botStore.config.dynamicLeverageConfig.enabled ? '启用' : '关闭' }}
+            </el-tag>
+          </div>
+          <div class="config-card-item">
+            <div class="item-label">
+              <el-icon class="label-icon"><ElIconAim /></el-icon>
+              移动止损
+            </div>
+            <el-tag 
+              :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'" 
+              size="small"
+            >
+              {{ botStore.config.trailingStopConfig.enabled ? '启用' : '关闭' }}
+            </el-tag>
+          </div>
+        </div>
       </div>
-      <div class="config-item">
-        <span>AI分析:</span>
-        <el-tag :type="botStore.config.aiConfig.enabled ? 'success' : 'info'">
-          {{ botStore.config.aiConfig.enabled ? '已启用' : '未启用' }}
-        </el-tag>
+
+      <!-- 参数配置区域 -->
+      <div class="config-section">
+        <div class="section-title">
+          <el-icon><ElIconOperation /></el-icon>
+          <span>参数配置</span>
+        </div>
+        <div class="params-grid">
+          <div class="param-item">
+            <div class="param-icon scan">
+              <el-icon><ElIconRefresh /></el-icon>
+            </div>
+            <div class="param-content">
+              <span class="param-label">市场扫描</span>
+              <span class="param-value">{{ botStore.config.scanInterval }}<small>秒</small></span>
+            </div>
+          </div>
+          <div class="param-item">
+            <div class="param-icon position">
+              <el-icon><ElIconDataAnalysis /></el-icon>
+            </div>
+            <div class="param-content">
+              <span class="param-label">持仓扫描</span>
+              <span class="param-value">{{ botStore.config.positionScanInterval }}<small>秒</small></span>
+            </div>
+          </div>
+          <div class="param-item">
+            <div class="param-icon cooldown">
+              <el-icon><ElIconTimer /></el-icon>
+            </div>
+            <div class="param-content">
+              <span class="param-label">交易冷却</span>
+              <span class="param-value">{{ formatCooldownTime(botStore.config.tradeCooldownInterval) }}</span>
+            </div>
+          </div>
+          <div class="param-item">
+            <div class="param-icon risk">
+              <el-icon><ElIconWarningFilled /></el-icon>
+            </div>
+            <div class="param-content">
+              <span class="param-label">最大风险</span>
+              <span class="param-value">{{ botStore.config.maxRiskPercentage }}<small>%</small></span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="config-item">
-        <span>动态杠杆:</span>
-        <el-tag :type="botStore.config.dynamicLeverageConfig.enabled ? 'success' : 'info'">
-          {{ botStore.config.dynamicLeverageConfig.enabled ? '已启用' : '未启用' }}
-        </el-tag>
-      </div>
-      <div class="config-item">
-        <span>移动止损:</span>
-        <el-tag :type="botStore.config.trailingStopConfig.enabled ? 'success' : 'info'">
-          {{ botStore.config.trailingStopConfig.enabled ? '已启用' : '未启用' }}
-        </el-tag>
-      </div>
-      <div class="config-item">
-        <span>价格突破指标:</span>
-        <el-tag :type="botStore.config.indicatorsConfig.priceBreakout.enabled ? 'success' : 'info'">
-          {{ botStore.config.indicatorsConfig.priceBreakout.enabled ? '已启用' : '未启用' }}
-        </el-tag>
-      </div>
-      <div class="config-item">
-        <span>市场扫描间隔:</span>
-        <span>{{ botStore.config.scanInterval }}秒</span>
-      </div>
-      <div class="config-item">
-        <span>持仓扫描间隔:</span>
-        <span>{{ botStore.config.positionScanInterval }}秒</span>
-      </div>
-      <div class="config-item">
-        <span>交易冷却时间:</span>
-        <span>{{ formatCooldownTime(botStore.config.tradeCooldownInterval) }}</span>
-      </div>
-      <div class="config-item">
-        <span>最大风险比例:</span>
-        <span>{{ botStore.config.maxRiskPercentage }}%</span>
+
+      <!-- 其他配置区域 -->
+      <div class="config-section">
+        <div class="section-title">
+          <el-icon><ElIconMore /></el-icon>
+          <span>其他配置</span>
+        </div>
+        <div class="other-grid">
+          <div class="other-item">
+            <div class="other-icon leverage">
+              <el-icon><ElIconScaleToOriginal /></el-icon>
+            </div>
+            <div class="other-content">
+              <span class="other-label">杠杆倍数</span>
+              <span class="other-value">{{ botStore.config.leverage }}<small>倍</small></span>
+            </div>
+          </div>
+          <div class="other-item">
+            <div class="other-icon stoploss">
+              <el-icon><ElIconRemove /></el-icon>
+            </div>
+            <div class="other-content">
+              <span class="other-label">止损ATR</span>
+              <span class="other-value">{{ botStore.config.stopLossATRMultiplier }}<small>倍</small></span>
+            </div>
+          </div>
+          <div class="other-item">
+            <div class="other-icon timeout">
+              <el-icon><ElIconClock /></el-icon>
+            </div>
+            <div class="other-content">
+              <span class="other-label">持仓超时</span>
+              <span class="other-value">{{ botStore.config.positionTimeoutHours }}<small>小时</small></span>
+            </div>
+          </div>
+          <div class="other-item">
+            <div class="other-icon maxstop">
+              <el-icon><ElIconRemoveFilled /></el-icon>
+            </div>
+            <div class="other-content">
+              <span class="other-label">最大止损</span>
+              <span class="other-value">{{ botStore.config.maxStopLossPercentage }}<small>%</small></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </el-card>
@@ -661,10 +764,13 @@ async function handleSaveConfig() {
 </script>
 
 <style scoped>
-.card {
+/* 配置卡片主样式 */
+.config-card {
+  margin-top: 20px;
   margin-bottom: 20px;
 }
 
+/* 卡片头部 */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -672,19 +778,193 @@ async function handleSaveConfig() {
   font-weight: 600;
 }
 
-.config-info {
-  padding: 10px 0;
+/* 配置容器 */
+.config-container {
+  padding: 8px 0;
 }
 
-.config-item {
+/* 配置区块 */
+.config-section {
+  margin-bottom: 20px;
+}
+
+.config-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #ebeef5;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e4e7ed;
 }
 
-.config-item:last-child {
-  border-bottom: none;
+.section-title .el-icon {
+  color: #409eff;
+  font-size: 16px;
+}
+
+/* 网格布局基础样式 */
+.config-grid,
+.params-grid,
+.other-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* 配置项通用样式 */
+.config-card-item,
+.param-item,
+.other-item {
+  background: #f8f9fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+/* 功能开关区域 */
+.config-card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.label-icon {
+  font-size: 16px;
+  color: #e6a23c;
+}
+
+/* 参数配置区域 */
+.param-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.param-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: #409eff;
+  color: #fff;
+}
+
+.param-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.param-label {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 500;
+}
+
+.param-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.param-value small {
+  font-size: 12px;
+  font-weight: 500;
+  color: #909399;
+  margin-left: 2px;
+}
+
+/* 其他配置区域 */
+.other-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.other-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+  background: #67c23a;
+  color: #fff;
+}
+
+.other-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.other-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.other-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.other-value small {
+  font-size: 11px;
+  font-weight: 500;
+  color: #888;
+  margin-left: 2px;
+}
+
+/* 系统控制按钮 */
+.system-control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* 响应式优化 */
+@media (max-width: 480px) {
+  .config-card-item,
+  .param-item,
+  .other-item {
+    padding: 10px;
+  }
+  
+  .param-icon,
+  .other-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .param-value,
+  .other-value {
+    font-size: 14px;
+  }
 }
 </style>

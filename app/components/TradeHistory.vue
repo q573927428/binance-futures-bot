@@ -46,12 +46,12 @@
         </template>
       </el-table-column>
       <el-table-column prop="reason" label="原因" min-width="100" />
-      <el-table-column prop="openTime" label="开仓时间" width="160">
+      <el-table-column prop="openTime" label="开仓时间" width="150">
         <template #default="scope">
           {{ dayjs(scope.row.openTime).format('YYYY-MM-DD HH:mm') }}
         </template>
       </el-table-column>
-      <el-table-column prop="closeTime" label="平仓时间" width="160">
+      <el-table-column prop="closeTime" label="平仓时间" width="150">
         <template #default="scope">
           {{ dayjs(scope.row.closeTime).format('YYYY-MM-DD HH:mm') }}
         </template>
