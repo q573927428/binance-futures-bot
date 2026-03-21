@@ -13,7 +13,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 12,
+  "positionTimeoutHours": 24,
   "scanInterval": 180,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 7200,

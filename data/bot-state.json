@@ -1,10 +1,10 @@
 {
-  "status": "IDLE",
+  "status": "MONITORING",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1774064536509,
+    "timestamp": 1774022456845,
     "dailyLoss": 0,
     "consecutiveLosses": 0
   },
@@ -20,54 +20,15 @@
     "HYPE/USDT",
     "DOGE/USDT"
   ],
-  "isRunning": false,
-  "currentPrice": 70375,
-  "currentPnL": -1.9668000000000174,
-  "currentPnLPercentage": -4.6797016868626145,
-  "totalTrades": 29,
-  "totalPnL": 19.72180994999998,
-  "winRate": 51.72,
+  "isRunning": true,
+  "currentPrice": 4667.31,
+  "currentPnL": 2.1052799999999623,
+  "currentPnLPercentage": 5.217624829755715,
+  "totalTrades": 30,
+  "totalPnL": 21.747109949999995,
+  "winRate": 53.33,
   "allowNewTrades": true,
-  "lastTradeTime": 1774001448420,
-  "lastIndicatorUpdate": 1774001246415,
-  "lastPrice": 70473.1,
-  "strategyAnalyzerData": {
-    "tradeId": "1773947304607-BTC-USDT",
-    "symbol": "BTC/USDT",
-    "direction": "SHORT",
-    "entryPrice": 70047.2,
-    "openTime": 1773947304607,
-    "stopLossPrice": 71448.144,
-    "takeProfit1Price": 68646.256,
-    "takeProfit2Price": 67245.31199999999,
-    "quantity": 0.006,
-    "leverage": 10,
-    "maxFavorableExcursion": 2.043,
-    "maxFavorableExcursionPercentage": 4.861008006030221,
-    "maxAdverseExcursion": -7.659600000000035,
-    "maxAdverseExcursionPercentage": -18.224854098379463,
-    "highestPrice": 71323.8,
-    "lowestPrice": 69706.7,
-    "lastPrice": 70473.4,
-    "entryIndicators": {
-      "rsi": 42.43,
-      "adx15m": 44.82734651207615,
-      "adx1h": 35.625978770586094,
-      "adx4h": 23.97791200033655,
-      "ema20": 71336.10469656401,
-      "ema60": 71399.99204147565,
-      "atr": 621.9228878545808
-    },
-    "aiAnalysis": {
-      "confidence": 86,
-      "score": 71,
-      "riskLevel": "LOW",
-      "reasoning": "基于多时间框架分析，当前BTC/USDT呈现空头趋势。EMA排列为EMA50（71336.1047）< EMA200（71399.9920），价格（70047.2000）位于EMA50和EMA200之下，确认空头趋势完整。趋势强度方面，1小时ADX（44.83）和4小时ADX（35.63）均显示强趋势，但日线ADX（23.98）为中等趋势，导致多周期趋势不一致，这降低了趋势的可靠性。RSI（42.43）处于中性区域，未显示超卖，但支持空头方向。ATR（621.9229，0.89%）表明低波动性，风险相对可控。成交量数据未提供变化趋势，但当前价格下跌（-1.30%）可能伴随成交量支持，需谨慎验证。综合来看，空头趋势占主导，但多周期不一致和RSI中性限制了置信度，建议轻仓做空，并设置严格止损。\n\n关键因素：\n1. 空头EMA排列（价格在EMA50和EMA200之下）\n2. 1小时和4小时ADX显示强趋势\n3. 多周期趋势不一致降低可靠性\n\n[技术指标调整] 置信度+21.0，评分+13.0，基于：ADX(34.8)，RSI(42.4)，ATR(0.89%)",
-      "support": 69000,
-      "resistance": 71300
-    },
-    "atrSum": 98904.86526250253,
-    "atrCount": 173,
-    "lastUpdateTime": 1774001186285
-  }
+  "lastTradeTime": 1774013236988,
+  "lastIndicatorUpdate": 1774013063741,
+  "lastPrice": 4667.75
 }

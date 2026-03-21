@@ -1,5 +1,19 @@
 [
   {
+    "id": "1774013236778-XAU/USDT",
+    "symbol": "XAU/USDT",
+    "direction": "SHORT",
+    "entryPrice": 4691.79,
+    "exitPrice": 4668.24,
+    "quantity": 0.086,
+    "leverage": 10,
+    "pnl": 2.0253000000000156,
+    "pnlPercentage": 5.019406239409731,
+    "openTime": 1774008784745,
+    "closeTime": 1774013236778,
+    "reason": "手动平仓"
+  },
+  {
     "id": "1774001448484-BTC/USDT",
     "symbol": "BTC/USDT",
     "direction": "SHORT",
