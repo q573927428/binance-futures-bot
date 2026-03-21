@@ -17,7 +17,7 @@ export class MarketAnalyzer {
   constructor(binance: BinanceService, config: BotConfig) {
     this.binance = binance
     this.config = config
-    this.indicatorsCache = new IndicatorsCache(binance, config)
+    this.indicatorsCache = IndicatorsCache.getInstance(binance, config)
   }
 
   /**

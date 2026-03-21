@@ -47,8 +47,8 @@ export class FuturesBot {
       async (position, entryIndicators, aiAnalysis) => await this.initializeStrategyAnalyzer(position, entryIndicators, aiAnalysis)
     )
     
-    // 创建指标缓存实例
-    const indicatorsCache = new IndicatorsCache(this.binance, defaultConfig)
+    // 获取指标缓存单例
+    const indicatorsCache = IndicatorsCache.getInstance(this.binance, defaultConfig)
     
     this.positionMonitor = new PositionMonitor(
       this.binance,
@@ -293,7 +293,7 @@ export class FuturesBot {
     try {
       // 使用指标缓存服务获取出场指标
       const config = this.stateManager.getConfig()
-      const indicatorsCache = new IndicatorsCache(this.binance, config)
+      const indicatorsCache = IndicatorsCache.getInstance(this.binance, config)
       const exitIndicators = await indicatorsCache.getIndicators(position.symbol)
       
       // 记录出场指标到策略分析器
