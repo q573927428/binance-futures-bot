@@ -138,7 +138,7 @@ export function checkTP2Condition(
   position: Position,
   rsi: number,
   adx15m: number,
-  previousADX15m: number,
+  adxSlope: number,
   riskConfig: BotConfig['riskConfig']
 ): { triggered: boolean; reason: string; data: any } {
   const { entryPrice, initialStopLoss, stopLoss, direction } = position
@@ -154,13 +154,13 @@ export function checkTP2Condition(
   
   const riskRewardRatio = risk > 0 ? profit / risk : 0
   const requiredRiskRewardRatio = riskConfig.takeProfit.tp2RiskRewardRatio
-  const adxChange = previousADX15m - adx15m
   
   // 检查各个条件
   const riskRewardTriggered = profit >= risk * requiredRiskRewardRatio
   const rsiTriggered = (direction === 'LONG' && rsi >= riskConfig.takeProfit.rsiExtreme.long) ||
                       (direction === 'SHORT' && rsi <= riskConfig.takeProfit.rsiExtreme.short)
-  const adxTriggered = adxChange >= riskConfig.takeProfit.adxDecreaseThreshold
+  // 使用ADX斜率判断走弱（负斜率表示ADX下降，绝对值 >= 阈值时触发）
+  const adxTriggered = adxSlope <= -riskConfig.takeProfit.adxDecreaseThreshold
   
   // 新增：必须至少达到0.5R盈利才允许触发TP2
   const minProfitRatio = riskConfig.takeProfit.tp2MinProfitRatio || 0.5
@@ -183,7 +183,7 @@ export function checkTP2Condition(
       reasons.push(`RSI ${rsi.toFixed(1)} ${direction === 'LONG' ? '≥' : '≤'} ${requiredRsi}`)
     }
     if (adxTriggered) {
-      reasons.push(`ADX下降 ${adxChange.toFixed(2)} ≥ ${riskConfig.takeProfit.adxDecreaseThreshold}`)
+      reasons.push(`ADX斜率 ${adxSlope.toFixed(2)} ≤ -${riskConfig.takeProfit.adxDecreaseThreshold}`)
     }
     reason = `达到TP2条件：${reasons.join('，')}（已满足最小盈利${minProfitRatio}R）`
   } else {
@@ -202,7 +202,7 @@ export function checkTP2Condition(
         reasons.push(`RSI ${rsi.toFixed(1)} ${direction === 'LONG' ? '<' : '>'} ${requiredRsi}`)
       }
       if (!adxTriggered) {
-        reasons.push(`ADX变化 ${adxChange.toFixed(2)} < ${riskConfig.takeProfit.adxDecreaseThreshold}`)
+        reasons.push(`ADX斜率 ${adxSlope.toFixed(2)} > -${riskConfig.takeProfit.adxDecreaseThreshold}`)
       }
     }
     reason = `未达到TP2条件：${reasons.join('，')}`
@@ -224,8 +224,7 @@ export function checkTP2Condition(
       hasMinProfit,
       rsi,
       adx15m,
-      previousADX15m,
-      adxChange,
+      adxSlope,
       direction,
       conditionTriggers: {
         riskReward: riskRewardTriggered,

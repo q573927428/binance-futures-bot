@@ -377,7 +377,11 @@
       </el-form-item>
 
       <el-form-item label="ADX下降阈值">
-        <el-input-number v-model="editConfig.riskConfig.takeProfit.adxDecreaseThreshold" :min="1" :max="20" />
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.adxDecreaseThreshold" :min="0.1" :max="10" />
+      </el-form-item>
+
+      <el-form-item label="ADX斜率周期">
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.adxSlopePeriod" :min="1" :max="10" />
       </el-form-item>
 
       <el-form-item label="每日交易限制">

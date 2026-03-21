@@ -215,6 +215,7 @@ export interface RiskConfig {
       short: number  // 空头RSI极值
     }
     adxDecreaseThreshold: number    // ADX下降阈值
+    adxSlopePeriod: number          // ADX斜率计算周期（默认3）
   }
   
   // 每日交易限制
@@ -260,6 +261,9 @@ export interface TechnicalIndicators {
   adx15m: number
   adx1h: number
   adx4h: number
+  
+  // ADX斜率（当前值 - N周期前的值，负值表示ADX下降）
+  adxSlope: number
   
   // RSI
   rsi: number

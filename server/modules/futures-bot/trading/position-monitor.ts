@@ -100,19 +100,18 @@ export class PositionMonitor {
         strategyAnalyzer.recordATR(indicators.atr)
       }
 
-      // 获取当前symbol的previous ADX值
-      const prevADX = this.getPreviousADX(position.symbol) ?? indicators.adx15m
-      const isADXDecreasing = prevADX > indicators.adx15m
+      // 使用ADX斜率判断趋势走弱（负斜率表示ADX下降）
+      const isADXDecreasing = indicators.adxSlope < 0
       
       // 检查持仓超时（ADX走弱时触发）
       const isTimeout = isPositionTimeout(position, this.config.positionTimeoutHours, isADXDecreasing)
       if (isTimeout) {
-        logger.warn('风控', `持仓超时且ADX走弱 (prevADX: ${prevADX.toFixed(2)}, currentADX: ${indicators.adx15m.toFixed(2)})`)
+        logger.warn('风控', `持仓超时且ADX走弱 (ADX斜率: ${indicators.adxSlope.toFixed(2)}, currentADX: ${indicators.adx15m.toFixed(2)})`)
         return { shouldClose: true, reason: '持仓超时' }
       }
 
-      // 检查TP2条件
-      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, prevADX, this.config.riskConfig)
+      // 检查TP2条件（使用ADX斜率）
+      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, indicators.adxSlope, this.config.riskConfig)
       if (tp2Result.triggered) {
         logger.success('止盈', tp2Result.reason, tp2Result.data)
         return { shouldClose: true, reason: 'TP2止盈' }

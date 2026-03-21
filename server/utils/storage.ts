@@ -245,6 +245,7 @@ export function getDefaultConfig(): BotConfig {
           short: 30,  // 空头RSI极值
         },
         adxDecreaseThreshold: 5,    // ADX下降阈值
+        adxSlopePeriod: 3,          // ADX斜率计算周期（默认3）
       },
       dailyTradeLimit: 3,            // 当天交易次数限制
     },

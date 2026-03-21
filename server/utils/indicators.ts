@@ -103,6 +103,13 @@ export async function calculateIndicators(
     const ema30Value = getEMAValue(emaMediumValues, closesMain[closesMain.length - 1] || 0)
     const ema60Value = getEMAValue(emaSlowValues, closesMain[closesMain.length - 1] || 0)
 
+    // 计算ADX斜率（当前值 - N周期前的值）
+    const adxSlopePeriod = config?.riskConfig?.takeProfit?.adxSlopePeriod || 3
+    const currentADX = adxMainValues[adxMainValues.length - 1]?.adx || 0
+    const previousADXIndex = Math.max(0, adxMainValues.length - 1 - adxSlopePeriod)
+    const previousADX = adxMainValues[previousADXIndex]?.adx || currentADX
+    const adxSlope = currentADX - previousADX
+
     return {
       ema20: ema20Value,
       ema30: ema30Value,
@@ -110,6 +117,7 @@ export async function calculateIndicators(
       adx15m,
       adx1h,
       adx4h,
+      adxSlope,
       rsi: rsiValues[rsiValues.length - 1] || 0,
       atr: atrValues[atrValues.length - 1] || 0,
     }

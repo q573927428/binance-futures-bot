@@ -44,7 +44,8 @@
         "long": 78,
         "short": 22
       },
-      "adxDecreaseThreshold": 3
+      "adxDecreaseThreshold": 3,
+      "adxSlopePeriod": 3
     },
     "dailyTradeLimit": 5
   },
