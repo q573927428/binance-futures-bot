@@ -13,7 +13,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 24,
+  "positionTimeoutHours": 8,
   "scanInterval": 180,
   "positionScanInterval": 60,
   "tradeCooldownInterval": 7200,
@@ -44,7 +44,7 @@
         "long": 78,
         "short": 22
       },
-      "adxDecreaseThreshold": 3,
+      "adxDecreaseThreshold": 0.8,
       "adxSlopePeriod": 3
     },
     "dailyTradeLimit": 5

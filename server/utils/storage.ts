@@ -205,97 +205,99 @@ export async function getTodayTradeHistory(): Promise<TradeHistory[]> {
 
 /**
  * 获取默认配置
+ * 默认值与 data/bot-config.json 保持同步
  */
 export function getDefaultConfig(): BotConfig {
   return {
-    strategyMode: 'short_term',      //策略模式：short_term(短期)或medium_term(中长期)
-    symbols: ['BTC/USDT','ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XAU/USDT', 'HYPE/USDT', 'DOGE/USDT'],
-    leverage: 10,                     //杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
-    maxRiskPercentage: 20,           //单笔最大风险比例
-    stopLossATRMultiplier: 2,      //止损ATR倍数
-    maxStopLossPercentage: 3,      //最大止损比例
-    positionTimeoutHours: 4,         //持仓超时时间
-    scanInterval: 120,                //市场扫描间隔
-    positionScanInterval: 60,         //持仓扫描间隔
-    tradeCooldownInterval: 600,     //交易冷却时间间隔（秒）- 默认10分钟
+    strategyMode: 'medium_term',      // 策略模式：short_term(短期)或medium_term(中长期)
+    symbols: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XAU/USDT', 'HYPE/USDT', 'DOGE/USDT'],
+    leverage: 10,                     // 杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
+    maxRiskPercentage: 20,            // 单笔最大风险比例（%）
+    stopLossATRMultiplier: 2.5,       // 止损ATR倍数
+    maxStopLossPercentage: 2,         // 最大止损比例（%）
+    positionTimeoutHours: 8,          // 持仓超时时间（小时）
+    scanInterval: 180,                // 市场扫描间隔（秒）
+    positionScanInterval: 60,         // 持仓扫描间隔（秒）
+    tradeCooldownInterval: 7200,      // 交易冷却时间间隔（秒）- 默认2小时
     aiConfig: { 
-      enabled: true,                //启用AI分析
-      minConfidence: 60,             //最小置信度（0-100）
-      maxRiskLevel: 'MEDIUM',        //最大风险等级
-      useForEntry: true,             //用于开仓决策
-      useForExit: true,              //用于平仓决策
-      cacheDuration: 10,             //缓存时长（分钟）
+      enabled: true,                  // 启用AI分析
+      analysisInterval: 1500,         // AI分析间隔（秒）
+      minConfidence: 70,              // 最小置信度（0-100）
+      maxRiskLevel: 'MEDIUM',         // 最大风险等级：LOW/MEDIUM/HIGH
+      useForEntry: true,              // 用于开仓决策
+      useForExit: true,               // 用于平仓决策
+      cacheDuration: 10,              // 缓存时长（分钟）
     },
     riskConfig: {
       circuitBreaker: {
-        dailyLossThreshold: 2,       // 当日亏损阈值（%）
+        dailyLossThreshold: 10,       // 当日亏损阈值（%）
         consecutiveLossesThreshold: 3, // 连续止损阈值（次）
       },
       forceLiquidateTime: {
-        enabled: true,    // 是否启用强制平仓
-        hour: 23,    // 小时（0-23）
-        minute: 30,  // 分钟（0-59）
+        enabled: false,               // 是否启用强制平仓
+        hour: 23,                     // 小时（0-23）
+        minute: 55,                   // 分钟（0-59）
       },
       takeProfit: {
-        tp1RiskRewardRatio: 2,      // TP1盈亏比（1:2）
-        tp2RiskRewardRatio: 3,      // TP2盈亏比（1:3）
-        tp2MinProfitRatio: 0.5,     // TP2最小盈利比例（0.5R）
+        tp1RiskRewardRatio: 2,        // TP1盈亏比（1:2）
+        tp2RiskRewardRatio: 3,        // TP2盈亏比（1:3）
+        tp2MinProfitRatio: 1,         // TP2最小盈利比例（1R）
         rsiExtreme: {
-          long: 70,   // 多头RSI极值
-          short: 30,  // 空头RSI极值
+          long: 78,                   // 多头RSI极值
+          short: 22,                  // 空头RSI极值
         },
-        adxDecreaseThreshold: 5,    // ADX下降阈值
-        adxSlopePeriod: 3,          // ADX斜率计算周期（默认3）
+        adxDecreaseThreshold: 0.8,    // ADX下降阈值
+        adxSlopePeriod: 3,            // ADX斜率计算周期
       },
-      dailyTradeLimit: 3,            // 当天交易次数限制
+      dailyTradeLimit: 5,             // 当天交易次数限制
     },
     dynamicLeverageConfig: {
-      enabled: true,                 // 启用动态杠杆
-      minLeverage: 2,                // 最小杠杆倍数
-      maxLeverage: 20,               // 最大杠杆倍数
-      baseLeverage: 6,               // 基础杠杆倍数（从5提高到8以获得更分散的杠杆）
-      riskLevelMultipliers: {        // 风险等级乘数（进一步调整以获得更分散的杠杆）
+      enabled: false,                 // 启用动态杠杆
+      minLeverage: 2,                 // 最小杠杆倍数
+      maxLeverage: 20,                // 最大杠杆倍数
+      baseLeverage: 8,                // 基础杠杆倍数
+      riskLevelMultipliers: {         // 风险等级乘数
         LOW: 1.5,
         MEDIUM: 1.0,
         HIGH: 0.5,
       },
     },
     trailingStopConfig: {
-      enabled: true,                 // 启用移动止损
-      activationRatio: 0.5,          // 激活盈亏比：盈利达到风险的50%时启用
-      trailingDistance: 1.5,         // 跟踪距离：ATR的1.5倍
-      updateIntervalSeconds: 60,     // 更新间隔：60秒检查一次
+      enabled: true,                  // 启用移动止损
+      activationRatio: 0.6,           // 激活盈亏比：盈利达到风险的60%时启用
+      trailingDistance: 1.2,          // 跟踪距离：ATR的1.2倍
+      updateIntervalSeconds: 120,     // 更新间隔（秒）：120秒检查一次
     },
     indicatorsConfig: {
       adxTrend: {
-        adx1hThreshold: 25,          // 1小时ADX阈值
-        adx4hThreshold: 28,          // 4小时ADX阈值
-        adx15mThreshold: 30,         // 15分钟ADX阈值
-        enableAdx15mVs1hCheck: true, // 启用15分钟ADX > 1小时ADX检查
+        adx1hThreshold: 20,           // 1小时ADX阈值
+        adx4hThreshold: 15,           // 4小时ADX阈值
+        adx15mThreshold: 25,          // 15分钟ADX阈值
+        enableAdx15mVs1hCheck: false, // 启用15分钟ADX > 1小时ADX检查
       },
       longEntry: {
-        emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)
-        rsiMin: 40,                  // RSI最小值
-        rsiMax: 60,                  // RSI最大值
+        emaDeviationThreshold: 0.03,  // EMA偏离阈值 (3%)
+        rsiMin: 35,                   // RSI最小值
+        rsiMax: 65,                   // RSI最大值
         candleShadowThreshold: 0.005, // K线下影线阈值 (0.5%)
-        volumeConfirmation: true,    // 成交量确认
-        volumeEMAPeriod: 10,         // EMA成交量周期
-        volumeEMAMultiplier: 1.2,    // EMA成交量倍数
+        volumeConfirmation: true,     // 成交量确认
+        volumeEMAPeriod: 12,          // EMA成交量周期
+        volumeEMAMultiplier: 1.2,     // EMA成交量倍数
       },
       shortEntry: {
-        emaDeviationThreshold: 0.005, // EMA偏离阈值 (0.5%)
-        rsiMin: 40,                  // RSI最小值
-        rsiMax: 55,                  // RSI最大值
+        emaDeviationThreshold: 0.02,  // EMA偏离阈值 (2%)
+        rsiMin: 35,                   // RSI最小值
+        rsiMax: 65,                   // RSI最大值
         candleShadowThreshold: 0.005, // K线上影线阈值 (0.5%)
-        volumeConfirmation: true,    // 成交量确认
-        volumeEMAPeriod: 10,         // EMA成交量周期
-        volumeEMAMultiplier: 1.2,    // EMA成交量倍数
+        volumeConfirmation: true,     // 成交量确认
+        volumeEMAPeriod: 12,          // EMA成交量周期
+        volumeEMAMultiplier: 1.2,     // EMA成交量倍数
       },
       priceBreakout: {
-        enabled: true,               // 启用价格突破指标
-        period: 5,                   // 突破周期（K线数）
-        requireConfirmation: true,   // 需要收盘价确认
-        confirmationCandles: 1,      // 确认K线数量
+        enabled: false,               // 启用价格突破指标
+        period: 5,                    // 突破周期（K线数）
+        requireConfirmation: true,    // 需要收盘价确认
+        confirmationCandles: 1,       // 确认K线数量
       },
     },
   }
