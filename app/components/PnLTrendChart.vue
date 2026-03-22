@@ -5,9 +5,24 @@
         <span>📈 {{ chartTitle }}</span>
         <div class="header-actions">
           <el-radio-group v-model="chartMode" size="small" style="margin-right: 10px">
-            <el-radio-button value="pnl">总盈亏</el-radio-button>
+            <el-radio-button value="pnl">盈亏</el-radio-button>
             <el-radio-button value="winrate">胜率</el-radio-button>
           </el-radio-group>
+          <el-select
+            v-model="selectedSymbol"
+            placeholder="选择交易对"
+            size="small"
+            style="width: 100px; margin-right: 10px"
+            clearable
+          >
+            <el-option label="全部交易对" value="" />
+            <el-option
+              v-for="symbol in availableSymbols"
+              :key="symbol"
+              :label="symbol"
+              :value="symbol"
+            />
+          </el-select>
           <el-button text type="primary" @click="refreshData">
             <el-icon><ElIconRefresh /></el-icon>
             刷新
@@ -46,8 +61,10 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-box">
-            <span class="stat-label">当前胜率</span>
-            <span class="stat-value">{{ currentWinRate.toFixed(1) }}%</span>
+            <span class="stat-label">平均盈亏</span>
+            <span :class="['stat-value', averagePnL >= 0 ? 'text-success' : 'text-danger']">
+              {{ averagePnL >= 0 ? '+' : '' }}{{ averagePnL.toFixed(2) }} U
+            </span>
           </div>
         </el-col>
       </el-row>
@@ -71,6 +88,19 @@ let chartInstance: any = null
 // 图表模式：pnl=总盈亏，winrate=胜率
 const chartMode = ref<'pnl' | 'winrate'>('pnl')
 
+// 选中的交易对
+const selectedSymbol = ref('')
+
+// 可用的交易对列表
+const availableSymbols = computed(() => {
+  if (!botStore.history || botStore.history.length === 0) return []
+  const symbols = new Set<string>()
+  botStore.history.forEach(trade => {
+    symbols.add(trade.symbol)
+  })
+  return Array.from(symbols).sort()
+})
+
 // 图表标题
 const chartTitle = computed(() => {
   return chartMode.value === 'pnl' ? '累计盈亏走势' : '胜率走势'
@@ -79,13 +109,21 @@ const chartTitle = computed(() => {
 // 是否有数据
 const hasData = computed(() => botStore.history && botStore.history.length > 0)
 
-// 总交易次数
-const totalTrades = computed(() => botStore.history?.length || 0)
+// 总交易次数（基于筛选后的数据）
+const totalTrades = computed(() => sortedHistory.value.length)
 
-// 按时间排序的交易历史（从早到晚）
+// 按时间排序的交易历史（从早到晚），根据选中的交易对筛选
 const sortedHistory = computed(() => {
   if (!botStore.history || botStore.history.length === 0) return []
-  return [...botStore.history].sort((a, b) => a.closeTime - b.closeTime)
+  
+  let filteredHistory = [...botStore.history]
+  
+  // 根据选中的交易对进行筛选
+  if (selectedSymbol.value) {
+    filteredHistory = filteredHistory.filter(trade => trade.symbol === selectedSymbol.value)
+  }
+  
+  return filteredHistory.sort((a, b) => a.closeTime - b.closeTime)
 })
 
 // 计算累计盈亏数据
@@ -129,18 +167,18 @@ const totalPnL = computed(() => {
   return lastItem?.value ?? 0
 })
 
-// 总胜率
+// 总胜率（基于筛选后的数据）
 const overallWinRate = computed(() => {
-  if (!botStore.history || botStore.history.length === 0) return 0
-  const wins = botStore.history.filter(t => t.pnl > 0).length
-  return (wins / botStore.history.length) * 100
+  if (sortedHistory.value.length === 0) return 0
+  const wins = sortedHistory.value.filter(t => t.pnl > 0).length
+  return (wins / sortedHistory.value.length) * 100
 })
 
-// 当前胜率
-const currentWinRate = computed(() => {
-  if (winRateData.value.length === 0) return 0
-  const lastItem = winRateData.value[winRateData.value.length - 1]
-  return lastItem?.value ?? 0
+// 平均盈亏
+const averagePnL = computed(() => {
+  if (sortedHistory.value.length === 0) return 0
+  const total = sortedHistory.value.reduce((sum, trade) => sum + trade.pnl, 0)
+  return total / sortedHistory.value.length
 })
 
 // 图表配置
@@ -482,6 +520,11 @@ watch(() => botStore.history, () => {
 
 // 监听图表模式变化
 watch(chartMode, () => {
+  updateChart()
+})
+
+// 监听交易对筛选变化
+watch(selectedSymbol, () => {
   updateChart()
 })
 
