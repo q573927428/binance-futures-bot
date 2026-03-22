@@ -190,6 +190,7 @@ const chartOption = computed<EChartsOption>(() => {
       top: '40px',
       containLabel: true
     },
+
     xAxis: {
       type: 'category',
       boundaryGap: false,
@@ -262,12 +263,12 @@ const chartOption = computed<EChartsOption>(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
+              { offset: 0, color: 'rgba(103, 194, 58, 0.5)' },
               { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
             ]
           }
         },
-        stack: 'total',
+        stack: undefined,
         showSymbol: false
       },
       {
@@ -291,12 +292,12 @@ const chartOption = computed<EChartsOption>(() => {
             x2: 0,
             y2: 1,
             colorStops: [
-              { offset: 0, color: 'rgba(245, 108, 108, 0.3)' },
-              { offset: 1, color: 'rgba(245, 108, 108, 0.05)' }
+              { offset: 0, color: 'rgba(245, 182, 182, 0.05)' },
+              { offset: 1, color: 'rgba(245, 85, 85, 0.5)' }
             ]
           }
         },
-        stack: 'total',
+        stack: undefined,
         showSymbol: false
       },
       {
