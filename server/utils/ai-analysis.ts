@@ -20,14 +20,14 @@ export function calculateTechnicalWeightAdjustment(
   
   // 1. ADX趋势强度调整（多周期确认）
   // ADX > 25表示强趋势，ADX > 40表示非常强趋势
-  const adxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
-  if (adxScore >= 40) {
+  const avgAdxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
+  if (avgAdxScore >= 40) {
     confidenceAdjustment += 15
     scoreAdjustment += 10
-  } else if (adxScore >= 25) {
+  } else if (avgAdxScore >= 25) {
     confidenceAdjustment += 8
     scoreAdjustment += 5
-  } else if (adxScore >= 20) {
+  } else if (avgAdxScore >= 20) {
     confidenceAdjustment += 3
     scoreAdjustment += 2
   }
@@ -46,29 +46,52 @@ export function calculateTechnicalWeightAdjustment(
     scoreAdjustment += 3
   }
   
-  // 3. RSI位置调整
+  // 3. RSI位置调整（结合交易方向）
+  const isLong = (indicators.ema20 > indicators.ema60 && price > indicators.ema20)
+  const isShort = (indicators.ema20 < indicators.ema60 && price < indicators.ema20)
+
   if (indicators.rsi >= 70) {
-    // 超买区域，降低置信度
-    confidenceAdjustment -= 10
-    scoreAdjustment -= 8
-  } else if (indicators.rsi <= 30) {
-    // 超卖区域，降低置信度
-    confidenceAdjustment -= 10
-    scoreAdjustment -= 8
+    // 超买区域
+    if (isLong) {
+      confidenceAdjustment -= 10  // 多头风险高
+      scoreAdjustment -= 8
+    } else if (isShort) {
+      confidenceAdjustment += 5   // 空头机会
+      scoreAdjustment += 3
+    }
   } else if (indicators.rsi >= 60) {
-    // 接近超买，轻微降低
-    confidenceAdjustment -= 3
-    scoreAdjustment -= 2
-  } else if (indicators.rsi <= 40) {
-    // 接近超卖，轻微降低
-    confidenceAdjustment -= 3
-    scoreAdjustment -= 2
+    // 接近超买
+    if (isLong) {
+      confidenceAdjustment -= 3
+      scoreAdjustment -= 2
+    } else if (isShort) {
+      confidenceAdjustment += 2
+      scoreAdjustment += 1
+    }
+  } else if (indicators.rsi >= 40) {
+    // 理想区间
+    confidenceAdjustment += 8
+    scoreAdjustment += 5
+  } else if (indicators.rsi >= 30) {
+    // 接近超卖
+    if (isLong) {
+      confidenceAdjustment += 2   // 多头机会
+      scoreAdjustment += 1
+    } else if (isShort) {
+      confidenceAdjustment -= 4   // 空头风险
+      scoreAdjustment -= 3
+    }
   } else {
-    // RSI在40-60理想区间
-    confidenceAdjustment += 5
-    scoreAdjustment += 3
+    // 超卖区域
+    if (isLong) {
+      confidenceAdjustment += 5   // 多头机会
+      scoreAdjustment += 3
+    } else if (isShort) {
+      confidenceAdjustment -= 8   // 空头风险
+      scoreAdjustment -= 6
+    }
   }
-  
+
   // 4. EMA排列调整
   const emaDistance20_60 = Math.abs(indicators.ema20 - indicators.ema60) / indicators.ema60
   if (emaDistance20_60 >= 0.02) { // 2%以上距离
@@ -88,16 +111,36 @@ export function calculateTechnicalWeightAdjustment(
     scoreAdjustment += 3
   }
   
-  // 6. ATR波动性调整（低波动性可能更好）
+  // 6. ATR波动性调整（基于实际交易数据优化）
   const normalizedATR = indicators.atr / price
-  if (normalizedATR <= 0.01) { // ATR小于1%
-    // 低波动性，趋势可能更稳定
-    confidenceAdjustment += 3
-    scoreAdjustment += 2
-  } else if (normalizedATR >= 0.03) { // ATR大于3%
-    // 高波动性，风险增加
-    confidenceAdjustment -= 5
-    scoreAdjustment -= 3
+  const adxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
+  
+  if (adxScore >= 30) { // 强趋势市场
+    // 强趋势通常伴随适度波动性，这是正常的
+    if (normalizedATR <= 0.008) { // ATR小于0.8%
+      // 强趋势但波动性偏低，可能趋势不够强劲
+      confidenceAdjustment -= 2
+      scoreAdjustment -= 1
+    } else if (normalizedATR >= 0.025) { // ATR大于2.5%
+      // 强趋势且波动性过高，风险较大
+      confidenceAdjustment -= 5
+      scoreAdjustment -= 3
+    } else {
+      // 强趋势+适度波动性（0.8%-2.5%），这是理想状态
+      confidenceAdjustment += 5
+      scoreAdjustment += 3
+    }
+  } else { // 非强趋势市场
+    // 基于实际交易数据调整阈值
+    if (normalizedATR <= 0.005) { // ATR小于0.5%
+      // 低波动性，市场相对稳定
+      confidenceAdjustment += 3
+      scoreAdjustment += 2
+    } else if (normalizedATR >= 0.015) { // ATR大于1.5%
+      // 高波动性，风险增加，不适合趋势交易
+      confidenceAdjustment -= 5
+      scoreAdjustment -= 3
+    }
   }
   
   // 确保调整在合理范围内
@@ -216,7 +259,7 @@ function buildAIPrompt(
 
 ### 其他关键指标：
 - ${emaMediumName}: ${indicators.ema30.toFixed(4)} ${Math.abs(price - indicators.ema30) / indicators.ema30 <= 0.005 ? '⚠️ 价格接近' + emaMediumName + '（潜在支撑/阻力）' : ''}
-- ATR: ${indicators.atr.toFixed(4)} (${(normalizedATR * 100).toFixed(2)}%) ${normalizedATR <= 0.01 ? '✓ 低波动性' : normalizedATR >= 0.03 ? '⚠️ 高波动性' : '○ 正常波动性'}
+- ATR: ${indicators.atr.toFixed(4)} (${(normalizedATR * 100).toFixed(2)}%) ${normalizedATR <= 0.005 ? '✓ 低波动性' : normalizedATR >= 0.015 ? '⚠️ 高波动性' : '○ 正常波动性'}
 
 ## 多时间框架一致性分析：
 - ADX一致性：${indicators.adx15m >= 20 && indicators.adx1h >= 22 && indicators.adx4h >= 25 ? '✓ 多周期趋势一致' : '✗ 多周期趋势不一致'}
