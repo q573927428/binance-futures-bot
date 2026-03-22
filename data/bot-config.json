@@ -20,7 +20,7 @@
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minConfidence": 70,
+    "minConfidence": 99,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
     "useForExit": true,
@@ -80,7 +80,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 2.5
+      "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
@@ -89,7 +89,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 3
+      "volumeEMAMultiplier": 1.2
     },
     "priceBreakout": {
       "enabled": false,

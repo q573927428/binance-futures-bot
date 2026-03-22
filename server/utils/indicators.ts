@@ -424,10 +424,10 @@ export function checkLongEntry(
       reasons.push('K线未确认（非阳线且无明显下影线）')
     }
     if (!volumePassed) {
-      reasons.push(`成交量条件不满足: ${volumeReason}`)
+      reasons.push(`${volumeReason}`)
     }
     if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
-      reasons.push(`价格突破条件不满足: ${priceBreakoutReason}`)
+      reasons.push(`${priceBreakoutReason}`)
     }
     reason = reasons.join('；')
   }
@@ -608,10 +608,10 @@ export function checkShortEntry(
       reasons.push('K线未确认（非阴线且无明显上影线）')
     }
     if (!volumePassed) {
-      reasons.push(`成交量条件不满足: ${volumeReason}`)
+      reasons.push(`${volumeReason}`)
     }
     if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
-      reasons.push(`价格突破条件不满足: ${priceBreakoutReason}`)
+      reasons.push(`${priceBreakoutReason}`)
     }
     reason = reasons.join('；')
   }
