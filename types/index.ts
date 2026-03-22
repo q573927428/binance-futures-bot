@@ -106,6 +106,13 @@ export interface PriceBreakoutConfig {
   confirmationCandles: number // 确认K线数量（默认1）
 }
 
+// 波动率过滤配置
+export interface VolatilityFilterConfig {
+  enabled: boolean           // 是否启用波动率过滤
+  minATRPercent: number      // 最小ATR百分比阈值（默认 0.5%）
+  skipSymbols: string[]      // 跳过波动率检查的交易对列表
+}
+
 // 技术指标配置
 export interface IndicatorsConfig {
   // ADX趋势检查配置
@@ -140,6 +147,9 @@ export interface IndicatorsConfig {
   
   // 价格突破配置
   priceBreakout: PriceBreakoutConfig
+  
+  // 波动率过滤配置
+  volatility: VolatilityFilterConfig
 }
 
 // 系统配置

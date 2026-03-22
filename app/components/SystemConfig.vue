@@ -225,13 +225,12 @@
       
       <el-form-item label="交易对">
         <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 100%">
-          <el-option label="BTC/USDT" value="BTC/USDT" />
-          <el-option label="ETH/USDT" value="ETH/USDT" />
-          <el-option label="BNB/USDT" value="BNB/USDT" />
-          <el-option label="SOL/USDT" value="SOL/USDT" />
-          <el-option label="XAU/USDT" value="XAU/USDT" />
-          <el-option label="HYPE/USDT" value="HYPE/USDT" />
-          <el-option label="DOGE/USDT" value="DOGE/USDT" />
+          <el-option 
+            v-for="symbol in availableSymbols" 
+            :key="symbol" 
+            :label="symbol" 
+            :value="symbol" 
+          />
         </el-select>
       </el-form-item>
 
@@ -491,6 +490,27 @@
 
       <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled && editConfig.indicatorsConfig.priceBreakout.requireConfirmation" label="确认K线数量">
         <el-input-number v-model="editConfig.indicatorsConfig.priceBreakout.confirmationCandles" :min="1" :max="3" />
+      </el-form-item>
+
+      <el-divider>波动率过滤配置</el-divider>
+
+      <el-form-item label="启用波动率过滤">
+        <el-switch v-model="editConfig.indicatorsConfig.volatility.enabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.volatility.enabled" label="最小ATR百分比(%)">
+        <el-input-number v-model="editConfig.indicatorsConfig.volatility.minATRPercent" :min="0.1" :max="5" :step="0.1" :precision="2" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.volatility.enabled" label="跳过检查的交易对">
+        <el-select v-model="editConfig.indicatorsConfig.volatility.skipSymbols" multiple placeholder="选择要跳过的交易对" style="width: 100%">
+          <el-option 
+            v-for="symbol in availableSymbols" 
+            :key="symbol" 
+            :label="symbol" 
+            :value="symbol" 
+          />
+        </el-select>
       </el-form-item>
     </el-form>
 
@@ -753,6 +773,27 @@ async function handleStop() {
     ElMessage.error(botStore.error || '停止失败')
   }
 }
+
+// 可用的交易对列表（从配置中获取）
+const availableSymbols = computed(() => {
+  // 使用默认的交易对列表
+  const defaultSymbols = [
+    'BTC/USDT',
+    'ETH/USDT', 
+    'BNB/USDT',
+    'SOL/USDT',
+    'XAU/USDT',
+    'HYPE/USDT',
+    'DOGE/USDT'
+  ]
+  
+  // 如果当前有配置，使用配置中的symbols
+  if (botStore.config?.symbols && botStore.config.symbols.length > 0) {
+    return botStore.config.symbols
+  }
+  
+  return defaultSymbols
+})
 
 async function handleSaveConfig() {
   if (!editConfig.value) return

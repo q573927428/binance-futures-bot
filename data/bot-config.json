@@ -96,6 +96,11 @@
       "period": 5,
       "requireConfirmation": true,
       "confirmationCandles": 1
+    },
+    "volatility": {
+      "enabled": true,
+      "minATRPercent": 0.5,
+      "skipSymbols": []
     }
   }
 }

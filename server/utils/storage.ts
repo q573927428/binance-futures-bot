@@ -299,6 +299,11 @@ export function getDefaultConfig(): BotConfig {
         requireConfirmation: true,    // 需要收盘价确认
         confirmationCandles: 1,       // 确认K线数量
       },
+      volatility: {
+        enabled: true,                // 启用波动率过滤
+        minATRPercent: 0.5,           // 最小ATR百分比阈值（0.5%）
+        skipSymbols: [],              // 跳过波动率检查的交易对列表
+      },
     },
   }
 }

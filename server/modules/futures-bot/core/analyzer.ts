@@ -1,6 +1,6 @@
 import type { TradeSignal, BotConfig } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
-import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry } from '../../../utils/indicators'
+import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, checkVolatility } from '../../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../../utils/ai-analysis'
 import { logger } from '../../../utils/logger'
 import { IndicatorsCache } from '../services/indicators-cache'
@@ -62,6 +62,13 @@ export class MarketAnalyzer {
       const adxResult = checkADXTrend(indicators, this.config)
       if (!adxResult.passed) {
         this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
+        return null
+      }
+
+      // 检查波动率条件
+      const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
+      if (!volatilityResult.passed) {
+        this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
         return null
       }
 

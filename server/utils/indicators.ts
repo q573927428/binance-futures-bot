@@ -935,3 +935,76 @@ export function checkPriceBreakoutShort(
     }
   }
 }
+
+/**
+ * 检查波动率条件
+ */
+export function checkVolatility(
+  price: number,
+  indicators: TechnicalIndicators,
+  config?: BotConfig,
+  symbol?: string
+): { passed: boolean; reason: string; data?: any } {
+  // 使用配置参数或默认值
+  const enabled = config?.indicatorsConfig?.volatility?.enabled ?? true
+  const minATRPercent = config?.indicatorsConfig?.volatility?.minATRPercent ?? 0.5
+  const skipSymbols = config?.indicatorsConfig?.volatility?.skipSymbols ?? []
+
+  // 如果未启用波动率过滤，直接返回通过
+  if (!enabled) {
+    return {
+      passed: true,
+      reason: '波动率过滤未启用',
+      data: {
+        enabled: false,
+        minATRPercent,
+        skipSymbols
+      }
+    }
+  }
+
+  // 检查是否在跳过列表中
+  if (symbol && skipSymbols.includes(symbol)) {
+    return {
+      passed: true,
+      reason: `交易对${symbol}在跳过列表中，不检查波动率`,
+      data: {
+        enabled,
+        minATRPercent,
+        skipSymbols,
+        symbol,
+        skipped: true
+      }
+    }
+  }
+
+  const { atr } = indicators
+
+  // 计算ATR百分比（波动率）
+  const atrPercent = (atr / price) * 100
+
+  // 检查波动率是否达到最小阈值
+  const passed = atrPercent >= minATRPercent
+
+  let reason = ''
+  if (passed) {
+    reason = `波动率满足条件：ATR百分比${atrPercent.toFixed(2)}% ≥ ${minATRPercent}%`
+  } else {
+    reason = `波动率过低：ATR百分比${atrPercent.toFixed(2)}% < ${minATRPercent}%`
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      enabled,
+      minATRPercent,
+      skipSymbols,
+      price,
+      atr,
+      atrPercent,
+      symbol,
+      skipped: symbol ? skipSymbols.includes(symbol) : false
+    }
+  }
+}
