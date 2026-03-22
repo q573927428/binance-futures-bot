@@ -89,15 +89,15 @@
                   </div>
                   <div class="balance-details-large">
                     <div class="balance-row-large">
-                      <span class="balance-label-large">总余额</span>
+                      <span class="balance-label-large">💵 总余额</span>
                       <span class="balance-total-large">$ {{ formatBalance(usdtBalance?.total || 0) }}</span>
                     </div>
                     <div class="balance-row-large">
-                      <span class="balance-label-large">可用</span>
+                      <span class="balance-label-large">💚 可用</span>
                       <span class="balance-free-large">$ {{ formatBalance(usdtBalance?.free || 0) }}</span>
                     </div>
                     <div class="balance-row-large">
-                      <span class="balance-label-large">锁定</span>
+                      <span class="balance-label-large">🔐 锁定</span>
                       <span class="balance-locked-large">$ {{ formatBalance(usdtBalance?.locked || 0) }}</span>
                     </div>
                   </div>
@@ -383,7 +383,7 @@ onUnmounted(() => {
 }
 
 .balance-total-large {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
   color: #1890ff;
   line-height: 1.2;
@@ -417,12 +417,6 @@ onUnmounted(() => {
   margin-bottom: 4px;
 }
 
-.balance-total-large {
-  font-size: 16px;
-  font-weight: 600;
-  color: #3b82f6;
-}
-
 .balance-free-large {
   font-size: 16px;
   font-weight: 600;
@@ -453,10 +447,6 @@ onUnmounted(() => {
     padding: 8px 3px;
   }
   
-  .stat-card-value {
-    font-size: 13px;
-  }
-  
   .balance-bar {
     flex-wrap: wrap;
     gap: 3px;
@@ -467,14 +457,6 @@ onUnmounted(() => {
     padding: 10px;
   }
   
-  .balance-total-large {
-    font-size: 18px;
-  }
-  
-  .balance-free-large,
-  .balance-locked-large {
-    font-size: 12px;
-  }
   
   .balance-details-large {
     padding: 6px;
