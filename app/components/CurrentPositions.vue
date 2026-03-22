@@ -5,11 +5,12 @@
         <span>🎯 当前持仓</span>
         <div class="header-actions">
           <el-button
-            type="danger"
-            size="small"
+            text
+            type="primary"
             @click="handleClosePosition"
             :loading="isClosing"
           >
+            <el-icon><ElIconRemove /></el-icon>
             手动平仓
           </el-button>
         </div>
