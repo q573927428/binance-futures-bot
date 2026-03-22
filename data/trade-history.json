@@ -1,5 +1,19 @@
 [
   {
+    "id": "1774171601177-XAU/USDT",
+    "symbol": "XAU/USDT",
+    "direction": "SHORT",
+    "entryPrice": 4495.59,
+    "exitPrice": 4495.36,
+    "quantity": 0.09,
+    "leverage": 10,
+    "pnl": 0.020700000000042563,
+    "pnlPercentage": 0.051161249135368875,
+    "openTime": 1774171421544,
+    "closeTime": 1774171601177,
+    "reason": "手动平仓"
+  },
+  {
     "id": "1774013236778-XAU/USDT",
     "symbol": "XAU/USDT",
     "direction": "SHORT",

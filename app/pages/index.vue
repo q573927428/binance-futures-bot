@@ -233,7 +233,6 @@ async function handleEditConfig() {
 // 页面加载时获取状态
 onMounted(async () => {
   await botStore.fetchStatus()
-  await botStore.fetchHistory()
 
   // 开启轮询，使用配置中的 scanInterval 值
   stopPolling = botStore.startPolling()

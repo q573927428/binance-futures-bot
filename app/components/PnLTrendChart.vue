@@ -2,14 +2,12 @@
   <el-card class="card" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>📈 盈亏与胜率走势</span>
+        <span>📈 {{ chartTitle }}</span>
         <div class="header-actions">
-          <el-select v-model="rollingWindow" size="small" style="width: 120px; margin-right: 10px">
-            <el-option label="最近10笔" :value="10" />
-            <el-option label="最近20笔" :value="20" />
-            <el-option label="最近50笔" :value="50" />
-            <el-option label="最近100笔" :value="100" />
-          </el-select>
+          <el-radio-group v-model="chartMode" size="small" style="margin-right: 10px">
+            <el-radio-button value="pnl">总盈亏</el-radio-button>
+            <el-radio-button value="winrate">胜率</el-radio-button>
+          </el-radio-group>
           <el-button text type="primary" @click="refreshData">
             <el-icon><ElIconRefresh /></el-icon>
             刷新
@@ -48,8 +46,8 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-box">
-            <span class="stat-label">当前滚动胜率</span>
-            <span class="stat-value">{{ currentRollingWinRate.toFixed(1) }}%</span>
+            <span class="stat-label">当前胜率</span>
+            <span class="stat-value">{{ currentWinRate.toFixed(1) }}%</span>
           </div>
         </el-col>
       </el-row>
@@ -70,8 +68,13 @@ const botStore = useBotStore()
 const chartRef = ref<HTMLDivElement>()
 let chartInstance: any = null
 
-// 滚动窗口大小（用于计算滚动胜率）
-const rollingWindow = ref(20)
+// 图表模式：pnl=总盈亏，winrate=胜率
+const chartMode = ref<'pnl' | 'winrate'>('pnl')
+
+// 图表标题
+const chartTitle = computed(() => {
+  return chartMode.value === 'pnl' ? '累计盈亏走势' : '胜率走势'
+})
 
 // 是否有数据
 const hasData = computed(() => botStore.history && botStore.history.length > 0)
@@ -99,24 +102,22 @@ const cumulativePnLData = computed(() => {
   })
 })
 
-// 计算滚动胜率数据
-const rollingWinRateData = computed(() => {
+// 计算胜率数据（使用所有历史记录）
+const winRateData = computed(() => {
   const history = sortedHistory.value
-  const windowSize = rollingWindow.value
   
   return history.map((trade, index) => {
-    // 获取当前及之前的交易（最多windowSize笔）
-    const startIndex = Math.max(0, index - windowSize + 1)
-    const windowTrades = history.slice(startIndex, index + 1)
+    // 获取当前及之前的所有交易
+    const allTrades = history.slice(0, index + 1)
     
-    // 计算窗口内的胜率
-    const wins = windowTrades.filter(t => t.pnl > 0).length
-    const winRate = (wins / windowTrades.length) * 100
+    // 计算累计胜率
+    const wins = allTrades.filter(t => t.pnl > 0).length
+    const winRate = (wins / allTrades.length) * 100
     
     return {
       time: trade.closeTime,
       value: winRate,
-      windowSize: windowTrades.length
+      totalTrades: allTrades.length
     }
   })
 })
@@ -135,73 +136,98 @@ const overallWinRate = computed(() => {
   return (wins / botStore.history.length) * 100
 })
 
-// 当前滚动胜率
-const currentRollingWinRate = computed(() => {
-  if (rollingWinRateData.value.length === 0) return 0
-  const lastItem = rollingWinRateData.value[rollingWinRateData.value.length - 1]
+// 当前胜率
+const currentWinRate = computed(() => {
+  if (winRateData.value.length === 0) return 0
+  const lastItem = winRateData.value[winRateData.value.length - 1]
   return lastItem?.value ?? 0
 })
 
 // 图表配置
 const chartOption = computed<EChartsOption>(() => {
-  const xAxisData = cumulativePnLData.value.map(d => dayjs(d.time).format('MM/DD HH:mm'))
   const pnlValues = cumulativePnLData.value.map(d => d.value)
-  const winRateValues = rollingWinRateData.value.map(d => d.value)
+  const winRateValues = winRateData.value.map(d => d.value)
   
   // 分离盈利和亏损数据
   const positiveData = pnlValues.map((value, index) => value >= 0 ? value : 0)
   const negativeData = pnlValues.map((value, index) => value < 0 ? value : 0)
 
-  return {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'cross'
-      },
-      formatter: (params: any) => {
-        if (!Array.isArray(params)) return ''
-        const dataIndex = params[0]?.dataIndex
-        if (dataIndex === undefined || dataIndex < 0) return ''
-        
-        const trade = sortedHistory.value[dataIndex]
-        const pnlData = cumulativePnLData.value[dataIndex]
-        const winRateData = rollingWinRateData.value[dataIndex]
-        
-        if (!trade || !pnlData || !winRateData) return ''
-        
-        let html = `<div style="font-weight: bold; margin-bottom: 5px">${dayjs(trade.closeTime).format('YYYY-MM-DD HH:mm')}</div>`
-        html += `<div>交易对: ${trade.symbol}</div>`
-        html += `<div>方向: ${trade.direction}</div>`
-        html += `<div style="color: ${trade.pnl >= 0 ? '#67c23a' : '#f56c6c'}">本次盈亏: ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)} U</div>`
-        html += `<div style="color: ${pnlData.value >= 0 ? '#67c23a' : '#f56c6c'}">累计盈亏: ${pnlData.value >= 0 ? '+' : ''}${pnlData.value.toFixed(2)} U</div>`
-        html += `<div style="color: #409eff">滚动胜率(${winRateData.windowSize}笔): ${winRateData.value.toFixed(1)}%</div>`
-        
-        return html
-      }
-    },
-    legend: {
-      data: ['累计盈亏', `滚动胜率(${rollingWindow.value}笔)`],
-      top: 0
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '3%',
-      top: '40px',
-      containLabel: true
-    },
+  // 根据数据量动态调整X轴显示
+  const dataCount = cumulativePnLData.value.length
+  let xAxisConfig: any = {
+    type: 'category',
+    boundaryGap: false,
+    axisLabel: {
+      rotate: 45,
+      fontSize: 10
+    }
+  }
 
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: xAxisData,
-      axisLabel: {
-        rotate: 45,
-        fontSize: 10
+  // 根据数据量调整X轴显示策略
+  if (dataCount <= 10) {
+    // 数据量少，显示所有时间点
+    xAxisConfig.data = cumulativePnLData.value.map(d => dayjs(d.time).format('MM/DD HH:mm'))
+  } else if (dataCount <= 30) {
+    // 数据量中等，显示部分时间点
+    xAxisConfig.data = cumulativePnLData.value.map((d, index) => {
+      // 每3个点显示一个，或者首尾和中间点
+      if (index === 0 || index === dataCount - 1 || index % 3 === 0) {
+        return dayjs(d.time).format('MM/DD HH:mm')
       }
-    },
-    yAxis: [
-      {
+      return ''
+    })
+  } else {
+    // 数据量多，显示简化时间
+    xAxisConfig.data = cumulativePnLData.value.map((d, index) => {
+      // 显示首尾和每10个点
+      if (index === 0 || index === dataCount - 1 || index % 10 === 0) {
+        return dayjs(d.time).format('MM/DD')
+      }
+      return ''
+    })
+  }
+
+  // 根据模式构建不同的图表配置
+  if (chartMode.value === 'pnl') {
+    // 总盈亏模式
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },
+        formatter: (params: any) => {
+          if (!Array.isArray(params)) return ''
+          const dataIndex = params[0]?.dataIndex
+          if (dataIndex === undefined || dataIndex < 0) return ''
+          
+          const trade = sortedHistory.value[dataIndex]
+          const pnlData = cumulativePnLData.value[dataIndex]
+          
+          if (!trade || !pnlData) return ''
+          
+          let html = `<div style="font-weight: bold; margin-bottom: 5px">${dayjs(trade.closeTime).format('YYYY-MM-DD HH:mm')}</div>`
+          html += `<div>交易对: ${trade.symbol}</div>`
+          html += `<div>方向: ${trade.direction}</div>`
+          html += `<div style="color: ${trade.pnl >= 0 ? '#67c23a' : '#f56c6c'}">本次盈亏: ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)} U</div>`
+          html += `<div style="color: ${pnlData.value >= 0 ? '#67c23a' : '#f56c6c'}">累计盈亏: ${pnlData.value >= 0 ? '+' : ''}${pnlData.value.toFixed(2)} U</div>`
+          
+          return html
+        }
+      },
+      legend: {
+        data: ['累计盈亏', '盈利区域', '亏损区域'],
+        top: 0
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        top: '40px',
+        containLabel: true
+      },
+      xAxis: xAxisConfig,
+      yAxis: {
         type: 'value',
         name: '盈亏(U)',
         position: 'left',
@@ -221,10 +247,123 @@ const chartOption = computed<EChartsOption>(() => {
           }
         }
       },
-      {
+      series: [
+        {
+          name: '盈利区域',
+          type: 'line',
+          data: positiveData,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: {
+            width: 0
+          },
+          itemStyle: {
+            color: '#67c23a'
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(103, 194, 58, 0.5)' },
+                { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+              ]
+            }
+          },
+          stack: undefined,
+          showSymbol: false
+        },
+        {
+          name: '亏损区域',
+          type: 'line',
+          data: negativeData,
+          smooth: true,
+          symbol: 'none',
+          lineStyle: {
+            width: 0
+          },
+          itemStyle: {
+            color: '#f56c6c'
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(245, 182, 182, 0.05)' },
+                { offset: 1, color: 'rgba(245, 85, 85, 0.5)' }
+              ]
+            }
+          },
+          stack: undefined,
+          showSymbol: false
+        },
+        {
+          name: '累计盈亏',
+          type: 'line',
+          data: pnlValues,
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: {
+            width: 2,
+            color: '#67c23a'
+          },
+          itemStyle: {
+            color: '#67c23a'
+          }
+        }
+      ]
+    }
+  } else {
+    // 胜率模式
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },
+        formatter: (params: any) => {
+          if (!Array.isArray(params)) return ''
+          const dataIndex = params[0]?.dataIndex
+          if (dataIndex === undefined || dataIndex < 0) return ''
+          
+          const trade = sortedHistory.value[dataIndex]
+          const rateData = winRateData.value[dataIndex]
+          
+          if (!trade || !rateData) return ''
+          
+          let html = `<div style="font-weight: bold; margin-bottom: 5px">${dayjs(trade.closeTime).format('YYYY-MM-DD HH:mm')}</div>`
+          html += `<div>交易对: ${trade.symbol}</div>`
+          html += `<div>方向: ${trade.direction}</div>`
+          html += `<div style="color: ${trade.pnl >= 0 ? '#67c23a' : '#f56c6c'}">本次盈亏: ${trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)} U</div>`
+          html += `<div style="color: #409eff">累计胜率(${rateData.totalTrades}笔): ${rateData.value.toFixed(1)}%</div>`
+          
+          return html
+        }
+      },
+      legend: {
+        data: ['累计胜率'],
+        top: 0
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        top: '40px',
+        containLabel: true
+      },
+      xAxis: xAxisConfig,
+      yAxis: {
         type: 'value',
         name: '胜率(%)',
-        position: 'right',
+        position: 'left',
         min: 0,
         max: 100,
         axisLine: {
@@ -237,109 +376,49 @@ const chartOption = computed<EChartsOption>(() => {
           formatter: '{value}%'
         },
         splitLine: {
-          show: false
-        }
-      }
-    ],
-    series: [
-      {
-        name: '盈利区域',
-        type: 'line',
-        yAxisIndex: 0,
-        data: positiveData,
-        smooth: true,
-        symbol: 'none',
-        lineStyle: {
-          width: 0
-        },
-        itemStyle: {
-          color: '#67c23a'
-        },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(103, 194, 58, 0.5)' },
-              { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
-            ]
+          show: true,
+          lineStyle: {
+            type: 'dashed'
           }
-        },
-        stack: undefined,
-        showSymbol: false
+        }
       },
-      {
-        name: '亏损区域',
-        type: 'line',
-        yAxisIndex: 0,
-        data: negativeData,
-        smooth: true,
-        symbol: 'none',
-        lineStyle: {
-          width: 0
-        },
-        itemStyle: {
-          color: '#f56c6c'
-        },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(245, 182, 182, 0.05)' },
-              { offset: 1, color: 'rgba(245, 85, 85, 0.5)' }
-            ]
+      series: [
+        {
+          name: '累计胜率',
+          type: 'line',
+          data: winRateValues,
+          smooth: true,
+          symbol: 'diamond',
+          symbolSize: 6,
+          lineStyle: {
+            width: 2,
+            color: '#409eff'
+          },
+          itemStyle: {
+            color: '#409eff'
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [
+                { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
+                { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+              ]
+            }
           }
-        },
-        stack: undefined,
-        showSymbol: false
-      },
-      {
-        name: '累计盈亏',
-        type: 'line',
-        yAxisIndex: 0,
-        data: pnlValues,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: {
-          width: 2,
-          color: '#67c23a'
-        },
-        itemStyle: {
-          color: '#67c23a'
         }
-      },
-      {
-        name: `滚动胜率(${rollingWindow.value}笔)`,
-        type: 'line',
-        yAxisIndex: 1,
-        data: winRateValues,
-        smooth: true,
-        symbol: 'diamond',
-        symbolSize: 6,
-        lineStyle: {
-          width: 2,
-          color: '#409eff',
-          type: 'dashed'
-        },
-        itemStyle: {
-          color: '#409eff'
-        }
-      }
-    ]
+      ]
+    }
   }
 })
 
 // 刷新数据
 async function refreshData() {
-  await botStore.fetchHistory(1, rollingWindow.value)
+  await botStore.fetchHistory(1, 1000) // 获取所有历史记录
   ElMessage.success('数据已刷新')
 }
 
@@ -388,6 +467,8 @@ async function initChart() {
 // 更新图表
 function updateChart() {
   if (chartInstance && chartOption.value) {
+    // 清除之前的图表配置，然后重新设置
+    chartInstance.clear()
     chartInstance.setOption(chartOption.value)
   }
 }
@@ -399,8 +480,8 @@ watch(() => botStore.history, () => {
   }
 }, { deep: true })
 
-// 监听滚动窗口变化
-watch(rollingWindow, () => {
+// 监听图表模式变化
+watch(chartMode, () => {
   updateChart()
 })
 
@@ -411,9 +492,8 @@ watch(chartOption, () => {
 
 // 组件挂载时确保有数据并初始化图表
 onMounted(async () => {
-  if (!botStore.history || botStore.history.length === 0) {
-    await botStore.fetchHistory(1, rollingWindow.value)
-  }
+  // 总是获取所有历史记录，确保数据是最新的
+  await botStore.fetchHistory(1, 1000) // 获取所有历史记录
   
   // 延迟初始化图表，确保DOM已渲染
   setTimeout(() => {
