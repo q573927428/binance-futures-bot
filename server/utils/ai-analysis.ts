@@ -12,7 +12,8 @@ const analysisCache = new Map<string, AIAnalysisCache>()
  */
 export function calculateTechnicalWeightAdjustment(
   indicators: TechnicalIndicators,
-  price: number
+  price: number,
+  config?: BotConfig
 ): { confidenceAdjustment: number; scoreAdjustment: number } {
   // 初始化调整因子
   let confidenceAdjustment = 0
@@ -49,46 +50,36 @@ export function calculateTechnicalWeightAdjustment(
   // 3. RSI位置调整（结合交易方向）
   const isLong = (indicators.ema20 > indicators.ema60 && price > indicators.ema20)
   const isShort = (indicators.ema20 < indicators.ema60 && price < indicators.ema20)
+  const rsi = indicators.rsi
+  if (isLong) {
+    if (rsi >= 60) {
+      // 强趋势（主升段）
+      confidenceAdjustment += 10
+      scoreAdjustment += 8
+    } else if (rsi >= 50) {
+      // 健康趋势（回调区）
+      confidenceAdjustment += 5
+      scoreAdjustment += 3
+    } else {
+      // 弱趋势 / 可能反转
+      confidenceAdjustment -= 6
+      scoreAdjustment -= 5
+    }
+  }
 
-  if (indicators.rsi >= 70) {
-    // 超买区域
-    if (isLong) {
-      confidenceAdjustment -= 10  // 多头风险高
-      scoreAdjustment -= 8
-    } else if (isShort) {
-      confidenceAdjustment += 5   // 空头机会
+  if (isShort) {
+    if (rsi <= 40) {
+      // 强趋势（主跌段）
+      confidenceAdjustment += 10
+      scoreAdjustment += 8
+    } else if (rsi <= 50) {
+      // 健康趋势
+      confidenceAdjustment += 5
       scoreAdjustment += 3
-    }
-  } else if (indicators.rsi >= 60) {
-    // 接近超买
-    if (isLong) {
-      confidenceAdjustment -= 3
-      scoreAdjustment -= 2
-    } else if (isShort) {
-      confidenceAdjustment += 2
-      scoreAdjustment += 1
-    }
-  } else if (indicators.rsi >= 40) {
-    // 理想区间
-    confidenceAdjustment += 8
-    scoreAdjustment += 5
-  } else if (indicators.rsi >= 30) {
-    // 接近超卖
-    if (isLong) {
-      confidenceAdjustment += 2   // 多头机会
-      scoreAdjustment += 1
-    } else if (isShort) {
-      confidenceAdjustment -= 4   // 空头风险
-      scoreAdjustment -= 3
-    }
-  } else {
-    // 超卖区域
-    if (isLong) {
-      confidenceAdjustment += 5   // 多头机会
-      scoreAdjustment += 3
-    } else if (isShort) {
-      confidenceAdjustment -= 8   // 空头风险
-      scoreAdjustment -= 6
+    } else {
+      // 弱趋势 / 可能反转
+      confidenceAdjustment -= 6
+      scoreAdjustment -= 5
     }
   }
 
@@ -105,42 +96,49 @@ export function calculateTechnicalWeightAdjustment(
   
   // 5. EMA30支撑/阻力调整
   const priceToEMA30 = Math.abs(price - indicators.ema30) / indicators.ema30
-  if (priceToEMA30 <= 0.005) { // 0.5%以内
-    // 价格接近EMA30，可能形成支撑/阻力
-    confidenceAdjustment += 5
-    scoreAdjustment += 3
+  // 使用配置文件中的阈值，默认为0.02
+  const longEmaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold ?? 0.02
+  const shortEmaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold ?? 0.02
+  
+  if (isLong && price > indicators.ema30 && priceToEMA30 <= longEmaDeviationThreshold) {
+    // 多头回踩EMA（健康趋势）
+    confidenceAdjustment += 3
+    scoreAdjustment += 2
+  }
+  
+  if (isShort && price < indicators.ema30 && priceToEMA30 <= shortEmaDeviationThreshold) {
+    // 空头反弹到EMA
+    confidenceAdjustment += 3
+    scoreAdjustment += 2
   }
   
   // 6. ATR波动性调整（基于实际交易数据优化）
   const normalizedATR = indicators.atr / price
   const adxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
   
-  if (adxScore >= 30) { // 强趋势市场
-    // 强趋势通常伴随适度波动性，这是正常的
-    if (normalizedATR <= 0.008) { // ATR小于0.8%
-      // 强趋势但波动性偏低，可能趋势不够强劲
-      confidenceAdjustment -= 2
-      scoreAdjustment -= 1
-    } else if (normalizedATR >= 0.025) { // ATR大于2.5%
-      // 强趋势且波动性过高，风险较大
+  // 强趋势门槛（使用配置文件中的阈值，默认为25）
+  const adx15mThreshold = config?.indicatorsConfig?.adxTrend?.adx15mThreshold ?? 25
+  const isStrongTrend = adxScore >= adx15mThreshold
+
+  if (isStrongTrend) {
+    // ATR过滤：只做“可交易波动”
+    if (normalizedATR < 0.006) {
+      // 波动太小 → 不动
+      confidenceAdjustment -= 3
+      scoreAdjustment -= 2
+    } else if (normalizedATR > 0.03) {
+      // 波动爆炸 → 风险大
       confidenceAdjustment -= 5
       scoreAdjustment -= 3
     } else {
-      // 强趋势+适度波动性（0.8%-2.5%），这是理想状态
+      // 理想趋势波动区间
       confidenceAdjustment += 5
       scoreAdjustment += 3
     }
-  } else { // 非强趋势市场
-    // 基于实际交易数据调整阈值
-    if (normalizedATR <= 0.005) { // ATR小于0.5%
-      // 低波动性，市场相对稳定
-      confidenceAdjustment += 3
-      scoreAdjustment += 2
-    } else if (normalizedATR >= 0.015) { // ATR大于1.5%
-      // 高波动性，风险增加，不适合趋势交易
-      confidenceAdjustment -= 5
-      scoreAdjustment -= 3
-    }
+  } else {
+    // 非趋势市场 → 直接打压（重点）
+    confidenceAdjustment -= 6
+    scoreAdjustment -= 4
   }
   
   // 确保调整在合理范围内
@@ -155,10 +153,11 @@ export function calculateTechnicalWeightAdjustment(
  */
 export function applyTechnicalWeightAdjustment(
   aiAnalysis: AIAnalysis,
-  indicators: TechnicalIndicators
+  indicators: TechnicalIndicators,
+  config?: BotConfig
 ): AIAnalysis {
   const { confidenceAdjustment, scoreAdjustment } = 
-    calculateTechnicalWeightAdjustment(indicators, aiAnalysis.technicalData.price)
+    calculateTechnicalWeightAdjustment(indicators, aiAnalysis.technicalData.price, config)
   
   // 计算调整后的值
   const adjustedConfidence = Math.min(100, Math.max(0, aiAnalysis.confidence + confidenceAdjustment))
@@ -409,7 +408,7 @@ export async function analyzeMarketWithAI(
     // 如果提供了技术指标，应用权重调整
     let finalAnalysis = analysis
     if (indicators) {
-      finalAnalysis = applyTechnicalWeightAdjustment(analysis, indicators)
+      finalAnalysis = applyTechnicalWeightAdjustment(analysis, indicators, config)
     }
 
     // 缓存结果
