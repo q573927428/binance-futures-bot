@@ -20,7 +20,7 @@
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minConfidence": 99,
+    "minConfidence": 68,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
     "useForExit": true,
@@ -76,7 +76,7 @@
     "longEntry": {
       "emaDeviationThreshold": 0.03,
       "rsiMin": 35,
-      "rsiMax": 65,
+      "rsiMax": 70,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
@@ -84,7 +84,7 @@
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
-      "rsiMin": 35,
+      "rsiMin": 30,
       "rsiMax": 65,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
