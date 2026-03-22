@@ -62,6 +62,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 import type { EChartsOption } from 'echarts'
+import { ElMessage } from 'element-plus'
 
 const botStore = useBotStore()
 
@@ -146,6 +147,10 @@ const chartOption = computed<EChartsOption>(() => {
   const xAxisData = cumulativePnLData.value.map(d => dayjs(d.time).format('MM/DD HH:mm'))
   const pnlValues = cumulativePnLData.value.map(d => d.value)
   const winRateValues = rollingWinRateData.value.map(d => d.value)
+  
+  // 分离盈利和亏损数据
+  const positiveData = pnlValues.map((value, index) => value >= 0 ? value : 0)
+  const negativeData = pnlValues.map((value, index) => value < 0 ? value : 0)
 
   return {
     tooltip: {
@@ -237,16 +242,14 @@ const chartOption = computed<EChartsOption>(() => {
     ],
     series: [
       {
-        name: '累计盈亏',
+        name: '盈利区域',
         type: 'line',
         yAxisIndex: 0,
-        data: pnlValues,
+        data: positiveData,
         smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
+        symbol: 'none',
         lineStyle: {
-          width: 2,
-          color: '#67c23a'
+          width: 0
         },
         itemStyle: {
           color: '#67c23a'
@@ -263,6 +266,53 @@ const chartOption = computed<EChartsOption>(() => {
               { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
             ]
           }
+        },
+        stack: 'total',
+        showSymbol: false
+      },
+      {
+        name: '亏损区域',
+        type: 'line',
+        yAxisIndex: 0,
+        data: negativeData,
+        smooth: true,
+        symbol: 'none',
+        lineStyle: {
+          width: 0
+        },
+        itemStyle: {
+          color: '#f56c6c'
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(245, 108, 108, 0.3)' },
+              { offset: 1, color: 'rgba(245, 108, 108, 0.05)' }
+            ]
+          }
+        },
+        stack: 'total',
+        showSymbol: false
+      },
+      {
+        name: '累计盈亏',
+        type: 'line',
+        yAxisIndex: 0,
+        data: pnlValues,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {
+          width: 2,
+          color: '#67c23a'
+        },
+        itemStyle: {
+          color: '#67c23a'
         }
       },
       {

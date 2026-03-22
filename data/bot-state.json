@@ -1,16 +1,16 @@
 {
-  "status": "MONITORING",
+  "status": "IDLE",
   "currentPosition": null,
   "circuitBreaker": {
     "isTriggered": false,
     "reason": "",
-    "timestamp": 1774022456845,
+    "timestamp": 1774162480062,
     "dailyLoss": 0,
     "consecutiveLosses": 0
   },
   "todayTrades": 0,
   "dailyPnL": 0,
-  "lastResetDate": "2026-03-21",
+  "lastResetDate": "2026-03-22",
   "monitoringSymbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -20,7 +20,7 @@
     "HYPE/USDT",
     "DOGE/USDT"
   ],
-  "isRunning": true,
+  "isRunning": false,
   "currentPrice": 4667.31,
   "currentPnL": 2.1052799999999623,
   "currentPnLPercentage": 5.217624829755715,
