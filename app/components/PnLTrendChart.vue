@@ -103,7 +103,7 @@ const availableSymbols = computed(() => {
 
 // 图表标题
 const chartTitle = computed(() => {
-  return chartMode.value === 'pnl' ? '累计盈亏走势' : '胜率走势'
+  return chartMode.value === 'pnl' ? '盈亏走势' : '胜率走势'
 })
 
 // 是否有数据
