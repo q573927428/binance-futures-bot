@@ -80,7 +80,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAMultiplier": 2.5
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
@@ -89,7 +89,7 @@
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAMultiplier": 3
     },
     "priceBreakout": {
       "enabled": false,
