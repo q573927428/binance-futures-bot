@@ -210,7 +210,7 @@ export async function getTodayTradeHistory(): Promise<TradeHistory[]> {
 export function getDefaultConfig(): BotConfig {
   return {
     strategyMode: 'medium_term',      // 策略模式：short_term(短期)或medium_term(中长期)
-    symbols: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT', 'SOL/USDT', 'XAU/USDT', 'HYPE/USDT', 'DOGE/USDT'],
+    symbols: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'DOGE/USDT', 'HYPE/USDT', 'XAU/USDT', 'XAG/USDT', 'BNB/USDT'],
     leverage: 10,                     // 杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
     maxRiskPercentage: 20,            // 单笔最大风险比例（%）
     stopLossATRMultiplier: 2.5,       // 止损ATR倍数

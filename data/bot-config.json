@@ -3,11 +3,12 @@
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
-    "BNB/USDT",
     "SOL/USDT",
-    "XAU/USDT",
+    "DOGE/USDT",
     "HYPE/USDT",
-    "DOGE/USDT"
+    "XAU/USDT",
+    "XAG/USDT",
+    "BNB/USDT"
   ],
   "leverage": 10,
   "maxRiskPercentage": 20,

@@ -806,11 +806,12 @@ const availableSymbols = computed(() => {
   const defaultSymbols = [
     'BTC/USDT',
     'ETH/USDT', 
-    'BNB/USDT',
     'SOL/USDT',
-    'XAU/USDT',
+    'DOGE/USDT',
     'HYPE/USDT',
-    'DOGE/USDT'
+    'XAU/USDT',
+    'XAG/USDT',
+    'BNB/USDT'
   ]
   
   // 如果当前有配置，使用配置中的symbols
