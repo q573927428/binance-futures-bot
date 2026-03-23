@@ -5,6 +5,7 @@ import { calculatePnL, checkCircuitBreaker } from '../../../utils/risk'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { recordTrade } from '../helpers/trade-recorder'
+import { calculateIndicators } from '../../../utils/indicators'
 
 /**
  * 持仓验证器
@@ -297,6 +298,29 @@ export class PositionValidator {
   }
 
   /**
+   * 为补偿平仓记录出场指标
+   */
+  private async recordExitIndicatorsForCompensatedClose(position: Position, strategyAnalyzer: any): Promise<void> {
+    try {
+      
+      // 获取当前指标 - 使用导入的calculateIndicators函数
+      const indicators = await calculateIndicators(this.binance, position.symbol, this.config)
+      
+      // 记录出场指标到策略分析器
+      strategyAnalyzer.recordExitIndicators(indicators)
+      
+      const strategyMode = this.config.strategyMode || 'short_term'
+      const adxValue = indicators.adx15m  // 两种模式都使用ADX15m的值
+      const adxLabel = strategyMode === 'short_term' ? 'ADX15m' : 'ADX1h'
+      
+      logger.info('策略分析', `补偿平仓出场指标已记录: ${position.symbol} RSI=${indicators.rsi}, ${adxLabel}=${adxValue}`)
+    } catch (error: any) {
+      logger.error('策略分析', `补偿平仓记录出场指标失败: ${error.message}`)
+      // 即使记录失败，也不抛出异常，继续执行平仓流程
+    }
+  }
+
+  /**
    * 处理补偿平仓（当检测到仓位已被平仓但本地没有记录时）
    */
   async handleCompensatedClose(position: Position, reason: string, strategyAnalyzer?: any): Promise<void> {
@@ -351,6 +375,9 @@ export class PositionValidator {
       // 如果有策略分析器，生成分析指标
       if (strategyAnalyzer) {
         try {
+          // 在生成分析指标之前，先记录出场指标
+          await this.recordExitIndicatorsForCompensatedClose(position, strategyAnalyzer)
+          
           // 获取移动止损数据
           const trailingStopData = position.trailingStopData
           
