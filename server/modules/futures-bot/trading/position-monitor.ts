@@ -19,7 +19,7 @@ export class PositionMonitor {
   private state: BotState
   private getPreviousADX: (symbol: string) => number | undefined
   private lastLogTime: number = 0
-  private readonly LOG_INTERVAL = 30000 // 30秒记录一次
+  private logInterval: number = 60000 // 默认60秒
 
   constructor(
     binance: BinanceService,
@@ -35,6 +35,7 @@ export class PositionMonitor {
     this.config = config
     this.state = state
     this.getPreviousADX = getPreviousADX
+    this.logInterval = this.config.positionScanInterval * 2 * 1000
   }
 
   /**
@@ -44,6 +45,7 @@ export class PositionMonitor {
     this.config = config
     // 同步更新 indicatorsCache 的配置
     this.indicatorsCache.updateConfig(config)
+    this.logInterval = this.config.positionScanInterval * 2 * 1000
   }
 
   /**
@@ -68,9 +70,9 @@ export class PositionMonitor {
       // 计算当前盈亏
       const { pnl, pnlPercentage } = calculatePnL(price, position)
 
-      // 减少日志记录频率：每30秒记录一次，或者盈亏变化超过0.5%
+      // 减少日志记录频率：使用监控间隔的2倍作为日志间隔，或者盈亏变化超过0.5%
       const now = Date.now()
-      const shouldLog = (now - this.lastLogTime > this.LOG_INTERVAL) || 
+      const shouldLog = (now - this.lastLogTime > this.logInterval) || 
                        Math.abs(pnlPercentage - (this.state.currentPnLPercentage || 0)) > 0.5
 
       if (shouldLog) {
