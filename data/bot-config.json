@@ -67,6 +67,18 @@
     "updateIntervalSeconds": 120
   },
   "indicatorsConfig": {
+    "emaPeriods": {
+      "short_term": {
+        "fast": 20,
+        "medium": 30,
+        "slow": 60
+      },
+      "medium_term": {
+        "fast": 50,
+        "medium": 100,
+        "slow": 200
+      }
+    },
     "adxTrend": {
       "adx1hThreshold": 20,
       "adx4hThreshold": 15,

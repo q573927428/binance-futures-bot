@@ -115,8 +115,27 @@ export interface VolatilityFilterConfig {
   skipSymbols: string[]      // 跳过波动率检查的交易对列表
 }
 
+// EMA周期配置
+export interface EMAPeriodsConfig {
+  // 短期策略EMA周期
+  short_term: {
+    fast: number    // 快速EMA周期 (默认 20)
+    medium: number  // 中速EMA周期 (默认 30)
+    slow: number    // 慢速EMA周期 (默认 60)
+  }
+  // 中长期策略EMA周期
+  medium_term: {
+    fast: number    // 快速EMA周期 (默认 50)
+    medium: number  // 中速EMA周期 (默认 100)
+    slow: number    // 慢速EMA周期 (默认 200)
+  }
+}
+
 // 技术指标配置
 export interface IndicatorsConfig {
+  // EMA周期配置
+  emaPeriods: EMAPeriodsConfig
+  
   // ADX趋势检查配置
   adxTrend: {
     adx1hThreshold: number        // 1小时ADX阈值 (默认 25)

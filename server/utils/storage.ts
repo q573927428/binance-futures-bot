@@ -269,6 +269,18 @@ export function getDefaultConfig(): BotConfig {
       updateIntervalSeconds: 120,     // 更新间隔（秒）：120秒检查一次
     },
     indicatorsConfig: {
+      emaPeriods: {
+        short_term: {
+          fast: 20,    // 快速EMA周期 (默认 20)
+          medium: 30,  // 中速EMA周期 (默认 30)
+          slow: 60,    // 慢速EMA周期 (默认 60)
+        },
+        medium_term: {
+          fast: 50,    // 快速EMA周期 (默认 50)
+          medium: 100, // 中速EMA周期 (默认 100)
+          slow: 200,   // 慢速EMA周期 (默认 200)
+        },
+      },
       adxTrend: {
         adx1hThreshold: 20,           // 1小时ADX阈值
         adx4hThreshold: 15,           // 4小时ADX阈值

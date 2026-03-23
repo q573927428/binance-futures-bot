@@ -396,6 +396,32 @@
         </el-radio-group>
       </el-form-item>
 
+      <el-divider>EMA周期配置</el-divider>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略快速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="5" :max="200" />
+      </el-form-item>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略中速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.medium" :min="10" :max="300" />
+      </el-form-item>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略慢速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="20" :max="500" />
+      </el-form-item>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略快速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.fast" :min="5" :max="200" />
+      </el-form-item>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略中速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.medium" :min="10" :max="300" />
+      </el-form-item>
+
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略慢速EMA周期`">
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="20" :max="500" />
+      </el-form-item>
+
       <el-divider>技术指标配置</el-divider>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1小时' : '15分钟'}ADX阈值`">

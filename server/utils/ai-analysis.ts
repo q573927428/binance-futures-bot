@@ -218,10 +218,14 @@ function buildAIPrompt(
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
   
-  // 根据策略模式选择指标名称
-  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
-  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
-  const emaSlowName = strategyMode === 'medium_term' ? 'EMA200' : 'EMA60'
+  // 根据策略模式选择指标名称（使用配置的EMA周期）
+  const emaPeriods = config?.indicatorsConfig?.emaPeriods
+  const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+  const emaMediumPeriod = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
+  const emaFastName = `EMA${emaFastPeriod}`
+  const emaMediumName = `EMA${emaMediumPeriod}`
+  const emaSlowName = `EMA${emaSlowPeriod}`
   
   // 根据策略模式选择ADX周期名称
   const adxMainName = strategyMode === 'medium_term' ? '1小时ADX' : '15分钟ADX'

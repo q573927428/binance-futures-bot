@@ -19,10 +19,11 @@ export async function calculateIndicators(
     const secondaryTF = strategyMode === 'medium_term' ? '4h' : '1h'
     const tertiaryTF = strategyMode === 'medium_term' ? '1d' : '4h'
     
-    // 根据策略模式选择EMA周期
-    const emaFast = strategyMode === 'medium_term' ? 50 : 20
-    const emaMedium = strategyMode === 'medium_term' ? 100 : 30
-    const emaSlow = strategyMode === 'medium_term' ? 200 : 60
+    // 根据策略模式选择EMA周期（使用配置值，默认为硬编码值）
+    const emaPeriods = config?.indicatorsConfig?.emaPeriods
+    const emaFast = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+    const emaMedium = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+    const emaSlow = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
 
     // 根据策略模式确定需要的K线数量
     // 中长期策略需要更多K线数据来计算EMA200
@@ -244,9 +245,12 @@ export function getTrendDirection(
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
   
-  // 根据策略模式选择指标名称
-  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
-  const emaSlowName = strategyMode === 'medium_term' ? 'EMA200' : 'EMA60'
+  // 根据策略模式选择指标名称（使用配置的EMA周期）
+  const emaPeriods = config?.indicatorsConfig?.emaPeriods
+  const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+  const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
+  const emaFastName = `EMA${emaFastPeriod}`
+  const emaSlowName = `EMA${emaSlowPeriod}`
 
   const ema20AboveEma60 = ema20 > ema60
   const priceAboveEma20 = price > ema20
@@ -314,9 +318,12 @@ export function checkLongEntry(
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
   
-  // 根据策略模式选择EMA名称
-  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
-  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
+  // 根据策略模式选择EMA名称（使用配置的EMA周期）
+  const emaPeriods = config?.indicatorsConfig?.emaPeriods
+  const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+  const emaMediumPeriod = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const emaFastName = `EMA${emaFastPeriod}`
+  const emaMediumName = `EMA${emaMediumPeriod}`
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
@@ -498,9 +505,12 @@ export function checkShortEntry(
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
   
-  // 根据策略模式选择EMA名称
-  const emaFastName = strategyMode === 'medium_term' ? 'EMA50' : 'EMA20'
-  const emaMediumName = strategyMode === 'medium_term' ? 'EMA100' : 'EMA30'
+  // 根据策略模式选择EMA名称（使用配置的EMA周期）
+  const emaPeriods = config?.indicatorsConfig?.emaPeriods
+  const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+  const emaMediumPeriod = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const emaFastName = `EMA${emaFastPeriod}`
+  const emaMediumName = `EMA${emaMediumPeriod}`
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
