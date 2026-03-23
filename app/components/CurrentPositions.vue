@@ -66,6 +66,7 @@
           <!-- 上方标签区域 -->
           <div class="price-labels-top">
             <div 
+              v-if="hasTrailingStop"
               class="price-label-top initial-stop-loss" 
               :style="getInitialStopLossStyle()"
             >
@@ -73,10 +74,11 @@
             </div>
             
             <div 
+              v-if="!hasTrailingStop"
               class="price-label-top stop-loss" 
               :style="getStopLossStyle()"
             >
-              <div class="label-text">🛑 移动止损</div>
+              <div class="label-text">🛑 止损</div>
             </div>
             
             <div 
@@ -104,6 +106,7 @@
           <!-- 上方金额区域 -->
           <div class="price-values-top">
             <div 
+              v-if="hasTrailingStop"
               class="price-value-top initial-stop-loss" 
               :style="getInitialStopLossStyle()"
             >
@@ -111,6 +114,7 @@
             </div>
             
             <div 
+              v-if="!hasTrailingStop"
               class="price-value-top stop-loss" 
               :style="getStopLossStyle()"
             >
@@ -147,10 +151,17 @@
               
               <!-- 价格标记点在线性进度条上方 -->
               <div 
+                v-if="hasTrailingStop"
                 class="linear-marker-dot initial-stop-loss" 
                 :style="getInitialStopLossStyle()"
               ></div>
               <div 
+                v-if="hasTrailingStop"
+                class="linear-marker-dot stop-loss" 
+                :style="getStopLossStyle()"
+              ></div>
+              <div 
+                v-if="!hasTrailingStop"
                 class="linear-marker-dot stop-loss" 
                 :style="getStopLossStyle()"
               ></div>
@@ -174,21 +185,42 @@
             </div>
           </div>
           
-          <!-- 下方当前价格区域 -->
-          <div class="current-price-bottom" :class="getCurrentPriceClass()">
-            <div 
-              class="current-label" 
-              :style="getCurrentPriceStyle()"
-            >
-              <div class="label-icon">▲</div>
-              <div class="label-text">当前</div>
+          <!-- 下方并排显示区域 -->
+          <div class="bottom-row-container">
+            <!-- 移动止损区域 -->
+            <div v-if="hasTrailingStop" class="trailing-stop-bottom">
+              <div 
+                class="trailing-stop-label" 
+                :style="getStopLossStyle()"
+              >
+                <div class="label-icon">▲</div>
+                <div class="label-text">移动止损</div>
+              </div>
+              
+              <div 
+                class="trailing-stop-value" 
+                :style="getStopLossStyle()"
+              >
+                {{ botStore.state.currentPosition.stopLoss.toFixed(3) }}
+              </div>
             </div>
             
-            <div 
-              class="current-value" 
-              :style="getCurrentPriceStyle()"
-            >
-              {{ botStore.state.currentPrice?.toFixed(3) || '--' }}
+            <!-- 当前价格区域 -->
+            <div class="current-price-bottom" :class="getCurrentPriceClass()">
+              <div 
+                class="current-label" 
+                :style="getCurrentPriceStyle()"
+              >
+                <div class="label-icon">▲</div>
+                <div class="label-text">当前价格</div>
+              </div>
+              
+              <div 
+                class="current-value" 
+                :style="getCurrentPriceStyle()"
+              >
+                {{ botStore.state.currentPrice?.toFixed(3) || '--' }}
+              </div>
             </div>
           </div>
         </div>
@@ -324,6 +356,16 @@ function getCurrentPriceClass() {
     return currentPrice <= position.entryPrice ? 'price-positive' : 'price-negative'
   }
 }
+
+// 检查是否触发了移动止损
+const hasTrailingStop = computed(() => {
+  const position = botStore.state?.currentPosition
+  if (!position) return false
+  
+  // 如果有初始止损且与当前止损不同，说明触发了移动止损
+  return position.initialStopLoss !== undefined && 
+         position.initialStopLoss !== position.stopLoss
+})
 
 // 获取初始止损价格位置百分比
 const initialStopLossPosition = computed(() => {
@@ -696,25 +738,25 @@ async function executeClosePositionWithPassword(password: string) {
   z-index: 10;
 }
 
+@keyframes pulse {
+  0%, 100% { transform: translateX(-50%) scale(0.8); }
+  50% { transform: translateX(-50%) scale(1.3); }
+}
+
 .linear-marker-dot.initial-stop-loss {
   background: #f97316; /* 橙色 */
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
-  border: 2px dashed white; /* 虚线边框，区分初始止损 */
 }
 
 .linear-marker-dot.stop-loss {
   background: #ef4444; /* 红色 */
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .linear-marker-dot.entry {
   background: #3b82f6; /* 蓝色 */
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-@keyframes pulse {
-  0%, 100% { transform: translateX(-50%) scale(0.8); }
-  50% { transform: translateX(-50%) scale(1.3); }
 }
 
 .linear-marker-dot.current {
@@ -742,12 +784,64 @@ async function executeClosePositionWithPassword(password: string) {
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
-/* 下方当前价格区域 */
-.current-price-bottom {
+/* 下方并排显示容器 */
+.bottom-row-container {
   position: absolute;
   bottom: 10px;
   left: 20px;
   right: 20px;
+  height: 50px;
+}
+
+/* 下方移动止损区域 */
+.trailing-stop-bottom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+}
+
+.trailing-stop-label {
+  position: absolute;
+  bottom: 0px;
+  transform: translateX(-50%);
+  text-align: center;
+  transition: left 0.5s ease;
+  min-width: 60px;
+}
+
+.trailing-stop-label .label-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+  color: #ef4444; /* 红色 */
+}
+
+.trailing-stop-label .label-text {
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #ef4444; /* 红色 */
+}
+
+.trailing-stop-value {
+  position: absolute;
+  bottom: -20px;
+  transform: translateX(-50%);
+  text-align: center;
+  font-size: 12px;
+  color: #ef4444; /* 红色 */
+  white-space: nowrap;
+  transition: left 0.5s ease;
+  min-width: 80px;
+}
+
+/* 下方当前价格区域 */
+.current-price-bottom {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 50px;
 }
 
@@ -768,7 +862,7 @@ async function executeClosePositionWithPassword(password: string) {
 
 .current-label .label-text {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   white-space: nowrap;
   color: #94a3b8;
 }
@@ -778,8 +872,7 @@ async function executeClosePositionWithPassword(password: string) {
   bottom: -20px;
   transform: translateX(-50%);
   text-align: center;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 12px;
   color: #94a3b8;
   white-space: nowrap;
   transition: left 0.5s ease;
