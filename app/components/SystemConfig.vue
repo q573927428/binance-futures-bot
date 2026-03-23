@@ -224,7 +224,7 @@
       <el-divider>交易配置</el-divider>
       
       <el-form-item label="交易对">
-        <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 100%">
+        <el-select v-model="editConfig.symbols" multiple placeholder="选择交易对" style="width: 80%">
           <el-option 
             v-for="symbol in availableSymbols" 
             :key="symbol" 
@@ -503,7 +503,7 @@
       </el-form-item>
 
       <el-form-item v-if="editConfig.indicatorsConfig.volatility.enabled" label="跳过检查的交易对">
-        <el-select v-model="editConfig.indicatorsConfig.volatility.skipSymbols" multiple placeholder="选择要跳过的交易对" style="width: 100%">
+        <el-select v-model="editConfig.indicatorsConfig.volatility.skipSymbols" multiple placeholder="选择要跳过的交易对" style="width: 80%">
           <el-option 
             v-for="symbol in availableSymbols" 
             :key="symbol" 
