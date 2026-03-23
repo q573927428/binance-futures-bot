@@ -9,8 +9,10 @@ const config = JSON.parse(fs.readFileSync(configPath, "utf8"))
 
 // 根据 strategyMode 确定 EMA 参数
 const isMediumTerm = config.strategyMode === "medium_term"
-const emaFast = isMediumTerm ? 50 : 20
-const emaSlow = isMediumTerm ? 200 : 60
+const emaPeriods = config.indicatorsConfig?.emaPeriods || {}
+const strategyMode = config.strategyMode || "short_term"
+const emaFast = emaPeriods?.[strategyMode]?.fast || (isMediumTerm ? 50 : 20)
+const emaSlow = emaPeriods?.[strategyMode]?.slow || (isMediumTerm ? 200 : 60)
 
 const openTimes = []
 const closeTimes = []

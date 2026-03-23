@@ -262,7 +262,7 @@
         <el-input-number v-model="editConfig.positionTimeoutHours" :min="1" :max="720" />
       </el-form-item>
 
-      <el-form-item label="交易冷却时间间隔(秒)">
+      <el-form-item label="交易冷却间隔(秒)">
         <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
       </el-form-item>
 
@@ -398,27 +398,27 @@
 
       <el-divider>EMA周期配置</el-divider>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略快速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}快速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="5" :max="200" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略中速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}中速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.medium" :min="10" :max="300" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}策略慢速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}慢速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="20" :max="500" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略快速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}快速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.fast" :min="5" :max="200" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略中速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}中速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.medium" :min="10" :max="300" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}策略慢速EMA周期`">
+      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}慢速EMA`">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="20" :max="500" />
       </el-form-item>
 
