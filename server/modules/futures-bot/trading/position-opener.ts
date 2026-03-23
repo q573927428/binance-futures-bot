@@ -245,9 +245,9 @@ export class PositionOpener {
       const actualQuantity = realPosition.quantity
       logger.info('持仓确认', `实际成交数量: ${actualQuantity} (下单数量: ${quantity})`)
 
-      // 计算止盈价格
-      const takeProfit1 = calculateTakeProfit(signal.price, stopLoss, signal.direction, 1)
-      const takeProfit2 = calculateTakeProfit(signal.price, stopLoss, signal.direction, 2)
+      // 计算止盈价格（直接使用配置中的盈亏比）
+      const takeProfit1 = calculateTakeProfit(signal.price, stopLoss, signal.direction, this.config.riskConfig.takeProfit.tp1RiskRewardRatio)
+      const takeProfit2 = calculateTakeProfit(signal.price, stopLoss, signal.direction, this.config.riskConfig.takeProfit.tp2RiskRewardRatio)
 
       // 设置止损单 (平仓操作，isEntry=false)
       const stopSide = getOrderSide(signal.direction, false)
