@@ -15,7 +15,7 @@
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 8,
   "scanInterval": 180,
-  "positionScanInterval": 60,
+  "positionScanInterval": 30,
   "tradeCooldownInterval": 7200,
   "aiConfig": {
     "enabled": true,

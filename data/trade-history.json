@@ -1,5 +1,33 @@
 [
   {
+    "id": "1774251918463-BNB/USDT",
+    "symbol": "BNB/USDT",
+    "direction": "SHORT",
+    "entryPrice": 626.13,
+    "exitPrice": 625.06,
+    "quantity": 0.65,
+    "leverage": 10,
+    "pnl": 0.6955000000000325,
+    "pnlPercentage": 1.7089102901954067,
+    "openTime": 1774225235099,
+    "closeTime": 1774251918463,
+    "reason": "移动止损"
+  },
+  {
+    "id": "1774217107420-XAU/USDT",
+    "symbol": "XAU/USDT",
+    "direction": "SHORT",
+    "entryPrice": 4487.94,
+    "exitPrice": 4474.63,
+    "quantity": 0.091,
+    "leverage": 10,
+    "pnl": 1.2112099999999537,
+    "pnlPercentage": 2.9657259232519806,
+    "openTime": 1774189421266,
+    "closeTime": 1774217107420,
+    "reason": "移动止损"
+  },
+  {
     "id": "1774174342692-XAU/USDT",
     "symbol": "XAU/USDT",
     "direction": "SHORT",

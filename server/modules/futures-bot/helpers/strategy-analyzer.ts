@@ -462,8 +462,10 @@ export class StrategyAnalyzer {
         adx1h: this.entryIndicators.adx1h,
         adx4h: this.entryIndicators.adx4h,
         ema20: this.entryIndicators.ema20,
+        ema30: this.entryIndicators.ema30,
         ema60: this.entryIndicators.ema60,
-        atr: this.entryIndicators.atr
+        atr: this.entryIndicators.atr,
+        adxSlope: this.entryIndicators.adxSlope
       } : undefined,
       
       // AI分析指标
@@ -529,9 +531,10 @@ export class StrategyAnalyzer {
         adx1h: data.entryIndicators.adx1h,
         adx4h: data.entryIndicators.adx4h,
         ema20: data.entryIndicators.ema20,
-        ema30: 0, // 这个字段在持久化数据中没有，设为0
+        ema30: data.entryIndicators.ema30,
         ema60: data.entryIndicators.ema60,
-        atr: data.entryIndicators.atr
+        atr: data.entryIndicators.atr,
+        adxSlope: data.entryIndicators.adxSlope
       }
     }
     

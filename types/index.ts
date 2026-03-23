@@ -65,8 +65,10 @@ export interface StrategyAnalyzerData {
     adx1h: number
     adx4h: number
     ema20: number
+    ema30: number
     ema60: number
     atr: number
+    adxSlope: number
   }
   
   // AI分析指标（可选）

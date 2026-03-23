@@ -66,10 +66,17 @@
           <!-- 上方标签区域 -->
           <div class="price-labels-top">
             <div 
+              class="price-label-top initial-stop-loss" 
+              :style="getInitialStopLossStyle()"
+            >
+              <div class="label-text">📌 初始止损</div>
+            </div>
+            
+            <div 
               class="price-label-top stop-loss" 
               :style="getStopLossStyle()"
             >
-              <div class="label-text">🛑 止损</div>
+              <div class="label-text">🛑 移动止损</div>
             </div>
             
             <div 
@@ -96,6 +103,13 @@
           
           <!-- 上方金额区域 -->
           <div class="price-values-top">
+            <div 
+              class="price-value-top initial-stop-loss" 
+              :style="getInitialStopLossStyle()"
+            >
+              {{ (botStore.state.currentPosition.initialStopLoss || botStore.state.currentPosition.stopLoss).toFixed(3) }}
+            </div>
+            
             <div 
               class="price-value-top stop-loss" 
               :style="getStopLossStyle()"
@@ -132,6 +146,10 @@
               <div class="linear-progress-background"></div>
               
               <!-- 价格标记点在线性进度条上方 -->
+              <div 
+                class="linear-marker-dot initial-stop-loss" 
+                :style="getInitialStopLossStyle()"
+              ></div>
               <div 
                 class="linear-marker-dot stop-loss" 
                 :style="getStopLossStyle()"
@@ -228,14 +246,34 @@ const passwordInput = ref('')
 const isClosing = ref(false)
 const requiresPassword = ref(false)
 
-// 计算价格区间相关数据
+// 计算价格区间相关数据（考虑所有关键价格点，添加缓冲避免重叠）
 const priceRange = computed(() => {
   const position = botStore.state?.currentPosition
   if (!position) return { min: 0, max: 0, range: 0 }
   
-  const min = Math.min(position.stopLoss, position.takeProfit2)
-  const max = Math.max(position.stopLoss, position.takeProfit2)
-  return { min, max, range: max - min }
+  // 考虑所有关键价格点：初始止损、当前止损、入场、TP1、TP2
+  const prices = [
+    position.initialStopLoss || position.stopLoss, // 初始止损（如果存在）
+    position.stopLoss,                             // 当前止损（移动止损后）
+    position.entryPrice,                           // 入场价格
+    position.takeProfit1,                          // TP1
+    position.takeProfit2                           // TP2
+  ]
+  
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min
+  
+  // 如果范围太小，添加缓冲（10%的缓冲，最小0.1%）
+  const buffer = Math.max(range * 0.1, (max * 0.001) || 0.0001)
+  const bufferedMin = min - buffer
+  const bufferedMax = max + buffer
+  
+  return { 
+    min: bufferedMin, 
+    max: bufferedMax, 
+    range: bufferedMax - bufferedMin 
+  }
 })
 
 // 获取当前价格位置百分比
@@ -287,7 +325,17 @@ function getCurrentPriceClass() {
   }
 }
 
-// 获取止损价格位置百分比
+// 获取初始止损价格位置百分比
+const initialStopLossPosition = computed(() => {
+  const position = botStore.state?.currentPosition
+  if (!position || priceRange.value.range === 0) return 0
+  
+  const initialStopLoss = position.initialStopLoss || position.stopLoss
+  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, initialStopLoss))
+  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
+})
+
+// 获取当前止损价格位置百分比（移动止损后）
 const stopLossPosition = computed(() => {
   const position = botStore.state?.currentPosition
   if (!position || priceRange.value.range === 0) return 0
@@ -332,6 +380,13 @@ function getEntryPriceStyle() {
 function getTakeProfit1Style() {
   return {
     left: `${takeProfit1Position.value}%`
+  }
+}
+
+// 获取初始止损价格样式
+function getInitialStopLossStyle() {
+  return {
+    left: `${initialStopLossPosition.value}%`
   }
 }
 
@@ -560,19 +615,23 @@ async function executeClosePositionWithPassword(password: string) {
   white-space: nowrap;
 }
 
+.price-label-top.initial-stop-loss .label-text {
+  color: #f97316; /* 橙色 */
+}
+
 .price-label-top.stop-loss .label-text {
-  color: #ef4444;
+  color: #ef4444; /* 红色 */
 }
 
 .price-label-top.entry .label-text {
-  color: #3b82f6;
+  color: #3b82f6; /* 蓝色 */
 }
 
 .price-label-top.take-profit1 .label-text {
-  color: #10b981;
+  color: #10b981; /* 绿色 */
 }
 .price-label-top.take-profit2 .label-text {
-  color: #0b882a;
+  color: #0b882a; /* 深绿色 */
 }
 
 /* 上方金额区域 */
@@ -637,13 +696,19 @@ async function executeClosePositionWithPassword(password: string) {
   z-index: 10;
 }
 
+.linear-marker-dot.initial-stop-loss {
+  background: #f97316; /* 橙色 */
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+  border: 2px dashed white; /* 虚线边框，区分初始止损 */
+}
+
 .linear-marker-dot.stop-loss {
-  background: #ef4444;
+  background: #ef4444; /* 红色 */
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
 .linear-marker-dot.entry {
-  background: #3b82f6;
+  background: #3b82f6; /* 蓝色 */
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
 }
 
