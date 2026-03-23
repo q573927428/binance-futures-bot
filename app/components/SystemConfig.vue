@@ -399,27 +399,27 @@
       <el-divider>EMA周期配置</el-divider>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}快速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="5" :max="200" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="8" :max="50" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}中速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.medium" :min="10" :max="300" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.medium" :min="15" :max="80" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}慢速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="20" :max="500" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="30" :max="100" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}快速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.fast" :min="5" :max="200" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.fast" :min="20" :max="100" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}中速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.medium" :min="10" :max="300" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.medium" :min="40" :max="150" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}慢速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="20" :max="500" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="80" :max="250" />
       </el-form-item>
 
       <el-divider>技术指标配置</el-divider>
