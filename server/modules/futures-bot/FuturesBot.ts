@@ -3,6 +3,7 @@ import { PositionStatus } from '../../../types'
 import { BinanceService } from '../../utils/binance'
 import { logger } from '../../utils/logger'
 import { saveBotState, getDefaultConfig, getDefaultState, getTradeHistory } from '../../utils/storage'
+import { calculateTakeProfit } from '../../utils/indicators'
 import { StateManager } from './core/state-manager'
 import { MarketAnalyzer } from './core/analyzer'
 import { MarketScanner } from './core/scanner'
@@ -431,6 +432,39 @@ export class FuturesBot {
    */
   async updateConfig(newConfig: Partial<BotConfig>): Promise<void> {
     await this.stateManager.updateConfig(newConfig)
+    
+    // 如果当前有持仓，更新止盈价格
+    const state = this.stateManager.getState()
+    if (state.currentPosition) {
+      const position = state.currentPosition
+      const config = this.stateManager.getConfig()
+      
+      // 重新计算止盈价格
+      const takeProfit1 = calculateTakeProfit(
+        position.entryPrice,
+        position.initialStopLoss,
+        position.direction as 'LONG' | 'SHORT', // 类型断言：持仓方向只能是LONG或SHORT
+        config.riskConfig.takeProfit.tp1RiskRewardRatio
+      )
+      
+      const takeProfit2 = calculateTakeProfit(
+        position.entryPrice,
+        position.initialStopLoss,
+        position.direction as 'LONG' | 'SHORT', // 类型断言：持仓方向只能是LONG或SHORT
+        config.riskConfig.takeProfit.tp2RiskRewardRatio
+      )
+      
+      // 更新position对象
+      position.takeProfit1 = takeProfit1
+      position.takeProfit2 = takeProfit2
+      
+      // 保存状态
+      this.stateManager.setState(state)
+      await saveBotState(state)
+      
+      logger.info('配置更新', `已更新持仓止盈价格: TP1=${takeProfit1.toFixed(2)}, TP2=${takeProfit2.toFixed(2)}`)
+    }
+    
     this.syncStateToModules()
   }
 
