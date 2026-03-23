@@ -27,7 +27,7 @@ export async function calculateIndicators(
 
     // 根据策略模式确定需要的K线数量
     // 中长期策略需要更多K线数据来计算EMA200
-    const requiredCandles = strategyMode === 'medium_term' ? 300 : 96
+    const requiredCandles = strategyMode === 'medium_term' ? 300 : 150
     
     // 获取不同周期的K线数据
     const candlesMain = await binance.fetchOHLCV(symbol, mainTF, requiredCandles)

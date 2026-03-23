@@ -399,7 +399,7 @@
       <el-divider>EMA周期配置</el-divider>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}快速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="8" :max="50" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="7" :max="50" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}中速EMA`">
@@ -407,7 +407,7 @@
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}慢速EMA`">
-        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="30" :max="100" />
+        <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="30" :max="120" />
       </el-form-item>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}快速EMA`">
