@@ -596,7 +596,30 @@ interface WebSocketStatusResponse {
 
 @media (max-width: 480px) {
   .cards-grid {
-    grid-template-columns: 2fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .price-card {
+    padding: 10px;
+  }
+  
+  .crypto-symbol {
+    font-size: 14px;
+  }
+  
+  .crypto-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .current-price {
+    font-size: 18px;
+  }
+  
+  .price-change {
+    font-size: 12px;
+    padding: 3px 6px;
   }
 }
 </style>

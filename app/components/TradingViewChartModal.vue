@@ -280,7 +280,24 @@ async function initChart() {
       hide_top_toolbar: true,
       details: true,
       calendar: true,
-      studies: [],
+      studies: [
+        {
+          id: "MAExp@tv-basicstudies",
+          inputs: { length: 50 },
+          styles: {
+            lineColor: "#2962FF",
+            lineWidth: 5
+          }
+        },
+        {
+          id: "MAExp@tv-basicstudies",
+          inputs: { length: 200 },
+          styles: {
+            lineColor: "#FFD700",
+            lineWidth: 5
+          }
+        }
+      ],
       show_popup_button: true,
       popup_width: '1000',
       popup_height: '850',
