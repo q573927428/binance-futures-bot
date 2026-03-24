@@ -155,7 +155,7 @@ const emit = defineEmits<{
 }>()
 
 // 响应式数据
-const timeframe = ref('15')
+const timeframe = ref('60')
 const theme = ref('dark')
 const chartType = ref('candlesticks')
 const isFullscreen = ref(false)
@@ -164,6 +164,19 @@ const isChartLoaded = ref(false)
 const chartError = ref('')
 const chartContainer = ref<HTMLDivElement>()
 const tradingViewWidget = ref<any>(null)
+
+// 辅助函数：将符号转换为TradingView格式
+function getTradingViewSymbol(symbol: string): string {
+  // 黄金和白银在TradingView中需要.P后缀
+  if (symbol === 'XAUUSDT') {
+    return 'XAUUSDT.P'
+  }
+  if (symbol === 'XAGUSDT') {
+    return 'XAGUSDT.P'
+  }
+  // 其他符号保持不变
+  return symbol
+}
 
 // 计算属性
 const dialogTitle = computed(() => {
@@ -234,7 +247,7 @@ async function initChart() {
     // 创建TradingView Widget
     tradingViewWidget.value = new (window as any).TradingView.widget({
       container_id: chartContainer.value.id,
-      symbol: props.symbol,
+      symbol: getTradingViewSymbol(props.symbol),
       interval: timeframe.value,
       theme: theme.value,
       style: chartType.value === 'candlesticks' ? '1' : 
@@ -344,7 +357,10 @@ function toggleFullscreen() {
 // 在TradingView网站打开
 function openInTradingView() {
   if (props.symbol) {
-    const symbolWithoutUSDT = props.symbol.replace('USDT', '')
+    const tradingViewSymbol = getTradingViewSymbol(props.symbol)
+    // 移除.P后缀（如果存在）以获取基础符号
+    const baseSymbol = tradingViewSymbol.replace('.P', '')
+    const symbolWithoutUSDT = baseSymbol.replace('USDT', '')
     const url = `https://www.tradingview.com/chart/?symbol=BINANCE:${symbolWithoutUSDT}USDT`
     window.open(url, '_blank')
   }
