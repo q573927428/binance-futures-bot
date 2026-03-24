@@ -18,8 +18,6 @@
 
       <!-- 主体 -->
       <el-main class="main">
-        <!-- 加密货币价格卡片组件 -->
-        <CryptoPriceCards />
         <el-row :gutter="20">
           <!-- 左侧 - 控制面板 -->
           <el-col :xs="24" :sm="24" :md="8" :lg="8">
@@ -108,6 +106,8 @@
             </el-card>
             <!-- 当前持仓组件 -->
             <CurrentPositions />
+            <!-- 加密货币价格卡片组件 -->
+            <CryptoPriceCards />
             <!-- 系统配置组件 -->
             <SystemConfig />
           </el-col>

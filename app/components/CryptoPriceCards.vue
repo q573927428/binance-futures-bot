@@ -1,6 +1,6 @@
 <template>
   <el-card class="price-cards-container" shadow="hover">
-    <!-- <template #header>
+    <template #header>
       <div class="card-header">
         <span>📊 加密货币</span>
         <div class="header-actions">
@@ -25,7 +25,7 @@
           </el-button>
         </div>
       </div>
-    </template> -->
+    </template>
 
     <!-- WebSocket状态提示 -->
     <div v-if="!isWebSocketConnected" class="connection-warning">
@@ -479,9 +479,9 @@ interface WebSocketStatusResponse {
   color: #f56c6c;
 }
 
-.price-card-body {
+/* .price-card-body {
   margin-bottom: 12px;
-}
+} */
 
 .current-price {
   font-size: 24px;
