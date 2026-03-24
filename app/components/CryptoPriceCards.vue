@@ -71,8 +71,13 @@
           <div class="current-price">
             ${{ formatPrice(crypto.price) }}
           </div>
-          <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
-            {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}  
+          <div class="price-change-row">
+            <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
+              {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}  
+            </div>
+            <div class="volume-24h">
+              24h: {{ formatVolume(crypto.volume24h) }}
+            </div>
           </div>
         </div>
 
@@ -492,6 +497,13 @@ interface WebSocketStatusResponse {
   margin-bottom: 4px;
 }
 
+.price-change-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
 .price-change-amount {
   font-size: 14px;
   font-weight: 500;
@@ -503,6 +515,12 @@ interface WebSocketStatusResponse {
 
 .price-change-amount.negative {
   color: #f56c6c;
+}
+
+.volume-24h {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 500;
 }
 
 .price-card-footer {
