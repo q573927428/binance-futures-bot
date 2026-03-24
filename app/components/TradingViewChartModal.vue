@@ -10,7 +10,7 @@
     @update:model-value="handleModelValueUpdate"
   >
     <!-- 图表控制栏 -->
-    <div class="chart-controls">
+    <!-- <div class="chart-controls">
       <div class="controls-left">
         <el-select
           v-model="timeframe"
@@ -85,7 +85,7 @@
           在TradingView打开
         </el-button>
       </div>
-    </div>
+    </div> -->
 
     <!-- 图表容器 -->
     <div class="chart-container">
@@ -128,12 +128,12 @@
       </div>
     </div>
 
-    <template #footer>
+    <!-- <template #footer>
       <div class="dialog-footer">
         <el-button @click="handleClose">关闭</el-button>
         <el-button type="primary" @click="handleClose">确定</el-button>
       </div>
-    </template>
+    </template> -->
   </el-dialog>
 </template>
 
@@ -184,7 +184,26 @@ const dialogTitle = computed(() => {
 })
 
 const chartHeight = computed(() => {
-  return isFullscreen.value ? 'calc(100vh - 200px)' : '600px'
+  if (isFullscreen.value) {
+    return 'calc(100vh - 200px)'
+  }
+  
+  // 响应式高度：根据屏幕宽度调整
+  // 使用process.client检查是否在客户端，避免SSR错误
+  if (process.client) {
+    const screenWidth = window.innerWidth
+    
+    if (screenWidth < 480) {
+      // 手机端：较小高度
+      return '400px'
+    } else if (screenWidth < 768) {
+      // 平板端：中等高度
+      return '400px'
+    }
+  }
+  
+  // 默认桌面端高度或SSR时的高度
+  return '620px'
 })
 
 // 监听symbol变化
@@ -258,14 +277,10 @@ async function initChart() {
       enable_publishing: false,
       allow_symbol_change: false,
       hide_side_toolbar: false,
+      hide_top_toolbar: true,
       details: true,
-      hotlist: true,
       calendar: true,
-      studies: [
-        'MACD@tv-basicstudies',
-        'RSI@tv-basicstudies',
-        'Volume@tv-basicstudies'
-      ],
+      studies: [],
       show_popup_button: true,
       popup_width: '1000',
       popup_height: '850',

@@ -1,6 +1,6 @@
 <template>
   <el-card class="price-cards-container" shadow="hover">
-    <template #header>
+    <!-- <template #header>
       <div class="card-header">
         <span>📊 加密货币</span>
         <div class="header-actions">
@@ -25,7 +25,7 @@
           </el-button>
         </div>
       </div>
-    </template>
+    </template> -->
 
     <!-- WebSocket状态提示 -->
     <div v-if="!isWebSocketConnected" class="connection-warning">
@@ -71,12 +71,12 @@
           <div class="current-price">
             ${{ formatPrice(crypto.price) }}
           </div>
-          <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
+          <!-- <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
             {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}
-          </div>
+          </div> -->
         </div>
 
-        <div class="price-card-footer">
+        <!-- <div class="price-card-footer">
           <div class="price-range">
             <div class="range-item">
               <span class="range-label">高:</span>
@@ -91,11 +91,11 @@
             <span class="volume-label">24h量:</span>
             <span class="volume-value">{{ formatVolume(crypto.volume24h) }}</span>
           </div>
-        </div>
+        </div> -->
 
-        <div class="last-update">
+        <!-- <div class="last-update">
           更新: {{ formatTime(crypto.lastUpdate) }}
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -401,7 +401,7 @@ interface WebSocketStatusResponse {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 2fr));
   gap: 16px;
   margin-top: 8px;
 }
