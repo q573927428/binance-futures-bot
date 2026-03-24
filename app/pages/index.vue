@@ -18,6 +18,8 @@
 
       <!-- 主体 -->
       <el-main class="main">
+        <!-- 加密货币价格卡片组件 -->
+        <CryptoPriceCards />
         <el-row :gutter="20">
           <!-- 左侧 - 控制面板 -->
           <el-col :xs="24" :sm="24" :md="8" :lg="8">
@@ -139,6 +141,7 @@ import SystemLogs from '../components/SystemLogs.vue'
 import SystemConfig from '../components/SystemConfig.vue'
 import CurrentPositions from '../components/CurrentPositions.vue'
 import PnLTrendChart from '../components/PnLTrendChart.vue'
+import CryptoPriceCards from '../components/CryptoPriceCards.vue'
 
 const botStore = useBotStore()
 let stopPolling: (() => void) | null = null

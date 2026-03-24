@@ -2,7 +2,7 @@ import * as ccxt from 'ccxt'
 import type { OHLCV, Order, AccountInfo, Position, CryptoBalance } from '../../types'
 
 export class BinanceService {
-  private publicExchange: ccxt.binance  // 公共实例，用于查询公开数据
+  public publicExchange: ccxt.binance  // 公共实例，用于查询公开数据
   private privateExchange: ccxt.binance // 私有实例，用于交易操作
   private marketsLoaded: boolean = false
   
