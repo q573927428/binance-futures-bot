@@ -2,7 +2,7 @@
   <el-card class="price-cards-container" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>📊 加密货币</span>
+        <span>📊 价格看板</span>
         <div class="header-actions">
           <el-button 
             text 
@@ -73,7 +73,7 @@
           </div>
           <div class="price-change-row">
             <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
-              {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}  
+              {{ crypto.change24h >= 0 ? '+' : '-' }}{{ formatPrice(Math.abs(crypto.change24h)) }}  
             </div>
             <div class="volume-24h">
               24h: {{ formatVolume(crypto.volume24h) }}
