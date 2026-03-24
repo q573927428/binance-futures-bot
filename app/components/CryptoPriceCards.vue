@@ -71,9 +71,9 @@
           <div class="current-price">
             ${{ formatPrice(crypto.price) }}
           </div>
-          <!-- <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
-            {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}
-          </div> -->
+          <div class="price-change-amount" :class="crypto.change24h >= 0 ? 'positive' : 'negative'">
+            {{ crypto.change24h >= 0 ? '+' : '' }}{{ formatPrice(Math.abs(crypto.change24h)) }}  
+          </div>
         </div>
 
         <!-- <div class="price-card-footer">
@@ -401,20 +401,21 @@ interface WebSocketStatusResponse {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 2fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   margin-top: 8px;
 }
 
 .price-card {
   background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
   border: 1px solid #ebeef5;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  min-height: 100px;
 }
 
 .price-card:hover {
@@ -448,25 +449,25 @@ interface WebSocketStatusResponse {
 .crypto-symbol {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 18px;
-  font-weight: 700;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
   color: #303133;
   line-height: 1.2;
 }
 
 .crypto-icon {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .price-change {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 3px 6px;
+  border-radius: 3px;
 }
 
 .price-change.positive {
@@ -484,7 +485,7 @@ interface WebSocketStatusResponse {
 } */
 
 .current-price {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #303133;
   line-height: 1.2;
@@ -563,63 +564,38 @@ interface WebSocketStatusResponse {
   text-align: center;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(170px, 2fr));
-    gap: 12px;
-  }
-  
-  .price-card {
-    padding: 12px;
-  }
-  
-  .crypto-symbol {
-    font-size: 16px;
-  }
-  
-  .current-price {
-    font-size: 20px;
-  }
-  
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .header-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
 
 @media (max-width: 480px) {
   .cards-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
   }
   
   .price-card {
-    padding: 10px;
+    padding: 8px;
+    min-height: 80px;
   }
   
   .crypto-symbol {
-    font-size: 14px;
+    font-size: 13px;
   }
   
   .crypto-icon {
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
   }
   
   .current-price {
-    font-size: 18px;
+    font-size: 15px;
   }
   
   .price-change {
-    font-size: 12px;
-    padding: 3px 6px;
+    font-size: 9px;
+    padding: 1px 3px;
+  }
+  
+  .price-card-header {
+    margin-bottom: 8px;
   }
 }
 </style>
