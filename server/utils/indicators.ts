@@ -327,6 +327,7 @@ export function checkLongEntry(
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
+  const emaDeviationEnabled = config?.indicatorsConfig?.longEntry?.emaDeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.longEntry?.rsiMax || 60
   const candleShadowThreshold = config?.indicatorsConfig?.longEntry?.candleShadowThreshold || 0.005
@@ -400,21 +401,46 @@ export function checkLongEntry(
     priceBreakoutData = priceBreakoutResult.data
   }
 
-  // 所有条件必须同时满足
-  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed && priceBreakoutPassed
+  // 核心入场条件：回踩条件或突破条件满足任意一个即可
+  // 如果启用回踩检查，则必须满足回踩条件；否则可以跳过回踩条件
+  const emaConditionPassed = !emaDeviationEnabled || nearEMA
+  
+  // 价格突破条件：如果启用则必须满足，否则可以跳过
+  const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
+  
+  // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
+  const passed = emaConditionPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
 
   let reason = ''
   if (passed) {
-    reason = `价格回踩${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+    // 根据实际满足的条件构建原因
+    const conditions: string[] = []
+    
+    if (emaDeviationEnabled && nearEMA) {
+      conditions.push(`价格回踩${nearEMAType}`)
+    } else if (!emaDeviationEnabled) {
+      conditions.push(`回踩条件已禁用`)
+    }
+    
+    conditions.push(`RSI适中(${rsi.toFixed(1)})`)
+    conditions.push(`${candleType}确认`)
+    
     if (volumeConfirmation) {
-      reason += `，成交量确认`
+      conditions.push(`成交量确认`)
     }
-    if (priceBreakoutData?.enabled) {
-      reason += `，价格突破确认`
+    
+    if (priceBreakoutData?.enabled && priceBreakoutPassed) {
+      conditions.push(`价格突破确认`)
+    } else if (priceBreakoutData?.enabled) {
+      conditions.push(`价格突破条件已启用但未满足`)
     }
+    
+    reason = conditions.join('，')
   } else {
     const reasons: string[] = []
-    if (!nearEMA) {
+    
+    // 检查回踩条件
+    if (emaDeviationEnabled && !nearEMA) {
       // 安全计算百分比，避免除以0
       const calculatePercentage = (value: number, base: number) => {
         if (base === 0) return 'N/A'
@@ -424,18 +450,23 @@ export function checkLongEntry(
       const ema30Percent = calculatePercentage(price, ema30)
       reasons.push(`价格未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
     }
+    
     if (!rsiInRange) {
       reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
     }
+    
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阳线且无明显下影线）')
     }
+    
     if (!volumePassed) {
       reasons.push(`${volumeReason}`)
     }
-    if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
+    
+    if (priceBreakoutData?.enabled && !priceBreakoutPassed) {
       reasons.push(`${priceBreakoutReason}`)
     }
+    
     reason = reasons.join('；')
   }
 
@@ -514,6 +545,7 @@ export function checkShortEntry(
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
+  const emaDeviationEnabled = config?.indicatorsConfig?.shortEntry?.emaDeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.shortEntry?.rsiMax || 55
   const candleShadowThreshold = config?.indicatorsConfig?.shortEntry?.candleShadowThreshold || 0.005
@@ -587,21 +619,46 @@ export function checkShortEntry(
     priceBreakoutData = priceBreakoutResult.data
   }
 
-  // 所有条件必须同时满足
-  const passed = nearEMA && rsiInRange && isConfirmCandle && volumePassed && priceBreakoutPassed
+  // 核心入场条件：回踩条件或突破条件满足任意一个即可
+  // 如果启用回踩检查，则必须满足回踩条件；否则可以跳过回踩条件
+  const emaConditionPassed = !emaDeviationEnabled || nearEMA
+  
+  // 价格突破条件：如果启用则必须满足，否则可以跳过
+  const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
+  
+  // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
+  const passed = emaConditionPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
 
   let reason = ''
   if (passed) {
-    reason = `价格反弹${nearEMAType}，RSI适中(${rsi.toFixed(1)})，${candleType}确认`
+    // 根据实际满足的条件构建原因
+    const conditions: string[] = []
+    
+    if (emaDeviationEnabled && nearEMA) {
+      conditions.push(`价格反弹${nearEMAType}`)
+    } else if (!emaDeviationEnabled) {
+      conditions.push(`回踩条件已禁用`)
+    }
+    
+    conditions.push(`RSI适中(${rsi.toFixed(1)})`)
+    conditions.push(`${candleType}确认`)
+    
     if (volumeConfirmation) {
-      reason += `，成交量确认`
+      conditions.push(`成交量确认`)
     }
-    if (priceBreakoutData?.enabled) {
-      reason += `，价格突破确认`
+    
+    if (priceBreakoutData?.enabled && priceBreakoutPassed) {
+      conditions.push(`价格突破确认`)
+    } else if (priceBreakoutData?.enabled) {
+      conditions.push(`价格突破条件已启用但未满足`)
     }
+    
+    reason = conditions.join('，')
   } else {
     const reasons: string[] = []
-    if (!nearEMA) {
+    
+    // 检查回踩条件
+    if (emaDeviationEnabled && !nearEMA) {
       // 安全计算百分比，避免除以0
       const calculatePercentage = (value: number, base: number) => {
         if (base === 0) return 'N/A'
@@ -611,18 +668,23 @@ export function checkShortEntry(
       const ema30Percent = calculatePercentage(price, ema30)
       reasons.push(`价格未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
     }
+    
     if (!rsiInRange) {
       reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
     }
+    
     if (!isConfirmCandle) {
       reasons.push('K线未确认（非阴线且无明显上影线）')
     }
+    
     if (!volumePassed) {
       reasons.push(`${volumeReason}`)
     }
-    if (!priceBreakoutPassed && priceBreakoutData?.enabled) {
+    
+    if (priceBreakoutData?.enabled && !priceBreakoutPassed) {
       reasons.push(`${priceBreakoutReason}`)
     }
+    
     reason = reasons.join('；')
   }
 

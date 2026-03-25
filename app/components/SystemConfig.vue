@@ -442,7 +442,11 @@
 
       <el-divider>做多入场条件</el-divider>
 
-      <el-form-item label="EMA偏离阈值(%)">
+      <el-form-item label="启用EMA回踩检查">
+        <el-switch v-model="editConfig.indicatorsConfig.longEntry.emaDeviationEnabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.emaDeviationEnabled" label="EMA偏离阈值(%)">
         <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
       </el-form-item>
 
@@ -472,7 +476,11 @@
 
       <el-divider>做空入场条件</el-divider>
 
-      <el-form-item label="EMA偏离阈值(%)">
+      <el-form-item label="启用EMA回踩检查">
+        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationEnabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.emaDeviationEnabled" label="EMA偏离阈值(%)">
         <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
       </el-form-item>
 

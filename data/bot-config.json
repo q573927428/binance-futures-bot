@@ -88,6 +88,7 @@
     },
     "longEntry": {
       "emaDeviationThreshold": 0.03,
+      "emaDeviationEnabled": true,
       "rsiMin": 35,
       "rsiMax": 70,
       "candleShadowThreshold": 0.005,
@@ -97,6 +98,7 @@
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
+      "emaDeviationEnabled": true,
       "rsiMin": 30,
       "rsiMax": 65,
       "candleShadowThreshold": 0.005,
