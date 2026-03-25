@@ -14,6 +14,9 @@ const strategyMode = config.strategyMode || "short_term"
 const emaFast = emaPeriods?.[strategyMode]?.fast || (isMediumTerm ? 50 : 20)
 const emaSlow = emaPeriods?.[strategyMode]?.slow || (isMediumTerm ? 200 : 60)
 
+const emaDeviationThreshold = config.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.03
+const emaDeviationThresholdPercent = emaDeviationThreshold * 100
+
 const openTimes = []
 const closeTimes = []
 
@@ -70,6 +73,32 @@ emaSlowLine = ta.ema(close, emaSlowPeriod)
 
 plot(emaFastLine, "EMA ${emaFast}", color=color.blue, linewidth=2)
 plot(emaSlowLine, "EMA ${emaSlow}", color=color.orange, linewidth=2)
+
+// ====================== EMA50 偏离率 ======================
+ema50Deviation = (close - emaFastLine) / emaFastLine * 100
+
+// 分级颜色逻辑（核心优化）
+color devColor =
+     ema50Deviation > ${emaDeviationThresholdPercent}  ? color.red :
+     ema50Deviation < -${emaDeviationThresholdPercent} ? color.red :
+     color.green
+
+// 只保留一个标签（避免爆 label）
+var label emaLabel = na
+
+if barstate.islast
+    label.delete(emaLabel)
+    emaLabel := label.new(
+        bar_index,
+        high,
+        "EMA50偏离: " + str.tostring(ema50Deviation, "#.##") + "%",
+        style = label.style_label_right,
+        color = devColor,
+        textcolor = color.white,
+        size = size.normal
+    )
+
+// ====================== 原始数据 ======================
 
 var int[] openTimes = array.from(${openTimes.join(",")})
 var int[] closeTimes = array.from(${closeTimes.join(",")})
