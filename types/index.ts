@@ -148,6 +148,8 @@ export interface IndicatorsConfig {
   longEntry: {
     emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
     emaDeviationEnabled: boolean   // 是否启用EMA偏离检查 (默认 true)
+    ema60DeviationThreshold: number  // EMA60偏离阈值 (默认 0.05 = 5%)
+    ema60DeviationEnabled: boolean   // 是否启用EMA60偏离检查 (默认 true)
     rsiMin: number                 // RSI最小值 (默认 40)
     rsiMax: number                 // RSI最大值 (默认 60)
     candleShadowThreshold: number  // K线下影线阈值 (默认 0.005 = 0.5%)
@@ -160,6 +162,8 @@ export interface IndicatorsConfig {
   shortEntry: {
     emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
     emaDeviationEnabled: boolean   // 是否启用EMA偏离检查 (默认 true)
+    ema60DeviationThreshold: number  // EMA60偏离阈值 (默认 0.05 = 5%)
+    ema60DeviationEnabled: boolean   // 是否启用EMA60偏离检查 (默认 true)
     rsiMin: number                 // RSI最小值 (默认 40)
     rsiMax: number                 // RSI最大值 (默认 55)
     candleShadowThreshold: number  // K线上影线阈值 (默认 0.005 = 0.5%)

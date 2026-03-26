@@ -313,7 +313,7 @@ export function checkLongEntry(
   volumeHistory?: number[],
   candles15m?: OHLCV[]
 ) {
-  const { ema20, ema30, rsi } = indicators
+  const { ema20, ema30, ema60, rsi } = indicators
 
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
@@ -322,12 +322,16 @@ export function checkLongEntry(
   const emaPeriods = config?.indicatorsConfig?.emaPeriods
   const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
   const emaMediumPeriod = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
   const emaFastName = `EMA${emaFastPeriod}`
   const emaMediumName = `EMA${emaMediumPeriod}`
+  const emaSlowName = `EMA${emaSlowPeriod}`
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = config?.indicatorsConfig?.longEntry?.emaDeviationEnabled ?? true
+  const ema60DeviationThreshold = config?.indicatorsConfig?.longEntry?.ema60DeviationThreshold || 0.05
+  const ema60DeviationEnabled = config?.indicatorsConfig?.longEntry?.ema60DeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.longEntry?.rsiMax || 60
   const candleShadowThreshold = config?.indicatorsConfig?.longEntry?.candleShadowThreshold || 0.005
@@ -341,6 +345,10 @@ export function checkLongEntry(
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? emaFastName : nearEMA30 ? emaMediumName : 'none'
+
+  // EMA60偏离检查（如果启用）
+  const ema60Deviation = Math.abs(price - ema60) / ema60
+  const ema60DeviationPassed = !ema60DeviationEnabled || ema60Deviation <= ema60DeviationThreshold
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -409,7 +417,7 @@ export function checkLongEntry(
   const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
   
   // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
-  const passed = emaConditionPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
+  const passed = emaConditionPassed && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
 
   let reason = ''
   if (passed) {
@@ -420,6 +428,12 @@ export function checkLongEntry(
       conditions.push(`价格回踩${nearEMAType}`)
     } else if (!emaDeviationEnabled) {
       conditions.push(`回踩条件已禁用`)
+    }
+    
+    if (ema60DeviationEnabled) {
+      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+    } else {
+      conditions.push(`${emaSlowName}偏离检查已禁用`)
     }
     
     conditions.push(`RSI适中(${rsi.toFixed(1)})`)
@@ -449,6 +463,12 @@ export function checkLongEntry(
       const ema20Percent = calculatePercentage(price, ema20)
       const ema30Percent = calculatePercentage(price, ema30)
       reasons.push(`价格未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+    }
+    
+    // 检查EMA60偏离条件
+    if (ema60DeviationEnabled && !ema60DeviationPassed) {
+      const ema60Percent = ((price - ema60) / ema60 * 100).toFixed(2)
+      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
     }
     
     if (!rsiInRange) {
@@ -531,7 +551,7 @@ export function checkShortEntry(
   volumeHistory?: number[],
   candles15m?: OHLCV[]
 ) {
-  const { ema20, ema30, rsi } = indicators
+  const { ema20, ema30, ema60, rsi } = indicators
 
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
@@ -540,12 +560,16 @@ export function checkShortEntry(
   const emaPeriods = config?.indicatorsConfig?.emaPeriods
   const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
   const emaMediumPeriod = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
   const emaFastName = `EMA${emaFastPeriod}`
   const emaMediumName = `EMA${emaMediumPeriod}`
+  const emaSlowName = `EMA${emaSlowPeriod}`
 
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = config?.indicatorsConfig?.shortEntry?.emaDeviationEnabled ?? true
+  const ema60DeviationThreshold = config?.indicatorsConfig?.shortEntry?.ema60DeviationThreshold || 0.05
+  const ema60DeviationEnabled = config?.indicatorsConfig?.shortEntry?.ema60DeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.shortEntry?.rsiMax || 55
   const candleShadowThreshold = config?.indicatorsConfig?.shortEntry?.candleShadowThreshold || 0.005
@@ -559,6 +583,10 @@ export function checkShortEntry(
   
   const nearEMA = nearEMA20 || nearEMA30
   const nearEMAType = nearEMA20 ? emaFastName : nearEMA30 ? emaMediumName : 'none'
+
+  // EMA60偏离检查（如果启用）
+  const ema60Deviation = Math.abs(price - ema60) / ema60
+  const ema60DeviationPassed = !ema60DeviationEnabled || ema60Deviation <= ema60DeviationThreshold
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -627,7 +655,7 @@ export function checkShortEntry(
   const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
   
   // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
-  const passed = emaConditionPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
+  const passed = emaConditionPassed && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
 
   let reason = ''
   if (passed) {
@@ -638,6 +666,12 @@ export function checkShortEntry(
       conditions.push(`价格反弹${nearEMAType}`)
     } else if (!emaDeviationEnabled) {
       conditions.push(`回踩条件已禁用`)
+    }
+    
+    if (ema60DeviationEnabled) {
+      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+    } else {
+      conditions.push(`${emaSlowName}偏离检查已禁用`)
     }
     
     conditions.push(`RSI适中(${rsi.toFixed(1)})`)
@@ -667,6 +701,12 @@ export function checkShortEntry(
       const ema20Percent = calculatePercentage(price, ema20)
       const ema30Percent = calculatePercentage(price, ema30)
       reasons.push(`价格未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+    }
+    
+    // 检查EMA60偏离条件
+    if (ema60DeviationEnabled && !ema60DeviationPassed) {
+      const ema60Percent = ((price - ema60) / ema60 * 100).toFixed(2)
+      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
     }
     
     if (!rsiInRange) {

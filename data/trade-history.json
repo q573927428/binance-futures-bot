@@ -1,5 +1,47 @@
 [
   {
+    "id": "1774441150572-HYPE/USDT",
+    "symbol": "HYPE/USDT",
+    "direction": "LONG",
+    "entryPrice": 40.573,
+    "exitPrice": 40.877,
+    "quantity": 9.13,
+    "leverage": 10,
+    "pnl": 2.775520000000019,
+    "pnlPercentage": 7.492667537525005,
+    "openTime": 1774426090165,
+    "closeTime": 1774441150572,
+    "reason": "移动止损"
+  },
+  {
+    "id": "1774396009025-ETH/USDT",
+    "symbol": "ETH/USDT",
+    "direction": "SHORT",
+    "entryPrice": 2125.01,
+    "exitPrice": 2157.29,
+    "quantity": 0.18,
+    "leverage": 10,
+    "pnl": -5.810399999999954,
+    "pnlPercentage": -15.190516750509289,
+    "openTime": 1774363599909,
+    "closeTime": 1774396009025,
+    "reason": "持仓超时"
+  },
+  {
+    "id": "1774346790328-XAU/USDT",
+    "symbol": "XAU/USDT",
+    "direction": "SHORT",
+    "entryPrice": 4381.3,
+    "exitPrice": 4424.69,
+    "quantity": 0.09,
+    "leverage": 10,
+    "pnl": -3.9050999999999476,
+    "pnlPercentage": -9.903453312943514,
+    "openTime": 1774303578502,
+    "closeTime": 1774346790328,
+    "reason": "持仓超时"
+  },
+  {
     "id": "1774263980073-BNB/USDT",
     "symbol": "BNB/USDT",
     "direction": "SHORT",

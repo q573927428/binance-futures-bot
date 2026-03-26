@@ -450,6 +450,14 @@
         <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
       </el-form-item>
 
+      <el-form-item label="启用EMA60偏离检查">
+        <el-switch v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" label="EMA60偏离阈值(%)">
+        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
+      </el-form-item>
+
       <el-form-item label="RSI最小值">
         <el-input-number v-model="editConfig.indicatorsConfig.longEntry.rsiMin" :min="20" :max="80" />
       </el-form-item>
@@ -482,6 +490,14 @@
 
       <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.emaDeviationEnabled" label="EMA偏离阈值(%)">
         <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
+      </el-form-item>
+
+      <el-form-item label="启用EMA60偏离检查">
+        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" label="EMA60偏离阈值(%)">
+        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
       </el-form-item>
 
       <el-form-item label="RSI最小值">

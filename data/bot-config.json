@@ -1,5 +1,5 @@
 {
-  "strategyMode": "medium_term",
+  "strategyMode": "short_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -14,14 +14,14 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 12,
+  "positionTimeoutHours": 9,
   "scanInterval": 180,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 7200,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minConfidence": 68,
+    "minConfidence": 60,
     "maxRiskLevel": "MEDIUM",
     "useForEntry": true,
     "useForExit": true,
@@ -63,20 +63,20 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.8,
+    "activationRatio": 0.7,
     "trailingDistance": 1.2,
     "updateIntervalSeconds": 120
   },
   "indicatorsConfig": {
     "emaPeriods": {
       "short_term": {
-        "fast": 20,
-        "medium": 30,
-        "slow": 60
+        "fast": 7,
+        "medium": 20,
+        "slow": 120
       },
       "medium_term": {
-        "fast": 50,
-        "medium": 100,
+        "fast": 7,
+        "medium": 60,
         "slow": 200
       }
     },
@@ -88,8 +88,10 @@
     },
     "longEntry": {
       "emaDeviationThreshold": 0.03,
-      "emaDeviationEnabled": true,
-      "rsiMin": 35,
+      "emaDeviationEnabled": false,
+      "ema60DeviationThreshold": 0.05,
+      "ema60DeviationEnabled": true,
+      "rsiMin": 30,
       "rsiMax": 70,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
@@ -98,18 +100,20 @@
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
-      "emaDeviationEnabled": true,
+      "emaDeviationEnabled": false,
+      "ema60DeviationThreshold": 0.05,
+      "ema60DeviationEnabled": true,
       "rsiMin": 30,
-      "rsiMax": 65,
+      "rsiMax": 70,
       "candleShadowThreshold": 0.005,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.3
     },
     "priceBreakout": {
-      "enabled": false,
-      "period": 5,
-      "requireConfirmation": true,
+      "enabled": true,
+      "period": 3,
+      "requireConfirmation": false,
       "confirmationCandles": 1
     },
     "volatility": {

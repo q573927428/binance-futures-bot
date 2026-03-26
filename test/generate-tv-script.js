@@ -14,7 +14,18 @@ const strategyMode = config.strategyMode || "short_term"
 const emaFast = emaPeriods?.[strategyMode]?.fast || (isMediumTerm ? 50 : 20)
 const emaSlow = emaPeriods?.[strategyMode]?.slow || (isMediumTerm ? 200 : 60)
 
-const emaDeviationThreshold = config.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.03
+// 根据 longEntry.ema60DeviationEnabled 确定 EMA 偏离阈值
+let emaDeviationThreshold
+let emaDeviationPeriod
+
+if (config.indicatorsConfig?.longEntry?.ema60DeviationEnabled) {
+    emaDeviationThreshold = config.indicatorsConfig?.longEntry?.ema60DeviationThreshold || 0.05
+    emaDeviationPeriod = emaSlow  // 使用慢速 EMA 周期
+} else {
+    emaDeviationThreshold = config.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.03
+    emaDeviationPeriod = emaFast  // 使用快速 EMA 周期
+}
+
 const emaDeviationThresholdPercent = emaDeviationThreshold * 100
 
 const openTimes = []
@@ -74,13 +85,13 @@ emaSlowLine = ta.ema(close, emaSlowPeriod)
 plot(emaFastLine, "EMA ${emaFast}", color=color.blue, linewidth=2)
 plot(emaSlowLine, "EMA ${emaSlow}", color=color.orange, linewidth=2)
 
-// ====================== EMA50 偏离率 ======================
-ema50Deviation = (close - emaFastLine) / emaFastLine * 100
+// ====================== EMA${emaDeviationPeriod} 偏离率 ======================
+ema${emaDeviationPeriod}Deviation = (close - emaFastLine) / emaFastLine * 100
 
 // 分级颜色逻辑（核心优化）
 color devColor =
-     ema50Deviation > ${emaDeviationThresholdPercent}  ? color.red :
-     ema50Deviation < -${emaDeviationThresholdPercent} ? color.red :
+     ema${emaDeviationPeriod}Deviation > ${emaDeviationThresholdPercent}  ? color.red :
+     ema${emaDeviationPeriod}Deviation < -${emaDeviationThresholdPercent} ? color.red :
      color.green
 
 // 只保留一个标签（避免爆 label）
@@ -91,7 +102,7 @@ if barstate.islast
     emaLabel := label.new(
         bar_index,
         high,
-        "EMA50偏离: " + str.tostring(ema50Deviation, "#.##") + "%",
+        "EMA${emaDeviationPeriod}偏离: " + str.tostring(ema${emaDeviationPeriod}Deviation, "#.##") + "%",
         style = label.style_label_right,
         color = devColor,
         textcolor = color.white,
