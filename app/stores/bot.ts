@@ -311,5 +311,53 @@ export const useBotStore = defineStore('bot', {
         this.isLoading = false
       }
     },
+
+    // 手动开仓
+    async manualOpenPosition(params: {
+      symbol: string
+      direction: 'LONG' | 'SHORT'
+      orderType: 'MARKET' | 'LIMIT'
+      price?: number
+      amountType: 'USDT' | 'PERCENTAGE'
+      amount: number
+      leverage: number
+      password: string
+    }) {
+      try {
+        this.isLoading = true
+        this.error = null
+
+        const response = await $fetch<ClosePositionResponse>('/api/bot/manual-open-position', {
+          method: 'POST',
+          body: params
+        })
+        
+        if (response.success) {
+          // 更新状态
+          if (response.state) {
+            this.state = response.state
+          }
+          return {
+            success: true,
+            message: response.message || '手动开仓成功'
+          }
+        } else {
+          this.error = response.message || '手动开仓失败'
+          return {
+            success: false,
+            message: response.message || '手动开仓失败'
+          }
+        }
+      } catch (error: any) {
+        this.error = error.message || '手动开仓时发生错误'
+        return {
+          success: false,
+          message: '手动开仓时发生错误',
+          error: error.message || String(error)
+        }
+      } finally {
+        this.isLoading = false
+      }
+    },
   },
 })

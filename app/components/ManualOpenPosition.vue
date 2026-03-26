@@ -1,0 +1,519 @@
+<template>
+  <el-card class="card" shadow="hover">
+    <template #header>
+      <div class="card-header">
+        <span>🎮 手动开仓</span>
+        <el-button
+          text
+          type="primary"
+          @click="toggleExpanded"
+        >
+          <el-icon>
+            <ElIconArrowDown v-if="!expanded" />
+            <ElIconArrowUp v-else />
+          </el-icon>
+          {{ expanded ? '收起' : '展开' }}
+        </el-button>
+      </div>
+    </template>
+
+    <div v-if="expanded" class="manual-open-form">
+      <!-- 交易对选择 -->
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+        <el-form-item label="交易对" prop="symbol">
+          <el-select
+            v-model="form.symbol"
+            placeholder="选择交易对"
+            style="width: 100%"
+            :disabled="!botStore.config?.symbols?.length"
+          >
+            <el-option
+              v-for="symbol in botStore.config?.symbols || []"
+              :key="symbol"
+              :label="symbol"
+              :value="symbol"
+            />
+          </el-select>
+          <div v-if="!botStore.config?.symbols?.length" class="form-hint">
+            请在系统配置中设置交易对
+          </div>
+        </el-form-item>
+
+        <!-- 方向选择 -->
+        <el-form-item label="方向" prop="direction">
+          <el-radio-group v-model="form.direction">
+            <el-radio-button label="LONG">做多</el-radio-button>
+            <el-radio-button label="SHORT">做空</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- 订单类型 -->
+        <!-- <el-form-item label="订单类型" prop="orderType">
+          <el-radio-group v-model="form.orderType" @change="handleOrderTypeChange">
+            <el-radio-button label="MARKET">市价</el-radio-button>
+            <el-radio-button label="LIMIT">限价</el-radio-button>
+          </el-radio-group>
+        </el-form-item> -->
+
+        <!-- 限价价格输入 -->
+        <el-form-item v-if="form.orderType === 'LIMIT'" label="限价价格" prop="price">
+          <el-input
+            v-model="form.price"
+            placeholder="请输入限价价格"
+            type="number"
+            :min="0.00001"
+            :step="0.00001"
+          >
+            <template #append>USDT</template>
+          </el-input>
+        </el-form-item>
+
+        <!-- 金额类型 -->
+        <el-form-item label="金额类型" prop="amountType">
+          <el-radio-group v-model="form.amountType" @change="handleAmountTypeChange">
+            <el-radio-button label="PERCENTAGE">仓位百分比</el-radio-button>
+            <el-radio-button label="USDT">USDT金额</el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- 金额输入 -->
+        <el-form-item :label="amountLabel" prop="amount">
+          <el-input
+            v-model="form.amount"
+            placeholder="请输入金额"
+            type="number"
+            :min="0.01"
+            :step="0.01"
+          >
+            <template #append>{{ amountUnit }}</template>
+          </el-input>
+          <div class="form-hint" v-if="form.amountType === 'PERCENTAGE'">
+            基于可用余额计算：{{ calculatedAmount.toFixed(2) }} USDT
+          </div>
+        </el-form-item>
+
+        <!-- 杠杆 -->
+        <el-form-item label="杠杆" prop="leverage">
+          <el-input
+            v-model="form.leverage"
+            placeholder="请输入杠杆倍数"
+            type="number"
+            :min="1"
+            :max="125"
+            :step="1"
+          >
+            <template #append>X</template>
+          </el-input>
+        </el-form-item>
+
+        <!-- 密码输入 -->
+        <el-form-item v-if="requiresPassword" label="密码" prop="password">
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+            @keyup.enter="handleSubmit"
+          />
+        </el-form-item>
+
+        <!-- 开仓按钮 -->
+        <el-form-item>
+          <el-button
+            type="primary"
+            :loading="isSubmitting"
+            :disabled="!canSubmit"
+            @click="handleSubmit"
+            style="width: 100%"
+          >
+            <el-icon style="margin-right: 8px"><ElIconVideoPlay /></el-icon>
+            手动开仓
+          </el-button>
+        </el-form-item>
+      </el-form>
+
+      <!-- 当前价格显示 -->
+      <div v-if="currentPrice" class="current-price-info">
+        <div class="price-label">当前价格：</div>
+        <div class="price-value">{{ currentPrice.toFixed(5) }} USDT</div>
+        <el-button
+          text
+          type="primary"
+          size="small"
+          @click="refreshPrice"
+          :loading="isRefreshingPrice"
+        >
+          <el-icon><ElIconRefresh /></el-icon>
+        </el-button>
+      </div>
+
+      <!-- 风险提示 -->
+      <div class="risk-warning">
+        <el-alert
+          title="风险提示"
+          type="warning"
+          :closable="false"
+          show-icon
+        >
+          <p>手动开仓将跳过所有技术指标验证，直接执行开仓操作。</p>
+          <p>请确保您了解交易风险，并设置合理的止损止盈。</p>
+        </el-alert>
+      </div>
+    </div>
+  </el-card>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useBotStore } from '../stores/bot'
+import { ElMessage } from 'element-plus'
+
+const botStore = useBotStore()
+
+// 表单状态
+const expanded = ref(false)
+const formRef = ref()
+const isSubmitting = ref(false)
+const isRefreshingPrice = ref(false)
+const currentPrice = ref<number | null>(null)
+const requiresPassword = ref(false)
+
+// 表单数据
+interface ManualOpenForm {
+  symbol: string
+  direction: 'LONG' | 'SHORT'
+  orderType: 'MARKET' | 'LIMIT'
+  price: string
+  amountType:  'PERCENTAGE' | 'USDT'
+  amount: string
+  leverage: string
+  password: string
+}
+
+const form = ref<ManualOpenForm>({
+  symbol: '',
+  direction: 'LONG',
+  orderType: 'MARKET',
+  price: '',
+  amountType: 'PERCENTAGE',
+  amount: '20',
+  leverage: '10',
+  password: ''
+})
+
+// 表单验证规则
+const rules = {
+  symbol: [
+    { required: true, message: '请选择交易对', trigger: 'change' }
+  ],
+  direction: [
+    { required: true, message: '请选择方向', trigger: 'change' }
+  ],
+  orderType: [
+    { required: true, message: '请选择订单类型', trigger: 'change' }
+  ],
+  price: [
+    { 
+      required: true, 
+      message: '请输入限价价格', 
+      trigger: 'blur',
+      validator: (rule: any, value: string, callback: any) => {
+        if (form.value.orderType === 'LIMIT' && !value) {
+          callback(new Error('限价订单需要输入价格'))
+        } else if (form.value.orderType === 'LIMIT' && Number(value) <= 0) {
+          callback(new Error('价格必须大于0'))
+        } else {
+          callback()
+        }
+      }
+    }
+  ],
+  amount: [
+    { required: true, message: '请输入金额', trigger: 'blur' },
+    { 
+      validator: (rule: any, value: string, callback: any) => {
+        const numValue = Number(value)
+        if (isNaN(numValue) || numValue <= 0) {
+          callback(new Error('金额必须大于0'))
+        } else if (form.value.amountType === 'PERCENTAGE' && (numValue < 1 || numValue > 100)) {
+          callback(new Error('百分比必须在1-100之间'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  leverage: [
+    { required: true, message: '请输入杠杆', trigger: 'blur' },
+    { 
+      validator: (rule: any, value: string, callback: any) => {
+        const numValue = Number(value)
+        if (isNaN(numValue) || numValue < 1 || numValue > 125) {
+          callback(new Error('杠杆必须在1-125之间'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  password: [
+    { 
+      validator: (rule: any, value: string, callback: any) => {
+        if (requiresPassword.value && !value) {
+          callback(new Error('请输入密码'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+// 计算属性
+const amountLabel = computed(() => {
+  return form.value.amountType === 'USDT' ? '金额' : '百分比'
+})
+
+const amountUnit = computed(() => {
+  return form.value.amountType === 'USDT' ? 'USDT' : '%'
+})
+
+const calculatedAmount = computed(() => {
+  if (form.value.amountType !== 'PERCENTAGE' || !form.value.amount) {
+    return 0
+  }
+  
+  const usdtBalance = botStore.cryptoBalances.find(b => b.asset === 'USDT')
+  const availableBalance = usdtBalance?.free || 0
+  const percentage = Number(form.value.amount) / 100
+  
+  return availableBalance * percentage
+})
+
+const canSubmit = computed(() => {
+  if (!form.value.symbol || !form.value.amount || !form.value.leverage) {
+    return false
+  }
+  
+  if (form.value.orderType === 'LIMIT' && !form.value.price) {
+    return false
+  }
+  
+  if (requiresPassword.value && !form.value.password) {
+    return false
+  }
+  
+  return true
+})
+
+// 方法
+function toggleExpanded() {
+  expanded.value = !expanded.value
+  if (expanded.value && form.value.symbol) {
+    refreshPrice()
+  }
+}
+
+function handleOrderTypeChange() {
+  if (form.value.orderType === 'MARKET') {
+    form.value.price = ''
+  }
+}
+
+function handleAmountTypeChange() {
+  // 重置金额输入
+  form.value.amount = ''
+}
+
+async function refreshPrice() {
+  const symbol = form.value.symbol
+  if (!symbol) {
+    ElMessage.warning('请先选择交易对')
+    return
+  }
+  
+  try {
+    isRefreshingPrice.value = true
+    const response = await $fetch<{ success: boolean; price?: number }>(`/api/websocket/prices?symbol=${symbol}`)
+    
+    if (response.success && response.price) {
+      currentPrice.value = response.price
+      
+      // 如果是市价订单，更新价格提示
+      if (form.value.orderType === 'MARKET') {
+        ElMessage.info(`当前价格: ${response.price.toFixed(5)} USDT`)
+      }
+    }
+  } catch (error) {
+    console.error('获取价格失败:', error)
+    ElMessage.error('获取价格失败')
+  } finally {
+    isRefreshingPrice.value = false
+  }
+}
+
+async function checkPasswordRequirement() {
+  try {
+    const response = await $fetch<{ success: boolean; requiresPassword: boolean }>('/api/bot/check-password')
+    if (response.success) {
+      requiresPassword.value = response.requiresPassword
+      return response.requiresPassword
+    }
+  } catch (error) {
+    console.error('检查密码配置失败:', error)
+  }
+  return false
+}
+
+async function handleSubmit() {
+  try {
+    // 验证表单
+    await formRef.value.validate()
+    
+    // 直接执行开仓，使用表单中的密码
+    await executeManualOpenPositionWithPassword(form.value.password || '')
+  } catch (error) {
+    console.error('表单验证失败:', error)
+  }
+}
+
+async function executeManualOpenPositionWithPassword(password: string) {
+  isSubmitting.value = true
+  
+  try {
+    const symbol = form.value.symbol
+    if (!symbol) {
+      ElMessage.error('请选择交易对')
+      return
+    }
+    
+    const payload = {
+      symbol: symbol,
+      direction: form.value.direction,
+      orderType: form.value.orderType,
+      price: form.value.orderType === 'LIMIT' ? Number(form.value.price) : undefined,
+      amountType: form.value.amountType,
+      amount: Number(form.value.amount),
+      leverage: Number(form.value.leverage),
+      password: password
+    }
+    
+    const response = await $fetch<{
+      success: boolean
+      message?: string
+      state?: any
+      requiresPassword?: boolean
+    }>('/api/bot/manual-open-position', {
+      method: 'POST',
+      body: payload
+    })
+    
+    if (response.success) {
+      ElMessage.success(response.message || '手动开仓成功')
+      
+      // 重置表单
+      resetForm()
+      
+      // 刷新状态
+      await botStore.fetchStatus()
+    } else {
+      if (response.requiresPassword) {
+        // 需要密码验证，更新状态
+        requiresPassword.value = true
+        ElMessage.warning('需要密码验证')
+      } else {
+        ElMessage.error(response.message || '手动开仓失败')
+      }
+    }
+  } catch (error: any) {
+    ElMessage.error('手动开仓失败: ' + (error.message || String(error)))
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+function resetForm() {
+  form.value.symbol = ''
+  form.value.direction = 'LONG'
+  form.value.orderType = 'MARKET'
+  form.value.price = ''
+  form.value.amountType = 'USDT'
+  form.value.amount = ''
+  form.value.leverage = '10'
+  form.value.password = ''
+  
+  if (formRef.value) {
+    formRef.value.resetFields()
+  }
+}
+
+// 初始化
+onMounted(async () => {
+  // 检查是否需要密码
+  await checkPasswordRequirement()
+  
+  // 如果有配置，设置默认交易对
+  const symbols = botStore.config?.symbols
+  if (symbols && symbols.length > 0 && symbols[0]) {
+    form.value.symbol = symbols[0]
+  }
+})
+</script>
+
+<style scoped>
+.card {
+  margin-bottom: 20px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+
+.manual-open-form {
+  padding: 10px 0;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.current-price-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.price-label {
+  font-size: 14px;
+  color: #606266;
+}
+
+.price-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: #409eff;
+  flex: 1;
+}
+
+.risk-warning {
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .current-price-info {
+    flex-wrap: wrap;
+  }
+}
+</style>

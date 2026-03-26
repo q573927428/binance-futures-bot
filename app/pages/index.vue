@@ -108,6 +108,8 @@
             <CurrentPositions />
             <!-- 加密货币价格卡片组件 -->
             <CryptoPriceCards />
+            <!-- 手动开仓组件 -->
+            <ManualOpenPosition />
             <!-- 系统配置组件 -->
             <SystemConfig />
           </el-col>
@@ -142,6 +144,7 @@ import SystemConfig from '../components/SystemConfig.vue'
 import CurrentPositions from '../components/CurrentPositions.vue'
 import PnLTrendChart from '../components/PnLTrendChart.vue'
 import CryptoPriceCards from '../components/CryptoPriceCards.vue'
+import ManualOpenPosition from '../components/ManualOpenPosition.vue'
 
 const botStore = useBotStore()
 let stopPolling: (() => void) | null = null

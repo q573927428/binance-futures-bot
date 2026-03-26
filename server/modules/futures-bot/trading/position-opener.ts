@@ -309,4 +309,226 @@ export class PositionOpener {
       throw error
     }
   }
+
+  /**
+   * 手动开仓（跳过所有验证，直接使用现有开仓流程）
+   */
+  async manualOpenPosition(params: {
+    symbol: string
+    direction: 'LONG' | 'SHORT'
+    orderType: 'MARKET' | 'LIMIT'
+    price?: number
+    amountType: 'USDT' | 'PERCENTAGE'
+    amount: number
+    leverage: number
+  }): Promise<void> {
+    try {
+      logger.info('手动开仓', `准备手动开仓: ${params.symbol} ${params.direction}`)
+
+      // 获取账户余额
+      const account = await this.binance.fetchBalance()
+      logger.info('账户', `余额: ${account.availableBalance} USDT`)
+
+      // 检查账户余额是否足够
+      if (account.availableBalance < 120) {
+        throw new Error(`账户余额（${account.availableBalance} USDT）不足120 USDT，无法开仓`)
+      }
+
+      // 获取当前价格（用于市价订单）
+      let entryPrice = params.price
+      if (!entryPrice || params.orderType === 'MARKET') {
+        entryPrice = await this.binance.fetchPrice(params.symbol)
+        logger.info('价格', `当前价格: ${entryPrice}`)
+      }
+
+      // 计算实际USDT金额
+      let usdtAmount = params.amount
+      if (params.amountType === 'PERCENTAGE') {
+        // 百分比计算：基于可用余额
+        const percentage = params.amount / 100
+        usdtAmount = account.availableBalance * percentage
+        logger.info('仓位计算', `百分比 ${params.amount}% = ${usdtAmount.toFixed(2)} USDT`)
+      }
+
+      // 检查最小名义价值
+      const minQuantity = 20 / entryPrice
+      const estimatedQuantity = usdtAmount / entryPrice
+      
+      if (estimatedQuantity < minQuantity) {
+        throw new Error(`预估数量${estimatedQuantity.toFixed(4)}小于最小名义价值要求20 USDT，请增加仓位金额`)
+      }
+
+      // 创建TradeSignal对象（跳过所有验证）
+      const tradeSignal: TradeSignal = {
+        symbol: params.symbol,
+        direction: params.direction,
+        price: entryPrice,
+        confidence: 100, // 手动开仓置信度100%
+        indicators: {
+          ema20: entryPrice,
+          ema30: entryPrice,
+          ema60: entryPrice,
+          adx15m: 30, // 默认值
+          adx1h: 25, // 默认值
+          adx4h: 28, // 默认值
+          adxSlope: 0,
+          rsi: 50, // 默认值
+          atr: entryPrice * 0.01, // 默认1% ATR
+        },
+        timestamp: Date.now(),
+        reason: '手动开仓',
+      }
+
+      // 设置状态为开仓中
+      this.state.status = PositionStatus.OPENING
+      await saveBotState(this.state)
+
+      // 设置杠杆和持仓模式
+      await this.binance.setLeverage(params.symbol, params.leverage)
+      await this.binance.setMarginMode(params.symbol, 'cross')
+      
+      try {
+        await this.binance.setPositionMode(false) // false = 单向持仓模式
+        logger.info('持仓模式', '已设置为单向持仓模式')
+      } catch (error: any) {
+        logger.warn('持仓模式', `设置持仓模式失败: ${error.message}`)
+      }
+
+      // 计算实际下单数量
+      const quantity = await this.binance.calculateOrderAmount(
+        params.symbol,
+        usdtAmount,
+        entryPrice
+      )
+
+      // 检查最小名义价值
+      const notional = quantity * entryPrice
+      if (notional < 20) {
+        throw new Error(`订单名义价值${notional.toFixed(2)} USDT小于交易所最小要求20 USDT`)
+      }
+
+      logger.info('手动开仓', `仓位参数`, {
+        数量: quantity,
+        杠杆: params.leverage,
+        入场价: entryPrice,
+        USDT金额: usdtAmount,
+        名义价值: notional,
+      })
+
+      let order
+      if (params.orderType === 'MARKET') {
+        // 市价开仓
+        const side = params.direction === 'LONG' ? 'buy' : 'sell'
+        order = await this.binance.marketOrder(params.symbol, side, quantity)
+      } else {
+        // 限价开仓
+        const side = params.direction === 'LONG' ? 'buy' : 'sell'
+        // 注意：这里需要添加限价订单支持，但当前binance.ts没有limitOrder方法
+        // 暂时使用市价订单，后续可以扩展
+        logger.warn('手动开仓', '限价订单暂不支持，使用市价订单替代')
+        order = await this.binance.marketOrder(params.symbol, side, quantity)
+      }
+
+      logger.success('手动开仓', `开仓订单已提交`, order)
+
+      // 二次确认持仓建立
+      const positionConfirmed = await waitAndConfirmPosition(this.binance, params.symbol)
+      
+      if (!positionConfirmed) {
+        throw new Error('开仓后未检测到实际持仓，可能存在网络异常或订单未成交')
+      }
+
+      // 获取实际持仓信息
+      const positions = await this.binance.fetchPositions(params.symbol)
+      const realPosition = positions.find(p => Math.abs(Number(p.quantity || 0)) > 0)
+      
+      if (!realPosition) {
+        throw new Error('开仓后未检测到实际持仓')
+      }
+
+      // 使用实际持仓信息更新数量
+      const actualQuantity = realPosition.quantity
+      logger.info('持仓确认', `实际成交数量: ${actualQuantity} (下单数量: ${quantity})`)
+
+      // 计算止损价格（使用默认ATR倍数）
+      const atr = entryPrice * 0.01 // 默认1% ATR
+      const stopLoss = calculateStopLoss(
+        entryPrice,
+        params.direction,
+        atr,
+        this.config.stopLossATRMultiplier,
+        this.config.maxStopLossPercentage
+      )
+
+      // 计算止盈价格
+      const takeProfit1 = calculateTakeProfit(
+        entryPrice,
+        stopLoss,
+        params.direction,
+        this.config.riskConfig.takeProfit.tp1RiskRewardRatio
+      )
+      const takeProfit2 = calculateTakeProfit(
+        entryPrice,
+        stopLoss,
+        params.direction,
+        this.config.riskConfig.takeProfit.tp2RiskRewardRatio
+      )
+
+      // 设置止损单
+      const stopSide = params.direction === 'LONG' ? 'sell' : 'buy'
+      const stopOrder = await this.binance.stopLossOrder(params.symbol, stopSide, actualQuantity, stopLoss)
+
+      logger.success('止损', `止损单已设置`, stopOrder)
+
+      // 更新状态
+      const position: Position = {
+        symbol: params.symbol,
+        direction: params.direction,
+        entryPrice: entryPrice,
+        quantity: actualQuantity,
+        leverage: params.leverage,
+        stopLoss,
+        initialStopLoss: stopLoss,
+        takeProfit1,
+        takeProfit2,
+        openTime: Date.now(),
+        highestPrice: entryPrice,
+        lowestPrice: entryPrice,
+        orderId: order.orderId,
+        stopLossOrderId: stopOrder.orderId,
+        stopLossOrderSymbol: stopOrder.symbol,
+        stopLossOrderSide: stopOrder.side,
+        stopLossOrderType: stopOrder.type,
+        stopLossOrderQuantity: stopOrder.quantity,
+        stopLossOrderStopPrice: stopOrder.stopPrice,
+        stopLossOrderStatus: stopOrder.status,
+        stopLossOrderTimestamp: stopOrder.timestamp,
+      }
+
+      this.state.currentPosition = position
+      this.state.status = PositionStatus.POSITION
+      this.state.todayTrades += 1
+      this.state.lastTradeTime = Date.now()
+      await saveBotState(this.state)
+
+      // 通知上层初始化策略分析器
+      if (this.onPositionOpened) {
+        try {
+          const result = this.onPositionOpened(position, tradeSignal.indicators)
+          if (result instanceof Promise) {
+            await result
+          }
+        } catch (error: any) {
+          logger.error('策略分析', `初始化策略分析器通知失败: ${error.message}`)
+        }
+      }
+
+      logger.success('手动开仓', `手动开仓完成`, position)
+    } catch (error: any) {
+      logger.error('手动开仓', '手动开仓失败', error.message)
+      this.state.status = PositionStatus.MONITORING
+      await saveBotState(this.state)
+      throw error
+    }
+  }
 }

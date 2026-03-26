@@ -89,7 +89,7 @@
     "longEntry": {
       "emaDeviationThreshold": 0.03,
       "emaDeviationEnabled": false,
-      "ema60DeviationThreshold": 0.05,
+      "ema60DeviationThreshold": 0.03,
       "ema60DeviationEnabled": true,
       "rsiMin": 30,
       "rsiMax": 70,
@@ -101,7 +101,7 @@
     "shortEntry": {
       "emaDeviationThreshold": 0.02,
       "emaDeviationEnabled": false,
-      "ema60DeviationThreshold": 0.05,
+      "ema60DeviationThreshold": 0.03,
       "ema60DeviationEnabled": true,
       "rsiMin": 30,
       "rsiMax": 70,
@@ -117,7 +117,7 @@
       "confirmationCandles": 1
     },
     "volatility": {
-      "enabled": true,
+      "enabled": false,
       "minATRPercent": 0.5,
       "skipSymbols": []
     }

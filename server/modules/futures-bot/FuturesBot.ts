@@ -520,6 +520,58 @@ export class FuturesBot {
   }
 
   /**
+   * 手动开仓（供外部API调用）
+   * @param params 手动开仓参数
+   */
+  async manualOpenPosition(params: {
+    symbol: string
+    direction: 'LONG' | 'SHORT'
+    orderType: 'MARKET' | 'LIMIT'
+    price?: number
+    amountType: 'USDT' | 'PERCENTAGE'
+    amount: number
+    leverage: number
+  }): Promise<{ success: boolean; message?: string; state?: BotState }> {
+    try {
+      const state = this.stateManager.getState()
+      
+      // 检查是否已有持仓
+      if (state.currentPosition) {
+        return {
+          success: false,
+          message: '已有持仓，请先平仓'
+        }
+      }
+
+      // 检查机器人是否正在运行
+      if (!state.isRunning) {
+        return {
+          success: false,
+          message: '机器人未运行，请先启动机器人'
+        }
+      }
+
+      // 调用PositionOpener的手动开仓方法
+      await this.positionOpener.manualOpenPosition(params)
+      
+      // 获取更新后的状态
+      const updatedState = this.stateManager.getState()
+      
+      return {
+        success: true,
+        message: '手动开仓成功',
+        state: updatedState
+      }
+    } catch (error: any) {
+      logger.error('手动开仓', '手动开仓失败', error.message)
+      return {
+        success: false,
+        message: error.message || '手动开仓失败'
+      }
+    }
+  }
+
+  /**
    * 保存策略分析器数据到状态
    */
   private async saveStrategyAnalyzerData(): Promise<void> {
