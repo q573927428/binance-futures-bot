@@ -43,9 +43,9 @@
     "DOGE/USDT"
   ],
   "isRunning": true,
-  "currentPrice": 4438.48,
-  "currentPnL": -0.22269999999999074,
-  "currentPnLPercentage": -0.5906408227491154,
+  "currentPrice": 4454.42,
+  "currentPnL": -1.577600000000034,
+  "currentPnLPercentage": -4.184081553520715,
   "totalTrades": 37,
   "totalPnL": 9.673039950000005,
   "winRate": 54.05,
@@ -70,7 +70,7 @@
     "maxAdverseExcursionPercentage": -3.7918239078782063,
     "highestPrice": 4452.68,
     "lowestPrice": 4420.94,
-    "lastPrice": 4438.88,
+    "lastPrice": 4442.67,
     "entryIndicators": {
       "rsi": 42.43,
       "adx15m": 29.656722931542873,
@@ -90,8 +90,8 @@
       "support": 4400,
       "resistance": 4450
     },
-    "atrSum": 3565.3493867433685,
-    "atrCount": 211,
-    "lastUpdateTime": 1774532060398
+    "atrSum": 3583.0975098358617,
+    "atrCount": 212,
+    "lastUpdateTime": 1774532607422
   }
 }

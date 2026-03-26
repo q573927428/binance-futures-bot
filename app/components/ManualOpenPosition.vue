@@ -201,76 +201,93 @@ const form = ref<ManualOpenForm>({
   password: ''
 })
 
-// 表单验证规则
-const rules = {
-  symbol: [
-    { required: true, message: '请选择交易对', trigger: 'change' }
-  ],
-  direction: [
-    { required: true, message: '请选择方向', trigger: 'change' }
-  ],
-  orderType: [
-    { required: true, message: '请选择订单类型', trigger: 'change' }
-  ],
-  price: [
-    { 
-      required: true, 
-      message: '请输入限价价格', 
-      trigger: 'blur',
-      validator: (rule: any, value: string, callback: any) => {
-        if (form.value.orderType === 'LIMIT' && !value) {
-          callback(new Error('限价订单需要输入价格'))
-        } else if (form.value.orderType === 'LIMIT' && Number(value) <= 0) {
-          callback(new Error('价格必须大于0'))
-        } else {
-          callback()
+  // 表单验证规则
+  const rules = {
+    symbol: [
+      { required: true, message: '请选择交易对', trigger: 'change' }
+    ],
+    direction: [
+      { required: true, message: '请选择方向', trigger: 'change' }
+    ],
+    orderType: [
+      { required: true, message: '请选择订单类型', trigger: 'change' }
+    ],
+    price: [
+      { 
+        required: true, 
+        message: '请输入限价价格', 
+        trigger: 'blur',
+        validator: (rule: any, value: string, callback: any) => {
+          if (form.value.orderType === 'LIMIT' && !value) {
+            callback(new Error('限价订单需要输入价格'))
+          } else if (form.value.orderType === 'LIMIT' && Number(value) <= 0) {
+            callback(new Error('价格必须大于0'))
+          } else {
+            callback()
+          }
         }
       }
-    }
-  ],
-  amount: [
-    { required: true, message: '请输入金额', trigger: 'blur' },
-    { 
-      validator: (rule: any, value: string, callback: any) => {
-        const numValue = Number(value)
-        if (isNaN(numValue) || numValue <= 0) {
-          callback(new Error('金额必须大于0'))
-        } else if (form.value.amountType === 'PERCENTAGE' && (numValue < 1 || numValue > 100)) {
-          callback(new Error('百分比必须在1-100之间'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ],
-  leverage: [
-    { required: true, message: '请输入杠杆', trigger: 'blur' },
-    { 
-      validator: (rule: any, value: string, callback: any) => {
-        const numValue = Number(value)
-        if (isNaN(numValue) || numValue < 1 || numValue > 125) {
-          callback(new Error('杠杆必须在1-125之间'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ],
-  password: [
-    { 
-      validator: (rule: any, value: string, callback: any) => {
-        if (requiresPassword.value && !value) {
-          callback(new Error('请输入密码'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-}
+    ],
+    amount: [
+      { required: true, message: '请输入金额', trigger: 'blur' },
+      { 
+        validator: (rule: any, value: string, callback: any) => {
+          const numValue = Number(value)
+          if (isNaN(numValue) || numValue <= 0) {
+            callback(new Error('金额必须大于0'))
+          } else if (form.value.amountType === 'PERCENTAGE' && (numValue < 1 || numValue > 100)) {
+            callback(new Error('百分比必须在1-100之间'))
+          } else {
+            // 检查最小金额限制
+            if (form.value.amountType === 'USDT') {
+              if (numValue < 20) {
+                callback(new Error('开仓金额必须大于等于20 USDT'))
+              } else {
+                callback()
+              }
+            } else {
+              // 对于百分比，检查计算出的金额是否大于20 USDT
+              const usdtBalance = botStore.cryptoBalances.find(b => b.asset === 'USDT')
+              const availableBalance = usdtBalance?.free || 0
+              const calculatedAmount = availableBalance * (numValue / 100)
+              if (calculatedAmount < 20) {
+                callback(new Error(`仓位百分比计算出的金额(${calculatedAmount.toFixed(2)} USDT)必须大于等于20 USDT`))
+              } else {
+                callback()
+              }
+            }
+          }
+        },
+        trigger: 'blur'
+      }
+    ],
+    leverage: [
+      { required: true, message: '请输入杠杆', trigger: 'blur' },
+      { 
+        validator: (rule: any, value: string, callback: any) => {
+          const numValue = Number(value)
+          if (isNaN(numValue) || numValue < 1 || numValue > 125) {
+            callback(new Error('杠杆必须在1-125之间'))
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
+      }
+    ],
+    password: [
+      { 
+        validator: (rule: any, value: string, callback: any) => {
+          if (requiresPassword.value && !value) {
+            callback(new Error('请输入密码'))
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
+      }
+    ]
+  }
 
 // 计算属性
 const amountLabel = computed(() => {
