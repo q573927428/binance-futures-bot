@@ -86,7 +86,8 @@ plot(emaFastLine, "EMA ${emaFast}", color=color.blue, linewidth=2)
 plot(emaSlowLine, "EMA ${emaSlow}", color=color.orange, linewidth=2)
 
 // ====================== EMA${emaDeviationPeriod} 偏离率 ======================
-ema${emaDeviationPeriod}Deviation = (close - emaFastLine) / emaFastLine * 100
+// 根据配置选择使用快速EMA线还是慢速EMA线
+ema${emaDeviationPeriod}Deviation = (close - ${config.indicatorsConfig?.longEntry?.ema60DeviationEnabled ? 'emaSlowLine' : 'emaFastLine'}) / ${config.indicatorsConfig?.longEntry?.ema60DeviationEnabled ? 'emaSlowLine' : 'emaFastLine'} * 100
 
 // 分级颜色逻辑（核心优化）
 color devColor =
