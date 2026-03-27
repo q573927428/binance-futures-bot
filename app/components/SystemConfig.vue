@@ -531,7 +531,7 @@
       </el-form-item>
 
       <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled" label="突破周期(K线数)">
-        <el-input-number v-model="editConfig.indicatorsConfig.priceBreakout.period" :min="3" :max="20" />
+        <el-input-number v-model="editConfig.indicatorsConfig.priceBreakout.period" :min="2" :max="20" />
       </el-form-item>
 
       <el-form-item v-if="editConfig.indicatorsConfig.priceBreakout.enabled" label="需要收盘价确认">
