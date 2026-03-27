@@ -283,7 +283,7 @@ async function initChart() {
       studies: [
         {
           id: "MAExp@tv-basicstudies",
-          inputs: { length: 50 },
+          inputs: { length: 14 },
           styles: {
             lineColor: "#2962FF",
             lineWidth: 2
@@ -291,7 +291,7 @@ async function initChart() {
         },
         {
           id: "MAExp@tv-basicstudies",
-          inputs: { length: 200 },
+          inputs: { length: 120 },
           styles: {
             lineColor: "#FFD700",
             lineWidth: 2
