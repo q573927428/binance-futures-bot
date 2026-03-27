@@ -10,7 +10,7 @@
       </div>
     </template>
 
-    <el-table :data="botStore.history" style="width: 100%" max-height="400">
+    <el-table :data="botStore.history" style="width: 100%" max-height="450">
       <el-table-column prop="symbol" label="交易对" width="110" />
       <el-table-column prop="direction" label="方向" width="80">
         <template #default="scope">
@@ -89,7 +89,7 @@ const botStore = useBotStore()
 
 // 分页相关
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 
 // 刷新历史记录
 async function handleRefreshHistory() {

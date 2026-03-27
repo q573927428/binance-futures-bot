@@ -161,7 +161,7 @@ export const useBotStore = defineStore('bot', {
       }
     },
 
-    async fetchHistory(page: number = 1, pageSize: number = 20) {
+    async fetchHistory(page: number = 1, pageSize: number = 10) {
       try {
         this.isLoading = true
         this.error = null
