@@ -1,5 +1,5 @@
 {
-  "strategyMode": "short_term",
+  "strategyMode": "medium_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -14,10 +14,10 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 9,
+  "positionTimeoutHours": 12,
   "scanInterval": 180,
   "positionScanInterval": 30,
-  "tradeCooldownInterval": 7200,
+  "tradeCooldownInterval": 3600,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -70,26 +70,26 @@
   "indicatorsConfig": {
     "emaPeriods": {
       "short_term": {
-        "fast": 7,
-        "medium": 20,
+        "fast": 14,
+        "medium": 30,
         "slow": 120
       },
       "medium_term": {
-        "fast": 7,
+        "fast": 14,
         "medium": 60,
-        "slow": 200
+        "slow": 120
       }
     },
     "adxTrend": {
-      "adx1hThreshold": 20,
+      "adx1hThreshold": 19,
       "adx4hThreshold": 15,
-      "adx15mThreshold": 25,
+      "adx15mThreshold": 23,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.03,
-      "emaDeviationEnabled": false,
-      "ema60DeviationThreshold": 0.03,
+      "emaDeviationThreshold": 0.022,
+      "emaDeviationEnabled": true,
+      "ema60DeviationThreshold": 0.038,
       "ema60DeviationEnabled": true,
       "rsiMin": 30,
       "rsiMax": 70,
@@ -99,9 +99,9 @@
       "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.02,
-      "emaDeviationEnabled": false,
-      "ema60DeviationThreshold": 0.03,
+      "emaDeviationThreshold": 0.022,
+      "emaDeviationEnabled": true,
+      "ema60DeviationThreshold": 0.038,
       "ema60DeviationEnabled": true,
       "rsiMin": 30,
       "rsiMax": 70,
@@ -111,7 +111,7 @@
       "volumeEMAMultiplier": 1.3
     },
     "priceBreakout": {
-      "enabled": true,
+      "enabled": false,
       "period": 3,
       "requireConfirmation": false,
       "confirmationCandles": 1

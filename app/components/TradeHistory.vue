@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 
@@ -90,6 +90,11 @@ const botStore = useBotStore()
 // 分页相关
 const currentPage = ref(1)
 const pageSize = ref(10)
+
+// 组件加载时获取第一页数据
+onMounted(() => {
+  botStore.fetchHistory(currentPage.value, pageSize.value)
+})
 
 // 刷新历史记录
 async function handleRefreshHistory() {
