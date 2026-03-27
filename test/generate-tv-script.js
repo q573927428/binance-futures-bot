@@ -66,10 +66,10 @@ for (const t of trades) {
 
   leverage.push(t.actualLeverage)
   
-  // 添加新字段 - 对 RSI、ADX、ATR 进行四舍五入
-  entryRSIs.push(Math.round(t.entryRSI || 0))
-  entryADXs.push(Math.round(t.entryADX15m || 0))
-  averageATRs.push(Math.round(t.averageATR || 0))
+  // 添加新字段 - 对 RSI、ADX、ATR 保留1位小数
+  entryRSIs.push((t.entryRSI || 0).toFixed(1))
+  entryADXs.push((t.entryADX15m || 0).toFixed(1))
+  averageATRs.push((t.averageATR || 0).toFixed(1))
   exitReasons.push(`"${t.exitReason || 'N/A'}"`)
 }
 
