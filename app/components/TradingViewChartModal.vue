@@ -156,7 +156,7 @@ const emit = defineEmits<{
 
 // 响应式数据
 const timeframe = ref('60')
-const theme = ref('dark')
+const theme = ref('light')
 const chartType = ref('candlesticks')
 const isFullscreen = ref(false)
 const isLoading = ref(false)
@@ -278,8 +278,6 @@ async function initChart() {
       allow_symbol_change: false,
       hide_side_toolbar: false,
       hide_top_toolbar: true,
-      details: true,
-      calendar: true,
       studies: [
         {
           id: "MAExp@tv-basicstudies",
