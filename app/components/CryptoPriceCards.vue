@@ -68,7 +68,13 @@
         </div>
 
         <div class="price-card-body">
-          <div class="current-price">
+          <div 
+            class="current-price" 
+            :class="{
+              'price-up-animation': priceChangeAnimations[crypto.symbol] === 'up',
+              'price-down-animation': priceChangeAnimations[crypto.symbol] === 'down'
+            }"
+          >
             ${{ formatPrice(crypto.price) }}
           </div>
           <div class="price-change-row">
@@ -125,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import TradingViewChartModal from './TradingViewChartModal.vue'
@@ -148,6 +154,8 @@ const isLoading = ref(false)
 const isWebSocketConnected = ref(false)
 const showChartModal = ref(false)
 const selectedSymbol = ref('')
+// 价格变动动画状态
+const priceChangeAnimations = ref<Record<string, 'up' | 'down' | null>>({})
 
 // 计算属性
 const hasPrices = computed(() => cryptoPrices.value.length > 0)
@@ -194,9 +202,25 @@ function updateCryptoPrices(prices: Record<string, any>) {
   DEFAULT_CRYPTOS.forEach(symbol => {
     const priceData = prices[symbol]
     if (priceData) {
+      // 获取当前价格用于比较
+      const currentCrypto = cryptoPrices.value.find(c => c.symbol === symbol)
+      const oldPrice = currentCrypto?.price || 0
+      const newPrice = priceData.price || 0
+      
+      // 检测价格变动方向
+      if (oldPrice > 0 && newPrice > 0) {
+        if (newPrice > oldPrice) {
+          // 价格上涨
+          triggerPriceAnimation(symbol, 'up')
+        } else if (newPrice < oldPrice) {
+          // 价格下跌
+          triggerPriceAnimation(symbol, 'down')
+        }
+      }
+      
       updatedPrices.push({
         symbol,
-        price: priceData.price || 0,
+        price: newPrice,
         change24h: priceData.change24h || 0,
         change24hPercent: priceData.change24hPercent || 0,
         high24h: priceData.high24h || 0,
@@ -220,6 +244,17 @@ function updateCryptoPrices(prices: Record<string, any>) {
   })
   
   cryptoPrices.value = updatedPrices
+}
+
+// 触发价格变动动画
+function triggerPriceAnimation(symbol: string, direction: 'up' | 'down') {
+  // 设置动画状态
+  priceChangeAnimations.value[symbol] = direction
+  
+  // 1.5秒后清除动画状态
+  setTimeout(() => {
+    priceChangeAnimations.value[symbol] = null
+  }, 1500)
 }
 
 // 刷新价格
@@ -495,6 +530,51 @@ interface WebSocketStatusResponse {
   color: #303133;
   line-height: 1.2;
   margin-bottom: 4px;
+  transition: all 0.3s ease;
+}
+
+/* 简洁的价格上涨动画 */
+.price-up-animation {
+  animation: priceUpEffect 0.3s ease;
+  color: #67c23a !important;
+}
+
+/* 简洁的价格下跌动画 */
+.price-down-animation {
+  animation: priceDownEffect 0.3s ease;
+  color: #f56c6c !important;
+}
+
+/* 简洁的价格上涨动画关键帧 */
+@keyframes priceUpEffect {
+  0% {
+    transform: scale(1);
+    color: #67c23a;
+  }
+  50% {
+    transform: scale(1.05);
+    color: #67c23a;
+  }
+  100% {
+    transform: scale(1);
+    color: #67c23a;
+  }
+}
+
+/* 简洁的价格下跌动画关键帧 */
+@keyframes priceDownEffect {
+  0% {
+    transform: scale(1);
+    color: #f56c6c;
+  }
+  50% {
+    transform: scale(1.05);
+    color: #f56c6c;
+  }
+  100% {
+    transform: scale(1);
+    color: #f56c6c;
+  }
 }
 
 .price-change-row {
