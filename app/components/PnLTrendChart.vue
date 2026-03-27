@@ -78,8 +78,27 @@ import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 import type { EChartsOption } from 'echarts'
 import { ElMessage } from 'element-plus'
+import type { TradeHistory, HistoryResponse } from '../../types'
 
 const botStore = useBotStore()
+
+// 独立的历史记录状态，用于图表显示
+const chartHistory = ref<TradeHistory[]>([])
+
+// 独立获取图表数据
+async function fetchChartHistory() {
+  try {
+    const response = await $fetch<HistoryResponse>('/api/bot/history', {
+      query: { page: 1, pageSize: 1000 }
+    })
+    if (response.success && response.data) {
+      chartHistory.value = response.data
+    }
+  } catch (error) {
+    console.error('获取图表数据失败:', error)
+    ElMessage.error('获取图表数据失败')
+  }
+}
 
 // 图表引用和实例
 const chartRef = ref<HTMLDivElement>()
@@ -93,9 +112,9 @@ const selectedSymbol = ref('')
 
 // 可用的交易对列表
 const availableSymbols = computed(() => {
-  if (!botStore.history || botStore.history.length === 0) return []
+  if (!chartHistory.value || chartHistory.value.length === 0) return []
   const symbols = new Set<string>()
-  botStore.history.forEach(trade => {
+  chartHistory.value.forEach(trade => {
     symbols.add(trade.symbol)
   })
   return Array.from(symbols).sort()
@@ -107,16 +126,16 @@ const chartTitle = computed(() => {
 })
 
 // 是否有数据
-const hasData = computed(() => botStore.history && botStore.history.length > 0)
+const hasData = computed(() => chartHistory.value && chartHistory.value.length > 0)
 
 // 总交易次数（基于筛选后的数据）
 const totalTrades = computed(() => sortedHistory.value.length)
 
 // 按时间排序的交易历史（从早到晚），根据选中的交易对筛选
 const sortedHistory = computed(() => {
-  if (!botStore.history || botStore.history.length === 0) return []
+  if (!chartHistory.value || chartHistory.value.length === 0) return []
   
-  let filteredHistory = [...botStore.history]
+  let filteredHistory = [...chartHistory.value]
   
   // 根据选中的交易对进行筛选
   if (selectedSymbol.value) {
@@ -456,8 +475,8 @@ const chartOption = computed<EChartsOption>(() => {
 
 // 刷新数据
 async function refreshData() {
-  await botStore.fetchHistory(1, 1000) // 获取所有历史记录
-  ElMessage.success('数据已刷新')
+  await fetchChartHistory()
+  ElMessage.success('图表数据已刷新')
 }
 
 // 初始化图表
@@ -512,7 +531,7 @@ function updateChart() {
 }
 
 // 监听数据变化
-watch(() => botStore.history, () => {
+watch(chartHistory, () => {
   if (hasData.value) {
     initChart()
   }
@@ -535,8 +554,8 @@ watch(chartOption, () => {
 
 // 组件挂载时确保有数据并初始化图表
 onMounted(async () => {
-  // 总是获取所有历史记录，确保数据是最新的
-  await botStore.fetchHistory(1, 1000) // 获取所有历史记录
+  // 获取图表数据
+  await fetchChartHistory()
   
   // 延迟初始化图表，确保DOM已渲染
   setTimeout(() => {
