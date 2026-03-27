@@ -11,6 +11,7 @@ import {
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { waitAndConfirmPosition } from '../helpers/position-helpers'
+import { IndicatorsCache } from '../services/indicators-cache'
 
 /**
  * 持仓开仓器
@@ -341,13 +342,17 @@ export class PositionOpener {
         logger.info('价格', `当前价格: ${entryPrice}`)
       }
 
-      // 计算实际USDT金额
+      // 计算实际USDT金额（应用杠杆，与openPosition保持一致）
       let usdtAmount = params.amount
       if (params.amountType === 'PERCENTAGE') {
-        // 百分比计算：基于可用余额
+        // 百分比计算：基于可用余额，并应用杠杆（与openPosition函数保持一致）
         const percentage = params.amount / 100
-        usdtAmount = account.availableBalance * percentage
-        logger.info('仓位计算', `百分比 ${params.amount}% = ${usdtAmount.toFixed(2)} USDT`)
+        usdtAmount = account.availableBalance * percentage * params.leverage
+        logger.info('仓位计算', `百分比 ${params.amount}% × 杠杆 ${params.leverage}x = ${usdtAmount.toFixed(2)} USDT`)
+      } else {
+        // USDT金额模式：用户输入的是基础金额，需要应用杠杆
+        usdtAmount = params.amount * params.leverage
+        logger.info('仓位计算', `基础金额 ${params.amount} USDT × 杠杆 ${params.leverage}x = ${usdtAmount.toFixed(2)} USDT`)
       }
 
       // 检查最小名义价值
@@ -358,23 +363,35 @@ export class PositionOpener {
         throw new Error(`预估数量${estimatedQuantity.toFixed(4)}小于最小名义价值要求20 USDT，请增加仓位金额`)
       }
 
-      // 创建TradeSignal对象（跳过所有验证）
+      // 获取指标缓存实例并获取真实指标数据
+      const indicatorsCache = IndicatorsCache.getInstance(this.binance, this.config)
+      let indicators: TechnicalIndicators
+      try {
+        indicators = await indicatorsCache.getIndicators(params.symbol)
+        logger.info('指标缓存', `获取到 ${params.symbol} 的指标数据，ATR: ${indicators.atr.toFixed(4)}`)
+      } catch (error: any) {
+        // 如果获取缓存失败，使用默认指标
+        logger.warn('指标缓存', `获取 ${params.symbol} 指标失败，使用默认值: ${error.message}`)
+        indicators = {
+          ema20: entryPrice,
+          ema30: entryPrice,
+          ema60: entryPrice,
+          adx15m: 25,
+          adx1h: 20,
+          adx4h: 15,
+          adxSlope: 0,
+          rsi: 50,
+          atr: entryPrice * 0.01, // 默认1% ATR
+        }
+      }
+
+      // 创建TradeSignal对象（使用真实指标数据）
       const tradeSignal: TradeSignal = {
         symbol: params.symbol,
         direction: params.direction,
         price: entryPrice,
         confidence: 100, // 手动开仓置信度100%
-        indicators: {
-          ema20: entryPrice,
-          ema30: entryPrice,
-          ema60: entryPrice,
-          adx15m: 30, // 默认值
-          adx1h: 25, // 默认值
-          adx4h: 28, // 默认值
-          adxSlope: 0,
-          rsi: 50, // 默认值
-          atr: entryPrice * 0.01, // 默认1% ATR
-        },
+        indicators: indicators,
         timestamp: Date.now(),
         reason: '手动开仓',
       }
@@ -451,11 +468,10 @@ export class PositionOpener {
       logger.info('持仓确认', `实际成交数量: ${actualQuantity} (下单数量: ${quantity})`)
 
       // 计算止损价格（使用默认ATR倍数）
-      const atr = entryPrice * 0.01 // 默认1% ATR
       const stopLoss = calculateStopLoss(
         entryPrice,
         params.direction,
-        atr,
+        indicators.atr,
         this.config.stopLossATRMultiplier,
         this.config.maxStopLossPercentage
       )

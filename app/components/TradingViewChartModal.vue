@@ -286,7 +286,7 @@ async function initChart() {
           inputs: { length: 50 },
           styles: {
             lineColor: "#2962FF",
-            lineWidth: 5
+            lineWidth: 2
           }
         },
         {
@@ -294,7 +294,7 @@ async function initChart() {
           inputs: { length: 200 },
           styles: {
             lineColor: "#FFD700",
-            lineWidth: 5
+            lineWidth: 2
           }
         }
       ],
