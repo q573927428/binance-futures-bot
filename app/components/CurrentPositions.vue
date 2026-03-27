@@ -157,7 +157,7 @@
               ></div>
               <div 
                 v-if="hasTrailingStop"
-                class="linear-marker-dot stop-loss" 
+                class="linear-marker-dot trailing-stop-loss" 
                 :style="getStopLossStyle()"
               ></div>
               <div 
@@ -749,6 +749,11 @@ async function executeClosePositionWithPassword(password: string) {
 }
 
 .linear-marker-dot.stop-loss {
+  background: #ef4444; /* 红色 */
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.linear-marker-dot.trailing-stop-loss {
   background: #ef4444; /* 红色 */
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
   animation: pulse 1.5s ease-in-out infinite;
