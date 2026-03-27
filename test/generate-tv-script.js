@@ -55,9 +55,9 @@ for (const t of trades) {
   entryPrices.push(t.entryPrice)
   exitPrices.push(t.exitPrice)
 
-  stopLoss.push(t.stopLossPrice)
-  tp1.push(t.takeProfit1Price)
-  tp2.push(t.takeProfit2Price)
+  stopLoss.push(t.stopLossPrice.toFixed(3))
+  tp1.push(t.takeProfit1Price.toFixed(3))
+  tp2.push(t.takeProfit2Price.toFixed(3))
 
   directions.push(`"${t.direction}"`)
   symbols.push(`"${t.symbol}"`)
@@ -66,10 +66,10 @@ for (const t of trades) {
 
   leverage.push(t.actualLeverage)
   
-  // 添加新字段
-  entryRSIs.push(t.entryRSI || 0)
-  entryADXs.push(t.entryADX15m || 0)
-  averageATRs.push(t.averageATR || 0)
+  // 添加新字段 - 对 RSI、ADX、ATR 进行四舍五入
+  entryRSIs.push(Math.round(t.entryRSI || 0))
+  entryADXs.push(Math.round(t.entryADX15m || 0))
+  averageATRs.push(Math.round(t.averageATR || 0))
   exitReasons.push(`"${t.exitReason || 'N/A'}"`)
 }
 
@@ -103,7 +103,7 @@ if barstate.islast
     emaLabel := label.new(
         bar_index,
         high,
-        "EMA${emaDeviationPeriod}偏离: " + str.tostring(ema${emaDeviationPeriod}Deviation, "#.##") + "%",
+        "EMA${emaDeviationPeriod}: " + str.tostring(ema${emaDeviationPeriod}Deviation, "#.##") + "%",
         style = label.style_label_right,
         color = devColor,
         textcolor = color.white,
@@ -164,9 +164,8 @@ for i = 0 to array.size(openTimes) - 1
         label.new(
             bar_index,
             entryPrice,
-            sym + "\\n" +
             dir + " 开仓" + "\\n" +
-            "价格: " + str.tostring(entryPrice) + "\\n" +
+            str.tostring(entryPrice) + "\\n" +
             "Lev: " + str.tostring(lev) + "\\n" +
             "RSI: " + str.tostring(entryRSI, "#.##") + "\\n" +
             "ADX: " + str.tostring(entryADX, "#.##") + "\\n" +
@@ -186,8 +185,8 @@ for i = 0 to array.size(openTimes) - 1
         label.new(
             bar_index,
             exitPrice,
-            sym + "\\n平仓\\n" +
-            "价格: " + str.tostring(exitPrice) + "\\n" +
+            "平仓\\n" +
+            str.tostring(exitPrice) + "\\n" +
             "PnL: " + str.tostring(p) + "%\\n" +
             exitReason,
             style = label.style_label_left,
