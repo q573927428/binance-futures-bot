@@ -14,10 +14,10 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 12,
+  "positionTimeoutHours": 120,
   "scanInterval": 180,
   "positionScanInterval": 30,
-  "tradeCooldownInterval": 3600,
+  "tradeCooldownInterval": 7200,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -38,8 +38,8 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 3,
+      "tp1RiskRewardRatio": 5,
+      "tp2RiskRewardRatio": 5,
       "tp2MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 78,
@@ -63,7 +63,7 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.7,
+    "activationRatio": 1.5,
     "trailingDistance": 1.2,
     "updateIntervalSeconds": 120
   },
@@ -81,32 +81,32 @@
       }
     },
     "adxTrend": {
-      "adx1hThreshold": 19,
+      "adx1hThreshold": 18,
       "adx4hThreshold": 15,
-      "adx15mThreshold": 23,
+      "adx15mThreshold": 20,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.022,
+      "emaDeviationThreshold": 0.01,
       "emaDeviationEnabled": true,
-      "ema60DeviationThreshold": 0.038,
+      "ema60DeviationThreshold": 0.03,
       "ema60DeviationEnabled": true,
-      "rsiMin": 30,
-      "rsiMax": 70,
+      "rsiMin": 38,
+      "rsiMax": 65,
       "candleShadowThreshold": 0.005,
-      "volumeConfirmation": true,
+      "volumeConfirmation": false,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.022,
+      "emaDeviationThreshold": 0.01,
       "emaDeviationEnabled": true,
-      "ema60DeviationThreshold": 0.038,
+      "ema60DeviationThreshold": 0.03,
       "ema60DeviationEnabled": true,
-      "rsiMin": 30,
-      "rsiMax": 70,
+      "rsiMin": 35,
+      "rsiMax": 62,
       "candleShadowThreshold": 0.005,
-      "volumeConfirmation": true,
+      "volumeConfirmation": false,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.3
     },
@@ -117,9 +117,11 @@
       "confirmationCandles": 1
     },
     "volatility": {
-      "enabled": false,
-      "minATRPercent": 0.5,
-      "skipSymbols": []
+      "enabled": true,
+      "minATRPercent": 0.3,
+      "skipSymbols": [
+        "HYPE/USDT"
+      ]
     }
   }
 }

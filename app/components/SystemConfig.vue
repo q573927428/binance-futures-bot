@@ -359,11 +359,11 @@
         <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
       </el-form-item>
 
-      <el-form-item label="启用EMA60偏离检查">
+      <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
         <el-switch v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" />
       </el-form-item>
 
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" label="EMA60偏离阈值(%)">
+      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
         <el-input-number v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
       </el-form-item>
 
@@ -401,11 +401,11 @@
         <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
       </el-form-item>
 
-      <el-form-item label="启用EMA60偏离检查">
+      <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
         <el-switch v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" />
       </el-form-item>
 
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" label="EMA60偏离阈值(%)">
+      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
         <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
       </el-form-item>
 
@@ -554,6 +554,20 @@ const forceLiquidateTime = computed({
     // 保留现有的 enabled 属性
     const enabled = editConfig.value.riskConfig.forceLiquidateTime.enabled
     editConfig.value.riskConfig.forceLiquidateTime = { enabled, hour, minute }
+  }
+})
+
+// 计算当前策略模式的慢速EMA周期
+const slowEMAPeriod = computed(() => {
+  if (!editConfig.value) return 60 // 默认值
+  
+  const strategyMode = editConfig.value.strategyMode
+  const emaPeriods = editConfig.value.indicatorsConfig?.emaPeriods
+  
+  if (strategyMode === 'short_term') {
+    return emaPeriods?.short_term?.slow || 60
+  } else {
+    return emaPeriods?.medium_term?.slow || 200
   }
 })
 
