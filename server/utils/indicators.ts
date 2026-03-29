@@ -330,8 +330,8 @@ export function checkLongEntry(
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = config?.indicatorsConfig?.longEntry?.emaDeviationEnabled ?? true
-  const ema60DeviationThreshold = config?.indicatorsConfig?.longEntry?.ema60DeviationThreshold || 0.05
-  const ema60DeviationEnabled = config?.indicatorsConfig?.longEntry?.ema60DeviationEnabled ?? true
+  const emaSlowDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaSlowDeviationThreshold || 0.05
+  const emaSlowDeviationEnabled = config?.indicatorsConfig?.longEntry?.emaSlowDeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.longEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.longEntry?.rsiMax || 60
   const candleShadowThreshold = config?.indicatorsConfig?.longEntry?.candleShadowThreshold || 0.005
@@ -348,7 +348,7 @@ export function checkLongEntry(
 
   // EMA60偏离检查（如果启用）
   const ema60Deviation = Math.abs(price - ema60) / ema60
-  const ema60DeviationPassed = !ema60DeviationEnabled || ema60Deviation <= ema60DeviationThreshold
+  const ema60DeviationPassed = !emaSlowDeviationEnabled || ema60Deviation <= emaSlowDeviationThreshold
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -430,8 +430,8 @@ export function checkLongEntry(
       conditions.push(`回踩条件已禁用`)
     }
     
-    if (ema60DeviationEnabled) {
-      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+    if (emaSlowDeviationEnabled) {
+      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
     } else {
       conditions.push(`${emaSlowName}偏离检查已禁用`)
     }
@@ -466,9 +466,9 @@ export function checkLongEntry(
     }
     
     // 检查EMA60偏离条件
-    if (ema60DeviationEnabled && !ema60DeviationPassed) {
+    if (emaSlowDeviationEnabled && !ema60DeviationPassed) {
       const ema60Percent = ((price - ema60) / ema60 * 100).toFixed(2)
-      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
     }
     
     if (!rsiInRange) {
@@ -568,8 +568,8 @@ export function checkShortEntry(
   // 使用配置参数或默认值
   const emaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = config?.indicatorsConfig?.shortEntry?.emaDeviationEnabled ?? true
-  const ema60DeviationThreshold = config?.indicatorsConfig?.shortEntry?.ema60DeviationThreshold || 0.05
-  const ema60DeviationEnabled = config?.indicatorsConfig?.shortEntry?.ema60DeviationEnabled ?? true
+  const emaSlowDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaSlowDeviationThreshold || 0.05
+  const emaSlowDeviationEnabled = config?.indicatorsConfig?.shortEntry?.emaSlowDeviationEnabled ?? true
   const rsiMin = config?.indicatorsConfig?.shortEntry?.rsiMin || 40
   const rsiMax = config?.indicatorsConfig?.shortEntry?.rsiMax || 55
   const candleShadowThreshold = config?.indicatorsConfig?.shortEntry?.candleShadowThreshold || 0.005
@@ -586,7 +586,7 @@ export function checkShortEntry(
 
   // EMA60偏离检查（如果启用）
   const ema60Deviation = Math.abs(price - ema60) / ema60
-  const ema60DeviationPassed = !ema60DeviationEnabled || ema60Deviation <= ema60DeviationThreshold
+  const ema60DeviationPassed = !emaSlowDeviationEnabled || ema60Deviation <= emaSlowDeviationThreshold
 
   // RSI在[min,max]区间
   const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
@@ -668,8 +668,8 @@ export function checkShortEntry(
       conditions.push(`回踩条件已禁用`)
     }
     
-    if (ema60DeviationEnabled) {
-      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+    if (emaSlowDeviationEnabled) {
+      conditions.push(`${emaSlowName}偏离(${(ema60Deviation * 100).toFixed(2)}%) ≤ ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
     } else {
       conditions.push(`${emaSlowName}偏离检查已禁用`)
     }
@@ -704,9 +704,9 @@ export function checkShortEntry(
     }
     
     // 检查EMA60偏离条件
-    if (ema60DeviationEnabled && !ema60DeviationPassed) {
+    if (emaSlowDeviationEnabled && !ema60DeviationPassed) {
       const ema60Percent = ((price - ema60) / ema60 * 100).toFixed(2)
-      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(ema60DeviationThreshold * 100).toFixed(2)}%`)
+      reasons.push(`${emaSlowName}偏离过大(${ema60Percent}%) > ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
     }
     
     if (!rsiInRange) {

@@ -290,8 +290,8 @@ export function getDefaultConfig(): BotConfig {
       longEntry: {
         emaDeviationThreshold: 0.03,  // EMA偏离阈值 (3%)
         emaDeviationEnabled: true,    // 启用EMA偏离检查
-        ema60DeviationThreshold: 0.05, // EMA60偏离阈值 (5%)
-        ema60DeviationEnabled: true,  // 启用EMA60偏离检查
+        emaSlowDeviationThreshold: 0.05, // EMA60偏离阈值 (5%)
+        emaSlowDeviationEnabled: true,  // 启用EMA60偏离检查
         rsiMin: 35,                   // RSI最小值
         rsiMax: 65,                   // RSI最大值
         candleShadowThreshold: 0.005, // K线下影线阈值 (0.5%)
@@ -302,8 +302,8 @@ export function getDefaultConfig(): BotConfig {
       shortEntry: {
         emaDeviationThreshold: 0.02,  // EMA偏离阈值 (2%)
         emaDeviationEnabled: true,    // 启用EMA偏离检查
-        ema60DeviationThreshold: 0.05, // EMA60偏离阈值 (5%)
-        ema60DeviationEnabled: true,  // 启用EMA60偏离检查
+        emaSlowDeviationThreshold: 0.05, // EMA60偏离阈值 (5%)
+        emaSlowDeviationEnabled: true,  // 启用EMA60偏离检查
         rsiMin: 35,                   // RSI最小值
         rsiMax: 65,                   // RSI最大值
         candleShadowThreshold: 0.005, // K线上影线阈值 (0.5%)

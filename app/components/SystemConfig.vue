@@ -265,15 +265,15 @@
       </el-form-item>
 
       <el-form-item label="TP1盈亏比">
-        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp1RiskRewardRatio" :min="0.5" :max="5" :step="0.1" />
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp1RiskRewardRatio" :min="0.5" :max="20" :step="0.1" />
       </el-form-item>
 
       <el-form-item label="TP2盈亏比">
-        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2RiskRewardRatio" :min="0.5" :max="5" :step="0.1" />
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2RiskRewardRatio" :min="0.5" :max="20" :step="0.1" />
       </el-form-item>
 
       <el-form-item label="TP2最小盈利比例(R)">
-        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2MinProfitRatio" :min="0.1" :max="2" :step="0.1" />
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2MinProfitRatio" :min="0.1" :max="20" :step="0.1" />
       </el-form-item>
 
       <el-form-item label="多头RSI极值">
@@ -360,11 +360,11 @@
       </el-form-item>
 
       <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
-        <el-switch v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" />
+        <el-switch v-model="editConfig.indicatorsConfig.longEntry.emaSlowDeviationEnabled" />
       </el-form-item>
 
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.ema60DeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
+      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
+        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
       </el-form-item>
 
       <el-form-item label="RSI最小值">
@@ -402,11 +402,11 @@
       </el-form-item>
 
       <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
-        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" />
+        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationEnabled" />
       </el-form-item>
 
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.ema60DeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.ema60DeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
+      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
+        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
       </el-form-item>
 
       <el-form-item label="RSI最小值">

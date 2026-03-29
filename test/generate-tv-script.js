@@ -14,11 +14,11 @@ const strategyMode = config.strategyMode || "short_term"
 const emaFast = emaPeriods?.[strategyMode]?.fast || (isMediumTerm ? 50 : 20)
 const emaSlow = emaPeriods?.[strategyMode]?.slow || (isMediumTerm ? 200 : 60)
 
-// 根据 longEntry.ema60DeviationEnabled 确定 EMA 偏离阈值
+// 根据 longEntry.emaSlowDeviationEnabled 确定 EMA 偏离阈值
 let emaDeviationThreshold
 let emaDeviationPeriod
 
-if (config.indicatorsConfig?.longEntry?.ema60DeviationEnabled) {
+if (config.indicatorsConfig?.longEntry?.emaSlowDeviationEnabled) {
     emaDeviationThreshold = config.indicatorsConfig?.longEntry?.ema60DeviationThreshold || 0.05
     emaDeviationPeriod = emaSlow  // 使用慢速 EMA 周期
 } else {
@@ -87,7 +87,7 @@ plot(emaSlowLine, "EMA ${emaSlow}", color=color.orange, linewidth=2)
 
 // ====================== EMA${emaDeviationPeriod} 偏离率 ======================
 // 根据配置选择使用快速EMA线还是慢速EMA线
-ema${emaDeviationPeriod}Deviation = (close - ${config.indicatorsConfig?.longEntry?.ema60DeviationEnabled ? 'emaSlowLine' : 'emaFastLine'}) / ${config.indicatorsConfig?.longEntry?.ema60DeviationEnabled ? 'emaSlowLine' : 'emaFastLine'} * 100
+ema${emaDeviationPeriod}Deviation = (close - ${config.indicatorsConfig?.longEntry?.emaSlowDeviationEnabled ? 'emaSlowLine' : 'emaFastLine'}) / ${config.indicatorsConfig?.longEntry?.emaSlowDeviationEnabled ? 'emaSlowLine' : 'emaFastLine'} * 100
 
 // 分级颜色逻辑（核心优化）
 color devColor =
