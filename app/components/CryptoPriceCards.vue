@@ -294,7 +294,7 @@ function formatPrice(price: number): string {
   if (price < 0.001) {
     return price.toFixed(6)
   } else if (price < 1) {
-    return price.toFixed(4)
+    return price.toFixed(3)
   } else if (price < 1000) {
     return price.toFixed(2)
   } else {
