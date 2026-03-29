@@ -32,21 +32,44 @@ function getIntervalSeconds(timeframe) {
   }
 }
 
-async function checkSymbol(symbol) {
-
-  // https://fapi.binance.com/fapi/v1/exchangeInfo
-  // https://api.binance.com/api/v3/exchangeInfo
-  return new Promise((resolve) => {
+// 获取合约信息，包括上线时间
+async function getSymbolInfo(symbol) {
+  return new Promise((resolve, reject) => {
     https.get('https://fapi.binance.com/fapi/v1/exchangeInfo', (res) => {
       let data = ''
       res.on('data', chunk => data += chunk)
       res.on('end', () => {
-        const json = JSON.parse(data)
-        const exists = json.symbols.some(s => s.symbol === symbol)
-        resolve(exists)
+        try {
+          const json = JSON.parse(data)
+          const symbolInfo = json.symbols.find(s => s.symbol === symbol)
+          
+          if (!symbolInfo) {
+            resolve(null) // 合约不存在
+          } else {
+            resolve({
+              exists: true,
+              symbol: symbolInfo.symbol,
+              status: symbolInfo.status,
+              onboardDate: symbolInfo.onboardDate, // 上线时间（毫秒）
+              onboardTimestamp: Math.floor(symbolInfo.onboardDate / 1000), // 转换为秒
+              baseAsset: symbolInfo.baseAsset,
+              quoteAsset: symbolInfo.quoteAsset
+            })
+          }
+        } catch (error) {
+          reject(error)
+        }
       })
+    }).on('error', (error) => {
+      reject(error)
     })
   })
+}
+
+// 检查合约是否存在
+async function checkSymbol(symbol) {
+  const info = await getSymbolInfo(symbol)
+  return info ? info.exists : false
 }
 
 // 从币安获取K线数据
@@ -205,27 +228,90 @@ function appendSimpleKLineData(symbol, timeframe, newData) {
   }
 }
 
-// 批量获取历史数据
+// 批量获取历史数据（优化版，支持新上合约）
 async function fetchHistoryData(symbol, timeframe, totalBars = 22000, batchSize = 1000) {
   console.log(`🚀 开始从币安获取历史数据: ${symbol}/${timeframe}`);
   console.log(`目标: ${totalBars} 条数据，批次大小: ${batchSize}`);
   
-  // 计算开始时间：从当前时间往前推，获取历史数据
+  // 1. 先获取合约信息，包括上线时间
+  console.log(`\n🔍 获取合约信息...`);
+  const symbolInfo = await getSymbolInfo(symbol);
+  
+  if (!symbolInfo) {
+    console.log(`❌ 合约 ${symbol} 不存在`);
+    return {
+      success: false,
+      message: `合约 ${symbol} 不存在`,
+      symbol,
+      timeframe,
+      totalBars: 0,
+      batches: 0,
+      duration: 0
+    };
+  }
+  
+  console.log(`   ✅ 合约状态: ${symbolInfo.status}`);
+  console.log(`   📅 上线时间: ${new Date(symbolInfo.onboardDate).toLocaleString()}`);
+  
+  // 2. 计算实际可获取的时间范围
   const now = Math.floor(Date.now() / 1000);
   const intervalSeconds = getIntervalSeconds(timeframe);
   const totalSeconds = totalBars * intervalSeconds;
-  const startTimestamp = now - totalSeconds;
   
-  let currentStartTime = startTimestamp;
+  // 合约上线时间（秒）
+  const onboardTimestamp = symbolInfo.onboardTimestamp;
+  
+  // 计算理论开始时间（从当前时间往前推）
+  const theoreticalStartTimestamp = now - totalSeconds;
+  
+  // 实际开始时间：取理论开始时间和上线时间的较大值（不能早于上线时间）
+  const actualStartTimestamp = Math.max(theoreticalStartTimestamp, onboardTimestamp);
+  
+  console.log(`\n📊 时间范围分析:`);
+  console.log(`   当前时间: ${new Date(now * 1000).toLocaleString()}`);
+  console.log(`   理论开始时间: ${new Date(theoreticalStartTimestamp * 1000).toLocaleString()}`);
+  console.log(`   实际上线时间: ${new Date(onboardTimestamp * 1000).toLocaleString()}`);
+  console.log(`   实际开始时间: ${new Date(actualStartTimestamp * 1000).toLocaleString()}`);
+  
+  // 3. 计算实际可获取的数据量
+  const availableSeconds = now - actualStartTimestamp;
+  const maxAvailableBars = Math.floor(availableSeconds / intervalSeconds);
+  const actualTargetBars = Math.min(totalBars, maxAvailableBars);
+  
+  console.log(`\n📈 数据量分析:`);
+  console.log(`   目标数据量: ${totalBars} 条`);
+  console.log(`   最大可获取数据量: ${maxAvailableBars} 条`);
+  console.log(`   实际目标数据量: ${actualTargetBars} 条`);
+  
+  if (actualTargetBars <= 0) {
+    console.log(`❌ 合约上线时间太短，无法获取任何数据`);
+    return {
+      success: false,
+      message: `合约上线时间太短，无法获取任何数据`,
+      symbol,
+      timeframe,
+      totalBars: 0,
+      batches: 0,
+      duration: 0
+    };
+  }
+  
+  if (actualTargetBars < totalBars) {
+    console.log(`⚠️  注意：合约上线时间较短，只能获取 ${actualTargetBars} 条数据（原目标: ${totalBars} 条）`);
+  }
+  
+  let currentStartTime = actualStartTimestamp;
   let fetchedBars = 0;
   let batches = 0;
   const allData = [];
+  let consecutiveEmptyBatches = 0;
+  const maxConsecutiveEmptyBatches = 3;
   
   const startTime = Date.now();
   
   try {
-    while (fetchedBars < totalBars) {
-      const remaining = totalBars - fetchedBars;
+    while (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
+      const remaining = actualTargetBars - fetchedBars;
       const currentBatchSize = Math.min(batchSize, remaining);
       
       console.log(`\n📦 获取批次 ${batches + 1}: ${symbol}/${timeframe}`);
@@ -235,40 +321,65 @@ async function fetchHistoryData(symbol, timeframe, totalBars = 22000, batchSize 
       // 计算结束时间（当前批次）
       const batchEndTime = currentStartTime + (currentBatchSize * intervalSeconds);
       
-      const batchData = await fetchKLineFromBinance(
-        symbol, 
-        timeframe, 
-        currentStartTime * 1000, // 转换为毫秒
-        batchEndTime * 1000,     // 转换为毫秒
-        currentBatchSize
-      );
-      
-      if (batchData.length === 0) {
-        console.log('⚠️  没有更多数据可获取');
-        break;
-      }
-      
-      allData.push(...batchData);
-      fetchedBars += batchData.length;
-      batches++;
-      
-      // 更新进度
-      const progress = Math.round((fetchedBars / totalBars) * 100);
-      console.log(`   ✅ 获取成功: ${batchData.length} 条数据`);
-      console.log(`   📊 总进度: ${fetchedBars}/${totalBars} (${progress}%)`);
-      
-      // 更新下一个批次的开始时间
-      const lastItem = batchData[batchData.length - 1];
-      if (lastItem) {
-        currentStartTime = lastItem.timestamp + 1;
-        console.log(`   ⏰ 下一个批次开始时间: ${new Date(currentStartTime * 1000).toLocaleString()}`);
-      } else {
-        console.log('⚠️  批次数据为空，停止获取');
-        break;
+      try {
+        const batchData = await fetchKLineFromBinance(
+          symbol, 
+          timeframe, 
+          currentStartTime * 1000, // 转换为毫秒
+          batchEndTime * 1000,     // 转换为毫秒
+          currentBatchSize
+        );
+        
+        if (batchData.length === 0) {
+          console.log('⚠️  批次返回空数据');
+          consecutiveEmptyBatches++;
+          
+          // 如果连续返回空数据，尝试调整时间范围
+          if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+            console.log(`⚠️  连续 ${maxConsecutiveEmptyBatches} 个批次返回空数据，停止获取`);
+            break;
+          }
+          
+          // 跳过一段时间继续尝试
+          currentStartTime = batchEndTime + 1;
+          console.log(`   ⏰ 跳过空数据区间，下一个开始时间: ${new Date(currentStartTime * 1000).toLocaleString()}`);
+        } else {
+          consecutiveEmptyBatches = 0; // 重置连续空批次计数
+          allData.push(...batchData);
+          fetchedBars += batchData.length;
+          batches++;
+          
+          // 更新进度
+          const progress = Math.round((fetchedBars / actualTargetBars) * 100);
+          console.log(`   ✅ 获取成功: ${batchData.length} 条数据`);
+          console.log(`   📊 总进度: ${fetchedBars}/${actualTargetBars} (${progress}%)`);
+          
+          // 更新下一个批次的开始时间
+          const lastItem = batchData[batchData.length - 1];
+          if (lastItem) {
+            currentStartTime = lastItem.timestamp + intervalSeconds;
+            console.log(`   ⏰ 下一个批次开始时间: ${new Date(currentStartTime * 1000).toLocaleString()}`);
+          } else {
+            console.log('⚠️  批次数据异常，停止获取');
+            break;
+          }
+        }
+      } catch (batchError) {
+        console.log(`⚠️  批次获取失败: ${batchError.message}`);
+        consecutiveEmptyBatches++;
+        
+        if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+          console.log(`⚠️  连续 ${maxConsecutiveEmptyBatches} 个批次失败，停止获取`);
+          break;
+        }
+        
+        // 跳过一段时间继续尝试
+        currentStartTime = batchEndTime + 1;
+        console.log(`   ⏰ 跳过失败区间，下一个开始时间: ${new Date(currentStartTime * 1000).toLocaleString()}`);
       }
       
       // 避免请求过于频繁
-      if (fetchedBars < totalBars) {
+      if (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
         console.log('   ⏳ 等待200ms后继续...');
         await new Promise(resolve => setTimeout(resolve, 200));
       }
@@ -305,7 +416,11 @@ async function fetchHistoryData(symbol, timeframe, totalBars = 22000, batchSize 
         timeframe,
         totalBars: allData.length,
         batches,
-        duration
+        duration,
+        symbolInfo: {
+          onboardDate: symbolInfo.onboardDate,
+          status: symbolInfo.status
+        }
       };
     } else {
       console.log('❌ 没有获取到任何数据');
@@ -316,7 +431,11 @@ async function fetchHistoryData(symbol, timeframe, totalBars = 22000, batchSize 
         timeframe,
         totalBars: 0,
         batches: 0,
-        duration: (Date.now() - startTime) / 1000
+        duration: (Date.now() - startTime) / 1000,
+        symbolInfo: {
+          onboardDate: symbolInfo.onboardDate,
+          status: symbolInfo.status
+        }
       };
     }
     
@@ -334,7 +453,11 @@ async function fetchHistoryData(symbol, timeframe, totalBars = 22000, batchSize 
       totalBars: allData.length,
       batches,
       duration,
-      error: error.message
+      error: error.message,
+      symbolInfo: symbolInfo ? {
+        onboardDate: symbolInfo.onboardDate,
+        status: symbolInfo.status
+      } : null
     };
   }
 }
@@ -345,7 +468,7 @@ async function main() {
   console.log('🚀 币安历史K线数据获取工具');
   console.log('========================================\n');
   
-  const symbol = 'HYPEUSDT';
+  const symbol = 'XAGUSDT';
   const timeframe = '1h';
   const totalBars = 22000;
   const batchSize = 1000;
