@@ -28,7 +28,7 @@
     </template>
 
      <!-- TradingView弹窗 -->
-    <KLineChartSimple symbol="BTCUSDT" timeframe="1h" />
+    <KLineChartSimple :symbol="selectedSymbol" timeframe="1h" />
 
     <!-- TradingView弹窗 -->
     <TradingViewChartModal 

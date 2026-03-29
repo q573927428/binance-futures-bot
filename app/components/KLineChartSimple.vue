@@ -105,12 +105,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { createChart, ColorType, CandlestickSeries, BarSeries } from 'lightweight-charts'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { createChart, ColorType, CandlestickSeries, BarSeries, LineSeries } from 'lightweight-charts'
 import type { 
   SimpleKLineData,
   KLineApiResponse 
 } from '../../types/kline-simple'
+import { calculateEMASeries, getEMAColor, getEMAWidth } from '../utils/ema-calculator'
 
 // 定义props
 interface Props {
@@ -142,6 +143,11 @@ const chartContainer = ref<HTMLElement | null>(null)
 let chart: any = null
 let candlestickSeries: any = null
 let volumeSeries: any = null
+let ema14Series: any = null
+let ema120Series: any = null
+
+// EMA周期配置
+const emaPeriods = [14, 120]
 
 // 加载K线数据
 const loadKLineData = async () => {
@@ -238,6 +244,20 @@ const initChart = () => {
     }
   })
   
+  // 添加EMA14线
+  ema14Series = chart.addSeries(LineSeries, {
+    color: getEMAColor(14),
+    lineWidth: getEMAWidth(14),
+    title: 'EMA14'
+  })
+  
+  // 添加EMA120线
+  ema120Series = chart.addSeries(LineSeries, {
+    color: getEMAColor(120),
+    lineWidth: getEMAWidth(120),
+    title: 'EMA120'
+  })
+  
   // 响应窗口大小变化
   const resizeObserver = new ResizeObserver(() => {
     if (chart && chartContainer.value) {
@@ -289,6 +309,21 @@ const updateChart = () => {
   // 设置数据
   candlestickSeries.setData(candlestickData)
   volumeSeries.setData(volumeData)
+  
+  // 计算并设置EMA数据
+  if (ema14Series && ema120Series) {
+    // 计算EMA14数据
+    const ema14Data = calculateEMASeries(klineData.value, 14)
+    if (ema14Data.length > 0) {
+      ema14Series.setData(ema14Data)
+    }
+    
+    // 计算EMA120数据
+    const ema120Data = calculateEMASeries(klineData.value, 120)
+    if (ema120Data.length > 0) {
+      ema120Series.setData(ema120Data)
+    }
+  }
   
   // 设置默认显示200根K线
   if (candlestickData.length > 0) {
