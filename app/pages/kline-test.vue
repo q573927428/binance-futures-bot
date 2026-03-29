@@ -112,6 +112,15 @@
             
             <div class="form-item">
               <el-button
+                type="warning"
+                @click="showManualSyncDialog = true"
+              >
+                手动同步
+              </el-button>
+            </div>
+            
+            <div class="form-item">
+              <el-button
                 type="info"
                 @click="checkSyncStatus"
                 :loading="isCheckingStatus"
@@ -137,9 +146,89 @@
               >
                 {{ isChartFullscreen ? '退出全屏' : '全屏' }}
               </el-button>
-            </div>
-          </div>
-        </template>
+    </div>
+
+    <!-- 手动同步对话框 -->
+    <el-dialog
+      v-model="showManualSyncDialog"
+      title="手动同步历史数据"
+      width="500px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <div class="manual-sync-form">
+        <el-form :model="manualSyncForm" label-width="120px">
+          <el-form-item label="交易对">
+            <el-input :value="selectedSymbol" disabled />
+          </el-form-item>
+          
+          <el-form-item label="时间周期">
+            <el-input :value="getTimeframeLabel(selectedTimeframe)" disabled />
+          </el-form-item>
+          
+          <el-form-item label="总数据条数" required>
+            <el-input-number
+              v-model="manualSyncForm.totalBars"
+              :min="1000"
+              :max="100000"
+              :step="1000"
+              style="width: 100%"
+            />
+            <div class="form-tip">总共要获取的数据条数（默认20000）</div>
+          </el-form-item>
+          
+          <el-form-item label="批次大小" required>
+            <el-input-number
+              v-model="manualSyncForm.batchSize"
+              :min="100"
+              :max="1000"
+              :step="100"
+              style="width: 100%"
+            />
+            <div class="form-tip">每批获取的数据条数（默认1000，币安API限制）</div>
+          </el-form-item>
+          
+          <el-form-item label="开始时间">
+            <el-input
+              v-model="manualSyncForm.startTime"
+              placeholder="可选，时间戳（秒），如：1609459200"
+            />
+            <div class="form-tip">可选，如果不指定则从现有数据的最早时间开始</div>
+          </el-form-item>
+          
+          <el-form-item label="结束时间">
+            <el-input
+              v-model="manualSyncForm.endTime"
+              placeholder="可选，时间戳（秒），如：1640995200"
+            />
+            <div class="form-tip">可选，如果不指定则获取到最新数据</div>
+          </el-form-item>
+          
+          <el-form-item label="强制同步">
+            <el-checkbox v-model="manualSyncForm.force">
+              强制重新获取（会清理现有数据）
+            </el-checkbox>
+          </el-form-item>
+        </el-form>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showManualSyncDialog = false" :disabled="isManualSyncing">
+            取消
+          </el-button>
+          <el-button
+            type="primary"
+            @click="startManualSync"
+            :loading="isManualSyncing"
+          >
+            开始同步
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+  </div>
+</template>
         
         <KLineChart
           ref="klineChartRef"
@@ -272,9 +361,10 @@ const chartHeight = ref(500)
 const showControls = ref(true)
 const showInfo = ref(true)
 const autoLoad = ref(true)
-const dataLimit = ref(20000)
+const dataLimit = ref(2200)
 const isRefreshing = ref(false)
 const isSyncing = ref(false)
+const isManualSyncing = ref(false)
 const isCheckingStatus = ref(false)
 const isChartFullscreen = ref(false)
 const syncStatus = ref<any>(null)
@@ -283,6 +373,16 @@ const logs = ref<Array<{
   level: 'INFO' | 'WARN' | 'ERROR' | 'SUCCESS'
   message: string
 }>>([])
+const showManualSyncDialog = ref(false)
+
+// 手动同步表单数据
+const manualSyncForm = ref({
+  totalBars: 20000,
+  batchSize: 1000,
+  startTime: '',
+  endTime: '',
+  force: false
+})
 
 // 图表引用
 const klineChartRef = ref<InstanceType<typeof KLineChart>>()
@@ -503,6 +603,73 @@ function getLogTagType(level: string): 'info' | 'warning' | 'danger' | 'success'
     case 'ERROR': return 'danger'
     case 'SUCCESS': return 'success'
     default: return 'info'
+  }
+}
+
+// 开始手动同步
+async function startManualSync() {
+  isManualSyncing.value = true
+  addLog('INFO', `开始手动同步历史数据: ${selectedSymbol.value}/${selectedTimeframe.value}`)
+  
+  try {
+    // 准备请求参数
+    const requestBody: any = {
+      action: 'manual-sync',
+      symbol: selectedSymbol.value,
+      timeframe: selectedTimeframe.value,
+      totalBars: manualSyncForm.value.totalBars,
+      batchSize: manualSyncForm.value.batchSize,
+      force: manualSyncForm.value.force
+    }
+    
+    // 添加可选的时间参数
+    if (manualSyncForm.value.startTime.trim()) {
+      const startTime = parseInt(manualSyncForm.value.startTime.trim())
+      if (!isNaN(startTime) && startTime > 0) {
+        requestBody.startTime = startTime
+      }
+    }
+    
+    if (manualSyncForm.value.endTime.trim()) {
+      const endTime = parseInt(manualSyncForm.value.endTime.trim())
+      if (!isNaN(endTime) && endTime > 0) {
+        requestBody.endTime = endTime
+      }
+    }
+    
+    const response = await fetch('/api/kline', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      addLog('SUCCESS', `手动同步成功: ${result.message}`)
+      // 关闭对话框
+      showManualSyncDialog.value = false
+      // 刷新同步状态
+      await checkSyncStatus()
+      // 刷新图表
+      await refreshChart()
+      // 重置表单
+      manualSyncForm.value = {
+        totalBars: 20000,
+        batchSize: 1000,
+        startTime: '',
+        endTime: '',
+        force: false
+      }
+    } else {
+      addLog('ERROR', `手动同步失败: ${result.message}`)
+    }
+  } catch (error: any) {
+    addLog('ERROR', `手动同步请求失败: ${error.message}`)
+  } finally {
+    isManualSyncing.value = false
   }
 }
 </script>

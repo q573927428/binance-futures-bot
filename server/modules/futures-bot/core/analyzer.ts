@@ -83,7 +83,7 @@ export class MarketAnalyzer {
       const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
       
       // 获取主K线数据（用于AI分析、价格变化计算和入场条件检查）
-      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, 20)
+      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, 20)
       
       // 检查mainCandles是否为空
       if (mainCandles.length === 0) {

@@ -30,9 +30,9 @@ export async function calculateIndicators(
     const requiredCandles = strategyMode === 'medium_term' ? 300 : 300
     
     // 获取不同周期的K线数据
-    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, requiredCandles)
-    const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, requiredCandles)
-    const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, requiredCandles)
+    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, undefined, requiredCandles)
+    const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, undefined, requiredCandles)
+    const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, undefined, requiredCandles)
 
     const closesMain = candlesMain.map(c => c.close)
     const highsMain = candlesMain.map(c => c.high)

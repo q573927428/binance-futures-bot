@@ -50,7 +50,7 @@ async function handleGetRequest(event: any) {
   try {
     // 获取K线数据
     const klineData = getKLineData(params.symbol, params.timeframe, {
-      limit: params.limit || 20000,
+      limit: params.limit || 1600,
       from: params.from,
       to: params.to
     })
@@ -78,7 +78,7 @@ async function handleGetRequest(event: any) {
         firstTimestamp: klineData[0]?.timestamp || 0,
         lastTimestamp: klineData[klineData.length - 1]?.timestamp || 0,
         count: klineData.length,
-        hasMore: klineData.length >= (params.limit || 20000)
+        hasMore: klineData.length >= (params.limit || 1600)
       }
     }
     
@@ -115,6 +115,9 @@ async function handlePostRequest(event: any) {
       
       case 'fill-gaps':
         return await handleFillGapsAction(symbol, timeframe)
+      
+      case 'manual-sync':
+        return await handleManualSyncAction(body)
       
       default:
         return createErrorResponse(`不支持的操作: ${action}`, 400)
@@ -276,6 +279,61 @@ async function handleFillGapsAction(symbol?: string, timeframe?: string) {
   } catch (error: any) {
     console.error(`补全数据缺口失败: ${symbol}/${timeframe}`, error)
     return createErrorResponse(`补全数据缺口失败: ${error.message}`, 500)
+  }
+}
+
+// 处理手动同步操作
+async function handleManualSyncAction(body: any) {
+  const { symbol, timeframe, totalBars, batchSize, startTime, endTime, force } = body
+  
+  if (!symbol || !timeframe) {
+    return createErrorResponse('手动同步操作需要 symbol 和 timeframe 参数', 400)
+  }
+  
+  // 验证timeframe
+  const validTimeframes = ['15m', '1h', '4h', '1d', '1w']
+  if (!validTimeframes.includes(timeframe)) {
+    return createErrorResponse(`无效的timeframe: ${timeframe}，有效值: ${validTimeframes.join(', ')}`, 400)
+  }
+  
+  // 验证参数
+  if (totalBars !== undefined && (typeof totalBars !== 'number' || totalBars <= 0)) {
+    return createErrorResponse('totalBars必须是大于0的数字', 400)
+  }
+  
+  if (batchSize !== undefined && (typeof batchSize !== 'number' || batchSize <= 0 || batchSize > 1000)) {
+    return createErrorResponse('batchSize必须是1-1000之间的数字', 400)
+  }
+  
+  if (startTime !== undefined && (typeof startTime !== 'number' || startTime <= 0)) {
+    return createErrorResponse('startTime必须是有效的时间戳（秒）', 400)
+  }
+  
+  if (endTime !== undefined && (typeof endTime !== 'number' || endTime <= 0)) {
+    return createErrorResponse('endTime必须是有效的时间戳（秒）', 400)
+  }
+  
+  try {
+    const result = await klineSyncService.manualSyncHistory(
+      symbol,
+      timeframe as any,
+      {
+        totalBars,
+        batchSize,
+        startTime,
+        endTime,
+        force: !!force
+      }
+    )
+    
+    if (result.success) {
+      return createSuccessResponse(result, result.message)
+    } else {
+      return createErrorResponse(result.message, 500)
+    }
+  } catch (error: any) {
+    console.error(`手动同步历史数据失败: ${symbol}/${timeframe}`, error)
+    return createErrorResponse(`手动同步失败: ${error.message}`, 500)
   }
 }
 

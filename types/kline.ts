@@ -47,7 +47,7 @@ export interface KLineSyncConfig {
   maxBarsPerFile: number      // 每个文件最大K线数量（默认30000）
   maxTotalBars: number        // 总共最大K线数量（默认20000）
   syncInterval: number        // 同步间隔（秒，默认300=5分钟）
-  initialBars: number         // 初始同步K线数量（默认2000）
+  initialBars: number         // 初始同步K线数量（默认1600）
 }
 
 // K线同步状态
@@ -141,7 +141,7 @@ export const DEFAULT_KLINE_SYNC_CONFIG: KLineSyncConfig = {
   symbols: [], // 从bot-config.json读取
   timeframes: ['15m', '1h', '4h', '1d', '1w'],
   maxBarsPerFile: 30000,
-  maxTotalBars: 20000,
+  maxTotalBars: 30000,
   syncInterval: 300, // 5分钟
-  initialBars: 2000
+  initialBars: 2200
 }

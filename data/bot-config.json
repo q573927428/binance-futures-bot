@@ -1,5 +1,6 @@
 {
   "strategyMode": "medium_term",
+  "initialBars": 1000,
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",

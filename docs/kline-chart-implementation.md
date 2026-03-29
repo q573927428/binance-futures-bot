@@ -165,7 +165,7 @@ POST /api/kline-scheduler
   maxBarsPerFile: 30000,          // 每个文件最大数据条数
   maxTotalBars: 20000,            // 总数据条数限制
   syncInterval: 300,              // 同步间隔（秒）
-  initialBars: 2000               // 初始加载数据条数
+  initialBars: 1600               // 初始加载数据条数
 }
 ```
 

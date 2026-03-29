@@ -144,9 +144,9 @@ export class KLineSyncService {
       symbols: botConfig.symbols,
       timeframes: ['15m', '1h', '4h', '1d', '1w'],
       maxBarsPerFile: 30000,
-      maxTotalBars: 20000,
+      maxTotalBars: 30000,
       syncInterval: 300, // 5分钟
-      initialBars: 20000
+      initialBars: 1600
     }
     
     this.config = { ...defaultConfig, ...config }
@@ -251,6 +251,7 @@ export class KLineSyncService {
         const ccxtData = await this.binanceService.fetchOHLCV(
           symbol,
           timeframe,
+          undefined,
           initialBars
         )
         
@@ -275,6 +276,7 @@ export class KLineSyncService {
         const ccxtData = await this.binanceService.fetchOHLCV(
           symbol,
           timeframe,
+          undefined,
           Math.min(estimatedBars, 1000) // 限制最多1000条
         )
         
@@ -493,11 +495,11 @@ export class KLineSyncService {
           continue
         }
         
-        // 获取缺口数据 - 注意：fetchOHLCV只支持symbol, timeframe, limit三个参数
-        // 无法指定开始时间，只能获取最新数据
+        // 获取缺口数据 - 现在支持指定开始时间
         const ccxtData = await this.binanceService.fetchOHLCV(
           symbol,
           timeframe,
+          gap.start * 1000, // 转换为毫秒
           Math.min(barsNeeded, 1000)
         )
         
@@ -543,6 +545,235 @@ export class KLineSyncService {
         message: `补全失败: ${error.message}`,
         filled: 0
       }
+    }
+  }
+  
+  // 手动同步历史数据（分批获取）
+  async manualSyncHistory(
+    symbol: string,
+    timeframe: KLineTimeframe,
+    options: {
+      totalBars?: number      // 总共要获取的数据条数
+      batchSize?: number      // 每批获取的数据条数（默认1000）
+      startTime?: number      // 开始时间戳（秒），如果不指定则从最早的数据开始
+      endTime?: number        // 结束时间戳（秒），如果不指定则获取到最新
+      force?: boolean         // 是否强制重新获取
+    } = {}
+  ): Promise<{ success: boolean; message: string; totalFetched: number; batches: number }> {
+    const normalizedSymbol = normalizeSymbol(symbol)
+    const statusKey = this.getStatusKey(normalizedSymbol, timeframe)
+    
+    // 检查是否正在同步
+    if (this.isSyncing) {
+      return {
+        success: false,
+        message: '已有同步任务正在进行',
+        totalFetched: 0,
+        batches: 0
+      }
+    }
+    
+    this.isSyncing = true
+    this.updateSyncStatus(normalizedSymbol, timeframe, { status: 'syncing' })
+    
+    try {
+      const {
+        totalBars = 20000,
+        batchSize = 1000,
+        startTime,
+        endTime,
+        force = false
+      } = options
+      
+      console.log(`开始手动同步历史数据: ${symbol}/${timeframe}, 目标: ${totalBars}条, 批次大小: ${batchSize}`)
+      
+      // 如果指定了force，先清理现有数据
+      if (force) {
+        console.log(`强制同步: 清理现有数据`)
+        // TODO: 实现清理现有数据的功能
+      }
+      
+      // 确定开始时间（从指定的开始时间向后获取）
+      let currentSince = startTime
+      if (!currentSince) {
+        // 如果没有指定开始时间，尝试获取最早的数据
+        const existingData = getKLineData(normalizedSymbol, timeframe, { limit: 1 })
+        if (existingData.length > 0 && existingData[0]) {
+          // 从现有数据的最早时间开始
+          currentSince = existingData[0].timestamp
+          console.log(`使用现有数据的最早时间: ${new Date(currentSince * 1000).toISOString()}`)
+        } else {
+          // 如果没有现有数据，从当前时间开始向前获取
+          currentSince = Math.floor(Date.now() / 1000) - (totalBars * 3600) // 假设1小时周期
+          console.log(`没有现有数据，从估计时间开始: ${new Date(currentSince * 1000).toISOString()}`)
+        }
+      }
+      
+      // 确定结束时间
+      const targetEndTime = endTime || Math.floor(Date.now() / 1000)
+      
+      // 分批获取数据
+      let totalFetched = 0
+      let batches = 0
+      let currentTime = currentSince
+      let lastBatchSize = 0
+      let consecutiveSmallBatches = 0
+      
+      while (totalFetched < totalBars && currentTime < targetEndTime) {
+        batches++
+        console.log(`批次 ${batches}: 从时间 ${new Date(currentTime * 1000).toISOString()} 开始`)
+        
+        try {
+          // 计算本次需要获取的数据量
+          const remainingBars = totalBars - totalFetched
+          const barsThisBatch = Math.min(batchSize, remainingBars)
+          
+          // 获取数据 - 使用since参数指定开始时间
+          const ccxtData = await this.binanceService.fetchOHLCV(
+            symbol,
+            timeframe,
+            currentTime * 1000, // 转换为毫秒
+            barsThisBatch
+          )
+          
+          if (ccxtData.length === 0) {
+            console.log(`批次 ${batches}: 没有获取到数据，可能已达到数据边界`)
+            break
+          }
+          
+          // 转换为标准格式
+          const newData = convertCCXTToKLineData(ccxtData)
+          
+          if (newData.length === 0) {
+            console.log(`批次 ${batches}: 转换后没有有效数据`)
+            break
+          }
+          
+          // 检查是否获取到了重复数据
+          if (newData.length === 1 && lastBatchSize === 1) {
+            consecutiveSmallBatches++
+            if (consecutiveSmallBatches >= 3) {
+              console.log(`连续 ${consecutiveSmallBatches} 个批次只获取到1条数据，可能已达到最新数据边界`)
+              break
+            }
+          } else {
+            consecutiveSmallBatches = 0
+          }
+          
+          lastBatchSize = newData.length
+          
+          // 按年份分组并保存
+          const groupedData = groupKLineDataByYear(newData)
+          let batchSaved = 0
+          
+          for (const [year, yearData] of Object.entries(groupedData)) {
+            const yearNum = parseInt(year)
+            const saved = writeKLineFile(normalizedSymbol, timeframe, yearNum, yearData)
+            
+            if (saved) {
+              batchSaved += yearData.length
+            }
+          }
+          
+          totalFetched += batchSaved
+          console.log(`批次 ${batches}: 获取 ${ccxtData.length} 条，保存 ${batchSaved} 条，累计 ${totalFetched} 条`)
+          
+          // 更新当前时间（使用最后一条数据的时间戳）
+          const lastItem = newData[newData.length - 1]
+          if (lastItem) {
+            const lastTimestamp = lastItem.timestamp
+            
+            // 检查是否已经达到最新数据
+            if (lastTimestamp >= targetEndTime - 3600) { // 如果最后一条数据的时间接近结束时间
+              console.log(`已达到最新数据边界，最后时间戳: ${new Date(lastTimestamp * 1000).toISOString()}`)
+              break
+            }
+            
+            // 计算时间框架的秒数
+            const timeframeSeconds: Record<KLineTimeframe, number> = {
+              '15m': 15 * 60,
+              '1h': 60 * 60,
+              '4h': 4 * 60 * 60,
+              '1d': 24 * 60 * 60,
+              '1w': 7 * 24 * 60 * 60
+            }
+            const interval = timeframeSeconds[timeframe]
+            
+            // 下一次从最后一条数据的时间戳 + 一个间隔开始
+            currentTime = lastTimestamp + interval
+          } else {
+            // 如果没有数据，向前移动一个批次的时间
+            const timeframeSeconds: Record<KLineTimeframe, number> = {
+              '15m': 15 * 60,
+              '1h': 60 * 60,
+              '4h': 4 * 60 * 60,
+              '1d': 24 * 60 * 60,
+              '1w': 7 * 24 * 60 * 60
+            }
+            const interval = timeframeSeconds[timeframe]
+            currentTime += interval * batchSize
+          }
+          
+          // 添加延迟以避免API限制
+          if (totalFetched < totalBars && currentTime < targetEndTime) {
+            await new Promise(resolve => setTimeout(resolve, 1000)) // 1秒延迟
+          }
+          
+        } catch (batchError: any) {
+          console.error(`批次 ${batches} 失败:`, batchError.message)
+          // 继续尝试下一个批次
+          const timeframeSeconds: Record<KLineTimeframe, number> = {
+            '15m': 15 * 60,
+            '1h': 60 * 60,
+            '4h': 4 * 60 * 60,
+            '1d': 24 * 60 * 60,
+            '1w': 7 * 24 * 60 * 60
+          }
+          const interval = timeframeSeconds[timeframe]
+          currentTime += interval * batchSize
+          await new Promise(resolve => setTimeout(resolve, 2000)) // 2秒延迟后重试
+        }
+      }
+      
+      // 更新缓存
+      if (totalFetched > 0) {
+        const updatedData = getKLineData(normalizedSymbol, timeframe, { limit: 2000 })
+        updateLatestCache(normalizedSymbol, timeframe, updatedData)
+      }
+      
+      // 更新同步状态
+      const allData = getKLineData(normalizedSymbol, timeframe, { limit: 10000 })
+      this.updateSyncStatus(normalizedSymbol, timeframe, {
+        status: 'idle',
+        lastSyncCount: totalFetched,
+        totalBars: allData.length
+      })
+      
+      console.log(`手动同步完成: ${symbol}/${timeframe}, 共获取 ${totalFetched} 条数据，${batches} 个批次`)
+      
+      return {
+        success: true,
+        message: `手动同步完成，共获取 ${totalFetched} 条数据`,
+        totalFetched,
+        batches
+      }
+      
+    } catch (error: any) {
+      console.error(`手动同步历史数据失败: ${symbol}/${timeframe}`, error)
+      
+      this.updateSyncStatus(normalizedSymbol, timeframe, {
+        status: 'error',
+        error: error.message
+      })
+      
+      return {
+        success: false,
+        message: `手动同步失败: ${error.message}`,
+        totalFetched: 0,
+        batches: 0
+      }
+    } finally {
+      this.isSyncing = false
     }
   }
   

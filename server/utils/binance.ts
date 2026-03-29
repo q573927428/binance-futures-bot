@@ -40,11 +40,15 @@ export class BinanceService {
 
   /**
    * 获取K线数据（使用公共实例）
+   * @param symbol 交易对
+   * @param timeframe 时间周期
+   * @param since 开始时间戳（毫秒），可选
+   * @param limit 限制数量
    */
-  async fetchOHLCV(symbol: string, timeframe: string, limit = 100): Promise<OHLCV[]> {
+  async fetchOHLCV(symbol: string, timeframe: string, since?: number, limit = 100): Promise<OHLCV[]> {
     try {
       // 使用公共实例查询K线数据
-      const ohlcv = await this.publicExchange.fetchOHLCV(symbol, timeframe, undefined, limit)
+      const ohlcv = await this.publicExchange.fetchOHLCV(symbol, timeframe, since, limit)
       return ohlcv.map(candle => ({
         timestamp: Number(Number(candle[0] || 0).toFixed(5)),
         open: Number(Number(candle[1] || 0).toFixed(5)),
