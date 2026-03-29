@@ -626,40 +626,4 @@ onMounted(() => {
     justify-content: space-between;
   }
 }
-
-/* 响应式设计 - 超小屏幕 (360px以下) */
-@media (max-width: 360px) {
-  .chart-controls {
-    padding: 8px 10px;
-    gap: 8px;
-  }
-  
-  .controls-left .el-select {
-    font-size: 12px;
-  }
-  
-  .controls-right .el-button {
-    padding: 6px 3px;
-    font-size: 11px;
-    min-height: 32px;
-  }
-  
-  .controls-right .el-button .el-icon {
-    font-size: 12px;
-  }
-  
-  .symbol-badge {
-    font-size: 11px;
-    padding: 2px 6px;
-  }
-  
-  .chart-wrapper {
-    margin: 6px;
-    min-height: 280px;
-  }
-  
-  .kline-chart {
-    min-height: 280px;
-  }
-}
 </style>
