@@ -1,7 +1,7 @@
 <template>
-  <div class="kline-simple-test-page">
-    <KLineChartSimple />
-  </div>
+  <!-- <div class="kline-simple-test-page">
+    <KLineChartSimple symbol="BTCUSDT" timeframe="1h" />
+  </div> -->
 </template>
 
 <script setup lang="ts">

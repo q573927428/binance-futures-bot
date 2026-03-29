@@ -3,19 +3,7 @@
     <!-- 图表控制栏 -->
     <div class="chart-controls">
       <div class="controls-left">
-        <div class="symbol-badge">{{ selectedSymbol }}</div>
-        
-        <el-select
-          v-model="selectedSymbol"
-          placeholder="选择交易对"
-          size="small"
-          style="width: 120px"
-          @change="loadKLineData"
-        >
-          <el-option label="BTCUSDT" value="BTCUSDT" />
-          <el-option label="ETHUSDT" value="ETHUSDT" />
-          <el-option label="BNBUSDT" value="BNBUSDT" />
-        </el-select>
+        <div class="symbol-badge">{{ symbol }}</div>
 
         <el-select
           v-model="selectedTimeframe"
@@ -124,9 +112,19 @@ import type {
   KLineApiResponse 
 } from '../../types/kline-simple'
 
+// 定义props
+interface Props {
+  symbol?: string
+  timeframe?: string
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  symbol: 'BTCUSDT',
+  timeframe: '1h'
+})
+
 // 响应式数据
-const selectedSymbol = ref('BTCUSDT')
-const selectedTimeframe = ref('1h')
+const selectedTimeframe = ref(props.timeframe)
 const klineData = ref<SimpleKLineData[]>([])
 const meta = ref({
   first: 0,
@@ -147,8 +145,8 @@ let volumeSeries: any = null
 
 // 加载K线数据
 const loadKLineData = async () => {
-  if (!selectedSymbol.value || !selectedTimeframe.value) {
-    error.value = '请选择交易对和周期'
+  if (!props.symbol || !selectedTimeframe.value) {
+    error.value = '请提供交易对和周期'
     return
   }
   
@@ -157,7 +155,7 @@ const loadKLineData = async () => {
   
   try {
     const params = new URLSearchParams({
-      symbol: selectedSymbol.value,
+      symbol: props.symbol,
       timeframe: selectedTimeframe.value,
       limit: '22000' // 最多加载2000条
     })

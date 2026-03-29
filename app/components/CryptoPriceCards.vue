@@ -27,13 +27,16 @@
       </div>
     </template>
 
+     <!-- TradingView弹窗 -->
+    <KLineChartSimple symbol="BTCUSDT" timeframe="1h" />
+
     <!-- TradingView弹窗 -->
-  <TradingViewChartModal 
-    v-model="showChartModal"
-    :symbol="selectedSymbol"
-    :visible="showChartModal"
-    @close="closeChartModal"
-  />
+    <TradingViewChartModal 
+      v-model="showChartModal"
+      :symbol="selectedSymbol"
+      :visible="showChartModal"
+      @close="closeChartModal"
+    />
 
     <!-- WebSocket状态提示 -->
     <div v-if="!isWebSocketConnected" class="connection-warning">
