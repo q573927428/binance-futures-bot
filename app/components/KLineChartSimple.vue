@@ -1,57 +1,117 @@
 <template>
-  <div class="kline-chart-simple">
-    <!-- 控制面板 -->
-    <div class="control-panel">
-      <div class="symbol-selector">
-        <el-select v-model="selectedSymbol" placeholder="选择交易对" @change="loadKLineData">
+  <div class="kline-chart-simple-container">
+    <!-- 图表控制栏 -->
+    <div class="chart-controls">
+      <div class="controls-left">
+        <div class="symbol-badge">{{ selectedSymbol }}</div>
+        
+        <el-select
+          v-model="selectedSymbol"
+          placeholder="选择交易对"
+          size="small"
+          style="width: 120px"
+          @change="loadKLineData"
+        >
           <el-option label="BTCUSDT" value="BTCUSDT" />
           <el-option label="ETHUSDT" value="ETHUSDT" />
           <el-option label="BNBUSDT" value="BNBUSDT" />
         </el-select>
-        
-        <el-select v-model="selectedTimeframe" placeholder="选择周期" @change="loadKLineData">
+
+        <el-select
+          v-model="selectedTimeframe"
+          placeholder="选择周期"
+          size="small"
+          style="width: 100px; margin-left: 8px"
+          @change="loadKLineData"
+        >
           <el-option label="15分钟" value="15m" />
           <el-option label="1小时" value="1h" />
           <el-option label="4小时" value="4h" />
           <el-option label="日线" value="1d" />
           <el-option label="周线" value="1w" />
         </el-select>
-        
-        <el-button type="primary" @click="loadKLineData" :loading="loading">
-          <el-icon><ElIconRefresh /></el-icon>
-          刷新
-        </el-button>
-        
-        <el-button @click="toggleTheme">
-          <el-icon><ElIconSunny v-if="theme === 'light'" /><ElIconMoon v-else /></el-icon>
-          {{ theme === 'light' ? '暗色' : '亮色' }}
-        </el-button>
+
+        <el-select
+          v-model="theme"
+          placeholder="主题"
+          size="small"
+          style="width: 100px; margin-left: 8px"
+          @change="toggleTheme"
+        >
+          <el-option label="浅色" value="light" />
+          <el-option label="深色" value="dark" />
+        </el-select>
       </div>
-      
-      <div class="info-display" v-if="klineData.length > 0">
-        <span>数据量: {{ klineData.length }} 条</span>
-        <span>时间范围: {{ formatTime(klineData[0]?.t || 0) }} - {{ formatTime(klineData[klineData.length - 1]?.t || 0) }}</span>
-        <span>最后更新: {{ formatTime(meta.updated) }}</span>
+
+      <div class="controls-right">
+        <el-button-group size="small">
+          <el-button
+            type="primary"
+            size="small"
+            @click="loadKLineData"
+            :loading="loading"
+            title="刷新图表"
+          >
+            <el-icon><ElIconRefresh /></el-icon>
+          </el-button>
+          
+          <el-button
+            type="info"
+            size="small"
+            @click="toggleTheme"
+            title="切换主题"
+          >
+            <el-icon>
+              <ElIconSunny v-if="theme === 'light'" />
+              <ElIconMoon v-else />
+            </el-icon>
+          </el-button>
+        </el-button-group>
       </div>
     </div>
-    
+
     <!-- 图表容器 -->
-    <div ref="chartContainer" class="chart-container"></div>
-    
-    <!-- 加载状态 -->
-    <div v-if="loading" class="loading-overlay">
-      <el-icon class="loading-icon"><ElIconLoading /></el-icon>
-      <span>加载K线数据中...</span>
+    <div class="chart-wrapper">
+      <div ref="chartContainer" class="kline-chart"></div>
+
+      <!-- 加载状态 -->
+      <div v-if="loading" class="chart-loading">
+        <el-skeleton :rows="5" animated />
+        <div class="loading-text">正在加载K线数据...</div>
+      </div>
+
+      <!-- 错误状态 -->
+      <div v-if="error" class="chart-error">
+        <el-alert
+          :title="error"
+          type="error"
+          :closable="false"
+          show-icon
+        />
+        <div class="error-actions">
+          <el-button type="primary" @click="loadKLineData">
+            重试
+          </el-button>
+        </div>
+      </div>
+
+
     </div>
-    
-    <!-- 错误提示 -->
-    <div v-if="error" class="error-message">
-      <el-alert :title="error" type="error" show-icon />
-    </div>
-    
-    <!-- 无数据提示 -->
-    <div v-if="!loading && klineData.length === 0 && !error" class="no-data">
-      <el-empty description="暂无K线数据" />
+
+    <!-- 图表信息 -->
+    <div class="chart-info" v-if="klineData.length > 0">
+      <div class="info-row">
+        <span class="info-label">数据量:</span>
+        <span class="info-value">{{ klineData.length }} 条</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">时间范围:</span>
+        <span class="info-value">{{ formatTime(klineData[0]?.t || 0) }} - {{ formatTime(klineData[klineData.length - 1]?.t || 0) }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">最后更新:</span>
+        <span class="info-value">{{ formatTime(meta.updated) }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -280,95 +340,326 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.kline-chart-simple {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+.kline-chart-simple-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e7ed;
+  overflow: hidden;
+  transition: all 0.3s ease;
 }
 
-.control-panel {
-  padding: 16px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.kline-chart-simple-container:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
-.symbol-selector {
+/* 图表控制栏 */
+.chart-controls {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e4e7ed;
 }
 
-.info-display {
+.controls-left {
   display: flex;
-  gap: 24px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.chart-container {
-  flex: 1;
-  min-height: 500px;
+.controls-right {
+  display: flex;
+  align-items: center;
+}
+
+.symbol-badge {
+  background: #409eff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 图表容器 */
+.chart-wrapper {
   position: relative;
+  min-height: 500px;
+  margin: 20px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
 }
 
-.loading-overlay {
+.kline-chart {
+  width: 100%;
+  min-height: 500px;
+}
+
+/* 加载状态 */
+.chart-loading {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  z-index: 10;
+}
+
+.loading-text {
+  margin-top: 20px;
+  color: #6c757d;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 错误状态 */
+.chart-error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 60px 20px;
+  text-align: center;
+  background: white;
+  z-index: 10;
+}
+
+.error-actions {
+  margin-top: 24px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  color: white;
-  z-index: 1000;
+  gap: 16px;
 }
 
-.loading-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.error-message {
-  padding: 16px;
-}
-
+/* 无数据提示 */
 .no-data {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 300px;
+  background: white;
+  z-index: 10;
 }
 
-/* 响应式设计 */
+/* 图表信息 */
+.chart-info {
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #e4e7ed;
+  display: flex;
+  gap: 24px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-label {
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 响应式设计 - 平板端 (768px以下) */
 @media (max-width: 768px) {
-  .symbol-selector {
+  .chart-controls {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
   }
   
-  .info-display {
+  .controls-left {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .controls-left .el-select {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .controls-right .el-button-group {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .controls-right .el-button {
+    flex: 1;
+    min-width: 60px;
+  }
+  
+  .chart-wrapper {
+    margin: 12px;
+    min-height: 400px;
+  }
+  
+  .kline-chart {
+    min-height: 400px;
+  }
+  
+  .chart-info {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+}
+
+/* 响应式设计 - 手机端 (480px以下) */
+@media (max-width: 480px) {
+  .symbol-badge {
+    font-size: 12px;
+    padding: 3px 8px;
+    margin-bottom: 8px;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .chart-controls {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .controls-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .controls-left .el-select {
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-bottom: 0;
+  }
+  
+  .controls-left .el-select:last-child {
+    margin-bottom: 0;
+  }
+  
+  .controls-right {
+    width: 100%;
+  }
+  
+  .controls-right .el-button-group {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+  }
+  
+  .controls-right .el-button {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+  
+  .controls-right .el-button .el-icon {
+    font-size: 14px;
+  }
+  
+  /* 优化按钮图标显示 */
+  .controls-right .el-button span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .chart-wrapper {
+    min-height: 300px;
+    margin: 8px;
+    border-radius: 6px;
+  }
+  
+  .kline-chart {
+    min-height: 300px;
+  }
+  
+  .chart-loading,
+  .chart-error {
+    padding: 30px 10px;
+  }
+  
+  .loading-text {
+    font-size: 14px;
+  }
+  
+  .error-actions {
     flex-direction: column;
     gap: 8px;
   }
   
-  .chart-container {
-    min-height: 400px;
+  .error-actions .el-button {
+    width: 100%;
+  }
+  
+  .no-data {
+    padding: 20px;
+  }
+  
+  .chart-info {
+    padding: 10px 12px;
+  }
+  
+  .info-row {
+    justify-content: space-between;
+  }
+}
+
+/* 响应式设计 - 超小屏幕 (360px以下) */
+@media (max-width: 360px) {
+  .chart-controls {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .controls-left .el-select {
+    font-size: 12px;
+  }
+  
+  .controls-right .el-button {
+    padding: 6px 3px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+  
+  .controls-right .el-button .el-icon {
+    font-size: 12px;
+  }
+  
+  .symbol-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .chart-wrapper {
+    margin: 6px;
+    min-height: 280px;
+  }
+  
+  .kline-chart {
+    min-height: 280px;
   }
 }
 </style>

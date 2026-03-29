@@ -1,13 +1,6 @@
 <template>
   <div class="kline-simple-test-page">
-    <div class="content">
-      <!-- K线图表 -->
-      <div class="chart-section">
-        <el-card class="chart-card">
-          <KLineChartSimple />
-        </el-card>
-      </div>
-    </div>
+    <KLineChartSimple />
   </div>
 </template>
 
@@ -75,7 +68,6 @@ const testSyncData = async () => {
 
 <style scoped>
 .kline-simple-test-page {
-  padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
 }
