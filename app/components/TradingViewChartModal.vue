@@ -435,29 +435,6 @@ declare global {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
-/* 卡片头部样式 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-bottom: 1px solid #dee2e6;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #2c3e50;
-}
-
 .symbol-badge {
   background: #409eff;
   color: white;
@@ -530,48 +507,8 @@ declare global {
   gap: 16px;
 }
 
-/* 全屏模式 */
-.tradingview-card.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  margin: 0;
-  border-radius: 0;
-  border: none;
-}
-
-.tradingview-card.fullscreen .chart-container {
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  height: calc(100vh - 120px);
-}
-
-.tradingview-card.fullscreen .tradingview-chart {
-  height: 100%;
-}
-
-/* 响应式设计 */
+/* 响应式设计 - 平板端 (768px以下) */
 @media (max-width: 768px) {
-  .card-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    padding: 12px 16px;
-  }
-  
-  .header-left {
-    justify-content: center;
-    text-align: center;
-  }
-  
-  .header-right {
-    justify-content: center;
-  }
-  
   .chart-controls {
     flex-direction: column;
     align-items: stretch;
@@ -582,6 +519,23 @@ declare global {
   .controls-left {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 6px;
+  }
+  
+  .controls-left .el-select {
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .header-right .el-button-group {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .header-right .el-button {
+    flex: 1;
+    min-width: 60px;
   }
   
   .chart-container {
@@ -594,30 +548,70 @@ declare global {
   }
 }
 
+/* 响应式设计 - 手机端 (480px以下) */
 @media (max-width: 480px) {
-  .card-title {
-    font-size: 16px;
-  }
-  
   .symbol-badge {
     font-size: 12px;
     padding: 3px 8px;
+    margin-bottom: 8px;
+    text-align: center;
+    width: 100%;
+  }
+  
+  .chart-controls {
+    padding: 10px 12px;
+    gap: 10px;
   }
   
   .controls-left {
     flex-direction: column;
     align-items: stretch;
+    gap: 8px;
+    width: 100%;
   }
   
-  .controls-left > * {
-    width: 100%;
+  .controls-left .el-select {
+    width: 100% !important;
     margin-left: 0 !important;
-    margin-bottom: 8px;
+    margin-bottom: 0;
+  }
+  
+  .controls-left .el-select:last-child {
+    margin-bottom: 0;
+  }
+  
+  .header-right {
+    width: 100%;
+  }
+  
+  .header-right .el-button-group {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+  }
+  
+  .header-right .el-button {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 12px;
+    min-height: 36px;
+  }
+  
+  .header-right .el-button .el-icon {
+    font-size: 14px;
+  }
+  
+  /* 优化按钮图标显示 */
+  .header-right .el-button span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   .chart-container {
     min-height: 300px;
     margin: 8px;
+    border-radius: 6px;
   }
   
   .tradingview-chart {
@@ -626,7 +620,56 @@ declare global {
   
   .chart-loading,
   .chart-error {
-    padding: 40px 12px;
+    padding: 30px 10px;
+  }
+  
+  .loading-text {
+    font-size: 14px;
+  }
+  
+  .error-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .error-actions .el-button {
+    width: 100%;
+  }
+}
+
+/* 响应式设计 - 超小屏幕 (360px以下) */
+@media (max-width: 360px) {
+  .chart-controls {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  
+  .controls-left .el-select {
+    font-size: 12px;
+  }
+  
+  .header-right .el-button {
+    padding: 6px 3px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+  
+  .header-right .el-button .el-icon {
+    font-size: 12px;
+  }
+  
+  .symbol-badge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
+  
+  .chart-container {
+    margin: 6px;
+    min-height: 280px;
+  }
+  
+  .tradingview-chart {
+    min-height: 280px;
   }
 }
 </style>

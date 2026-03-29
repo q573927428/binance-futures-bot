@@ -83,7 +83,7 @@
     "adxTrend": {
       "adx1hThreshold": 18,
       "adx4hThreshold": 15,
-      "adx15mThreshold": 20,
+      "adx15mThreshold": 50,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
