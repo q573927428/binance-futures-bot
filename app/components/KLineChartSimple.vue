@@ -207,7 +207,8 @@ const initChart = () => {
     height: 500,
     timeScale: {
       timeVisible: true,
-      secondsVisible: false
+      secondsVisible: false,
+      rightOffset: 12 // 右侧留出一点距离，避免K线紧贴Y轴
     }
   }
   
@@ -291,8 +292,41 @@ const updateChart = () => {
   candlestickSeries.setData(candlestickData)
   volumeSeries.setData(volumeData)
   
-  // 自适应时间范围
-  chart.timeScale().fitContent()
+  // 设置默认显示200根K线
+  if (candlestickData.length > 0) {
+    const visibleBarCount = 200
+    const totalBars = candlestickData.length
+    
+    // 如果数据量少于200根，显示所有数据
+    if (totalBars <= visibleBarCount) {
+      chart.timeScale().fitContent()
+    } else {
+      // 显示最新的200根K线
+      const fromIndex = totalBars - visibleBarCount
+      const fromItem = candlestickData[fromIndex]
+      const toItem = candlestickData[totalBars - 1]
+      
+      if (fromItem && toItem) {
+        // 先设置可见范围
+        chart.timeScale().setVisibleRange({
+          from: fromItem.time,
+          to: toItem.time
+        })
+        
+        // 然后应用rightOffset，确保右侧有留白
+        // 使用setTimeout确保在下一帧应用，避免冲突
+        setTimeout(() => {
+          if (chart) {
+            chart.timeScale().applyOptions({
+              rightOffset: 12
+            })
+          }
+        }, 0)
+      } else {
+        chart.timeScale().fitContent()
+      }
+    }
+  }
 }
 
 // 切换主题
