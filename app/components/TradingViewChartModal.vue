@@ -1,17 +1,9 @@
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="dialogTitle"
-    width="90%"
-    :fullscreen="isFullscreen"
-    :close-on-click-modal="false"
-    :destroy-on-close="true"
-    @close="handleClose"
-    @update:model-value="handleModelValueUpdate"
-  >
+  <div v-if="visible" class="tradingview-card">
     <!-- 图表控制栏 -->
-    <!-- <div class="chart-controls">
+    <div class="chart-controls">
       <div class="controls-left">
+        <div class="symbol-badge">{{ symbol }}</div>
         <el-select
           v-model="timeframe"
           placeholder="时间周期"
@@ -53,39 +45,42 @@
         </el-select>
       </div>
 
-      <div class="controls-right">
-        <el-button
-          type="primary"
-          size="small"
-          @click="refreshChart"
-          :loading="isLoading"
-        >
-          <el-icon><ElIconRefresh /></el-icon>
-          刷新
-        </el-button>
-
-        <el-button
-          type="info"
-          size="small"
-          @click="toggleFullscreen"
-        >
-          <el-icon>
-            <ElIconFullScreen v-if="!isFullscreen" />
-            <ElIconClose v-else />
-          </el-icon>
-          {{ isFullscreen ? '退出全屏' : '全屏' }}
-        </el-button>
-
-        <el-button
-          type="success"
-          size="small"
-          @click="openInTradingView"
-        >
-          <el-icon><ElIconLink /></el-icon>
-          在TradingView打开
-        </el-button>
+      <div class="header-right">
+        <!-- 控制按钮 -->
+        <el-button-group size="small">
+          <el-button
+            type="primary"
+            size="small"
+            @click="refreshChart"
+            :loading="isLoading"
+            title="刷新图表"
+          >
+            <el-icon><ElIconRefresh /></el-icon>
+          </el-button>
+          
+          <el-button
+            type="info"
+            size="small"
+            @click="toggleFullscreen"
+            title="切换全屏"
+          >
+            <el-icon>
+              <ElIconFullScreen v-if="!isFullscreen" />
+              <ElIconClose v-else />
+            </el-icon>
+          </el-button>
+        
+          <el-button
+            type="danger"
+            size="small"
+            @click="handleClose"
+            title="关闭图表"
+          >
+            <el-icon><ElIconClose /></el-icon>
+          </el-button>
+        </el-button-group>
       </div>
-    </div> -->
+    </div>
 
     <!-- 图表容器 -->
     <div class="chart-container">
@@ -127,14 +122,7 @@
         </div>
       </div>
     </div>
-
-    <!-- <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="handleClose">关闭</el-button>
-        <el-button type="primary" @click="handleClose">确定</el-button>
-      </div>
-    </template> -->
-  </el-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -195,15 +183,15 @@ const chartHeight = computed(() => {
     
     if (screenWidth < 480) {
       // 手机端：较小高度
-      return '400px'
+      return '300px'
     } else if (screenWidth < 768) {
       // 平板端：中等高度
-      return '400px'
+      return '450px'
     }
   }
   
   // 默认桌面端高度或SSR时的高度
-  return '620px'
+  return '450px'
 })
 
 // 监听symbol变化
@@ -384,18 +372,6 @@ function toggleFullscreen() {
   }
 }
 
-// 在TradingView网站打开
-function openInTradingView() {
-  if (props.symbol) {
-    const tradingViewSymbol = getTradingViewSymbol(props.symbol)
-    // 移除.P后缀（如果存在）以获取基础符号
-    const baseSymbol = tradingViewSymbol.replace('.P', '')
-    const symbolWithoutUSDT = baseSymbol.replace('USDT', '')
-    const url = `https://www.tradingview.com/chart/?symbol=BINANCE:${symbolWithoutUSDT}USDT`
-    window.open(url, '_blank')
-  }
-}
-
 // 使用备用图表
 function useFallbackChart() {
   chartError.value = ''
@@ -445,29 +421,82 @@ declare global {
 </script>
 
 <style scoped>
+.tradingview-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e4e7ed;
+  overflow: hidden;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.tradingview-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 卡片头部样式 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.symbol-badge {
+  background: #409eff;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* 图表控制栏 */
 .chart-controls {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 8px 0;
-  border-bottom: 1px solid #ebeef5;
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e4e7ed;
 }
 
-.controls-left,
-.controls-right {
+.controls-left {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* 图表容器 */
 .chart-container {
   position: relative;
   min-height: 500px;
-  border: 1px solid #ebeef5;
+  margin: 20px;
+  border: 1px solid #e4e7ed;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 16px;
+  background: #f8f9fa;
 }
 
 .tradingview-chart {
@@ -476,89 +505,128 @@ declare global {
 }
 
 .chart-loading {
-  padding: 40px;
+  padding: 60px 20px;
   text-align: center;
+  background: white;
 }
 
 .loading-text {
-  margin-top: 16px;
-  color: #909399;
-  font-size: 14px;
+  margin-top: 20px;
+  color: #6c757d;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .chart-error {
-  padding: 40px;
+  padding: 60px 20px;
   text-align: center;
+  background: white;
 }
 
 .error-actions {
-  margin-top: 16px;
+  margin-top: 24px;
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+/* 全屏模式 */
+.tradingview-card.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+  border: none;
 }
 
-/* 全屏模式调整 */
-:deep(.el-dialog__wrapper) {
-  z-index: 9999 !important;
+.tradingview-card.fullscreen .chart-container {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  height: calc(100vh - 120px);
 }
 
-:deep(.el-dialog) {
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.el-dialog__body) {
-  flex: 1;
-  overflow: auto;
+.tradingview-card.fullscreen .tradingview-chart {
+  height: 100%;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  
+  .header-left {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .header-right {
+    justify-content: center;
+  }
+  
   .chart-controls {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+    padding: 12px 16px;
   }
   
-  .controls-left,
-  .controls-right {
+  .controls-left {
     flex-wrap: wrap;
     justify-content: center;
+  }
+  
+  .chart-container {
+    margin: 12px;
+    min-height: 400px;
   }
   
   .tradingview-chart {
     min-height: 400px;
   }
-  
-  :deep(.el-dialog) {
-    width: 95% !important;
-    margin: 20px auto;
-  }
 }
 
 @media (max-width: 480px) {
-  .tradingview-chart {
-    min-height: 300px;
+  .card-title {
+    font-size: 16px;
   }
   
-  .controls-left,
-  .controls-right {
+  .symbol-badge {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+  
+  .controls-left {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .controls-left > *,
-  .controls-right > * {
+  .controls-left > * {
     width: 100%;
     margin-left: 0 !important;
     margin-bottom: 8px;
+  }
+  
+  .chart-container {
+    min-height: 300px;
+    margin: 8px;
+  }
+  
+  .tradingview-chart {
+    min-height: 300px;
+  }
+  
+  .chart-loading,
+  .chart-error {
+    padding: 40px 12px;
   }
 }
 </style>

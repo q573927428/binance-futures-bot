@@ -78,7 +78,7 @@
               class="price-label-top stop-loss" 
               :style="getStopLossStyle()"
             >
-              <div class="label-text">🛑 止损</div>
+              <div class="label-text">🛡️ 止损</div>
             </div>
             
             <div 

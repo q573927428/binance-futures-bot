@@ -15,7 +15,7 @@
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 120,
-  "scanInterval": 180,
+  "scanInterval": 18000,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 7200,
   "aiConfig": {

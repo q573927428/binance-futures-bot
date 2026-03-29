@@ -106,8 +106,6 @@
             </el-card>
             <!-- 当前持仓组件 -->
             <CurrentPositions />
-            <!-- 加密货币价格卡片组件 -->
-            <CryptoPriceCards />
             <!-- 手动开仓组件 -->
             <ManualOpenPosition />
             <!-- 系统配置组件 -->
@@ -116,6 +114,8 @@
 
           <!-- 中间 - 持仓和交易历史 -->
           <el-col :xs="24" :sm="24" :md="16" :lg="16">
+            <!-- 加密货币价格卡片组件 -->
+            <CryptoPriceCards />
 
             <!-- 盈亏与胜率走势图 -->
             <PnLTrendChart />

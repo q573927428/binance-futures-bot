@@ -27,6 +27,14 @@
       </div>
     </template>
 
+    <!-- TradingView弹窗 -->
+  <TradingViewChartModal 
+    v-model="showChartModal"
+    :symbol="selectedSymbol"
+    :visible="showChartModal"
+    @close="closeChartModal"
+  />
+
     <!-- WebSocket状态提示 -->
     <div v-if="!isWebSocketConnected" class="connection-warning">
       <el-alert
@@ -120,14 +128,6 @@
       <el-empty description="暂无价格数据" />
     </div>
   </el-card>
-
-  <!-- TradingView弹窗 -->
-  <TradingViewChartModal 
-    v-model="showChartModal"
-    :symbol="selectedSymbol"
-    :visible="showChartModal"
-    @close="closeChartModal"
-  />
 </template>
 
 <script setup lang="ts">
@@ -441,7 +441,7 @@ interface WebSocketStatusResponse {
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 12px;
   margin-top: 8px;
 }
