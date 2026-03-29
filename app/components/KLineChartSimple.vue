@@ -149,6 +149,12 @@ let ema120Series: any = null
 // EMA周期配置
 const emaPeriods = [14, 120]
 
+// 判断是否为DOGE交易对
+const isDOGESymbol = computed(() => {
+  const symbol = props.symbol || 'BTCUSDT'
+  return symbol.toUpperCase().includes('DOGE')
+})
+
 // 加载K线数据
 const loadKLineData = async () => {
   // 使用默认值如果symbol为空
@@ -190,43 +196,60 @@ const loadKLineData = async () => {
   }
 }
 
-// 初始化图表
-const initChart = () => {
-  if (!chartContainer.value) return
-  
-  // 清理现有图表
-  if (chart) {
-    chart.remove()
-  }
-  
-  // 创建新图表
-  const chartOptions = {
-    layout: {
-      background: { type: ColorType.Solid, color: theme.value === 'dark' ? '#131722' : '#FFFFFF' },
-      textColor: theme.value === 'dark' ? '#D9D9D9' : '#191919'
-    },
-    grid: {
-      vertLines: { color: theme.value === 'dark' ? '#2B2B43' : '#F0F3FA' },
-      horzLines: { color: theme.value === 'dark' ? '#2B2B43' : '#F0F3FA' }
-    },
-    width: chartContainer.value.clientWidth,
-    height: 500,
-    timeScale: {
-      timeVisible: true,
-      secondsVisible: false,
-      rightOffset: 12 // 右侧留出一点距离，避免K线紧贴Y轴
+  // 初始化图表
+  const initChart = () => {
+    if (!chartContainer.value) return
+    
+    // 清理现有图表
+    if (chart) {
+      chart.remove()
     }
-  }
+    
+    // 创建新图表
+    const chartOptions = {
+      layout: {
+        background: { type: ColorType.Solid, color: theme.value === 'dark' ? '#131722' : '#FFFFFF' },
+        textColor: theme.value === 'dark' ? '#D9D9D9' : '#191919'
+      },
+      grid: {
+        vertLines: { color: theme.value === 'dark' ? '#2B2B43' : '#F0F3FA' },
+        horzLines: { color: theme.value === 'dark' ? '#2B2B43' : '#F0F3FA' }
+      },
+      width: chartContainer.value.clientWidth,
+      height: 500,
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+        rightOffset: 12, // 右侧留出一点距离，避免K线紧贴Y轴
+        borderColor: '#CCCCCC' // X轴颜色设置为浅灰色
+      },
+      rightPriceScale: {
+        borderColor: '#CCCCCC', // Y轴边框颜色设置为浅灰色
+        textColor: '#333333' // Y轴文字颜色设置为浅灰色
+      },
+      leftPriceScale: {
+        borderColor: '#CCCCCC', // 左侧Y轴边框颜色设置为浅灰色
+        textColor: '#333333' // 左侧Y轴文字颜色设置为浅灰色
+      }
+    }
   
   chart = createChart(chartContainer.value, chartOptions)
   
   // 添加K线系列 - 使用正确的5.1.0版本API
+  // 根据交易对类型设置不同的价格格式精度
+  const priceFormat = {
+    type: 'price' as const,
+    precision: isDOGESymbol.value ? 3 : 2,
+    minMove: isDOGESymbol.value ? 0.001 : 0.01
+  }
+  
   candlestickSeries = chart.addSeries(CandlestickSeries, {
     upColor: '#26a69a',
     downColor: '#ef5350',
     borderVisible: false,
     wickUpColor: '#26a69a',
-    wickDownColor: '#ef5350'
+    wickDownColor: '#ef5350',
+    priceFormat: priceFormat
   })
   
   // 添加成交量系列 - 使用正确的5.1.0版本API
@@ -250,14 +273,16 @@ const initChart = () => {
   ema14Series = chart.addSeries(LineSeries, {
     color: getEMAColor(14),
     lineWidth: getEMAWidth(14),
-    title: 'EMA14'
+    title: 'EMA14',
+    priceFormat: priceFormat
   })
   
   // 添加EMA120线
   ema120Series = chart.addSeries(LineSeries, {
     color: getEMAColor(120),
     lineWidth: getEMAWidth(120),
-    title: 'EMA120'
+    title: 'EMA120',
+    priceFormat: priceFormat
   })
   
   // 响应窗口大小变化
@@ -400,6 +425,15 @@ const formatTime = (timestamp: number): string => {
 watch(() => props.symbol, (newSymbol, oldSymbol) => {
   if (newSymbol && newSymbol !== oldSymbol) {
     console.log('Symbol changed:', oldSymbol, '->', newSymbol)
+    // 重新初始化图表以应用新的价格格式
+    if (chart) {
+      chart.remove()
+      chart = null
+      candlestickSeries = null
+      volumeSeries = null
+      ema14Series = null
+      ema120Series = null
+    }
     loadKLineData()
   }
 })
@@ -471,7 +505,7 @@ onMounted(() => {
 /* 图表容器 */
 .chart-wrapper {
   position: relative;
-  min-height: 500px;
+  min-height: 450px;
   margin: 20px;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
@@ -481,7 +515,7 @@ onMounted(() => {
 
 .kline-chart {
   width: 100%;
-  min-height: 500px;
+  min-height: 450px;
 }
 
 /* 加载状态 */
@@ -597,11 +631,11 @@ onMounted(() => {
   
   .chart-wrapper {
     margin: 12px;
-    min-height: 400px;
+    min-height: 250px;
   }
   
   .kline-chart {
-    min-height: 400px;
+    min-height: 250px;
   }
   
   .chart-info {
@@ -672,13 +706,13 @@ onMounted(() => {
   }
   
   .chart-wrapper {
-    min-height: 300px;
+    min-height: 250px;
     margin: 8px;
     border-radius: 6px;
   }
   
   .kline-chart {
-    min-height: 300px;
+    min-height: 250px;
   }
   
   .chart-loading,
