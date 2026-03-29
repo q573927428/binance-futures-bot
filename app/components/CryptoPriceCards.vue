@@ -29,14 +29,11 @@
 
      <!-- TradingView弹窗 -->
     <KLineChartSimple :symbol="selectedSymbol" timeframe="1h" />
+    
+    <!-- 水平线 -->
+     <div class="horizontal-line"></div>
 
-    <!-- TradingView弹窗 -->
-    <TradingViewChartModal 
-      v-model="showChartModal"
-      :symbol="selectedSymbol"
-      :visible="showChartModal"
-      @close="closeChartModal"
-    />
+
 
     <!-- WebSocket状态提示 -->
     <div v-if="!isWebSocketConnected" class="connection-warning">
@@ -446,6 +443,9 @@ interface WebSocketStatusResponse {
   display: flex;
   flex-wrap: nowrap;
   gap: 8px;
+}
+.horizontal-line{
+  margin-bottom: 10px;
 }
 
 .price-card {

@@ -151,7 +151,9 @@ const emaPeriods = [14, 120]
 
 // 加载K线数据
 const loadKLineData = async () => {
-  if (!props.symbol || !selectedTimeframe.value) {
+  // 使用默认值如果symbol为空
+  const symbolToUse = props.symbol || 'BTCUSDT'
+  if (!symbolToUse || !selectedTimeframe.value) {
     error.value = '请提供交易对和周期'
     return
   }
@@ -161,7 +163,7 @@ const loadKLineData = async () => {
   
   try {
     const params = new URLSearchParams({
-      symbol: props.symbol,
+      symbol: symbolToUse,
       timeframe: selectedTimeframe.value,
       limit: '22000' // 最多加载2000条
     })
@@ -393,6 +395,22 @@ const formatTime = (timestamp: number): string => {
     minute: '2-digit'
   })
 }
+
+// 监听symbol变化
+watch(() => props.symbol, (newSymbol, oldSymbol) => {
+  if (newSymbol && newSymbol !== oldSymbol) {
+    console.log('Symbol changed:', oldSymbol, '->', newSymbol)
+    loadKLineData()
+  }
+})
+
+// 监听timeframe变化
+watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
+  if (newTimeframe && newTimeframe !== oldTimeframe) {
+    selectedTimeframe.value = newTimeframe
+    loadKLineData()
+  }
+})
 
 // 监听主题变化
 watch(theme, () => {

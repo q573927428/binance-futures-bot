@@ -32,6 +32,23 @@ function getIntervalSeconds(timeframe) {
   }
 }
 
+async function checkSymbol(symbol) {
+
+  // https://fapi.binance.com/fapi/v1/exchangeInfo
+  // https://api.binance.com/api/v3/exchangeInfo
+  return new Promise((resolve) => {
+    https.get('https://fapi.binance.com/fapi/v1/exchangeInfo', (res) => {
+      let data = ''
+      res.on('data', chunk => data += chunk)
+      res.on('end', () => {
+        const json = JSON.parse(data)
+        const exists = json.symbols.some(s => s.symbol === symbol)
+        resolve(exists)
+      })
+    })
+  })
+}
+
 // 从币安获取K线数据
 async function fetchKLineFromBinance(symbol, timeframe, startTime, endTime, limit = 1000) {
   return new Promise((resolve, reject) => {
@@ -43,18 +60,20 @@ async function fetchKLineFromBinance(symbol, timeframe, startTime, endTime, limi
       '1d': '1d',
       '1w': '1w'
     };
-    
+
     const interval = intervalMap[timeframe];
     const binanceSymbol = symbol.replace('/', '');
     
-    let url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
+    let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
+    // https://fapi.binance.com/fapi/v1/klines  合约
+    // https://api.binance.com/api/v3/klines  现货
     
     if (startTime) {
-      url += `&startTime=${startTime * 1000}`;
+      url += `&startTime=${startTime}`;
     }
     
     if (endTime) {
-      url += `&endTime=${endTime * 1000}`;
+      url += `&endTime=${endTime}`;
     }
     
     console.log(`请求URL: ${url}`);
@@ -326,10 +345,14 @@ async function main() {
   console.log('🚀 币安历史K线数据获取工具');
   console.log('========================================\n');
   
-  const symbol = 'BTCUSDT';
+  const symbol = 'HYPEUSDT';
   const timeframe = '1h';
   const totalBars = 22000;
   const batchSize = 1000;
+
+  // ⭐ 加在这里
+  const exists = await checkSymbol(symbol)
+  console.log('交易对是否存在:', exists)
   
   try {
     const result = await fetchHistoryData(symbol, timeframe, totalBars, batchSize);
