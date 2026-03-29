@@ -84,9 +84,9 @@
               <el-input-number
                 v-model="dataLimit"
                 :min="100"
-                :max="10000"
+                :max="30000"
                 :step="100"
-                style="width: 120px"
+                style="width: 150px"
               />
             </div>
             
@@ -272,7 +272,7 @@ const chartHeight = ref(500)
 const showControls = ref(true)
 const showInfo = ref(true)
 const autoLoad = ref(true)
-const dataLimit = ref(2000)
+const dataLimit = ref(20000)
 const isRefreshing = ref(false)
 const isSyncing = ref(false)
 const isCheckingStatus = ref(false)

@@ -146,7 +146,7 @@ export class KLineSyncService {
       maxBarsPerFile: 30000,
       maxTotalBars: 20000,
       syncInterval: 300, // 5分钟
-      initialBars: 2000
+      initialBars: 20000
     }
     
     this.config = { ...defaultConfig, ...config }

@@ -50,7 +50,7 @@ async function handleGetRequest(event: any) {
   try {
     // 获取K线数据
     const klineData = getKLineData(params.symbol, params.timeframe, {
-      limit: params.limit || 2000,
+      limit: params.limit || 20000,
       from: params.from,
       to: params.to
     })
@@ -78,7 +78,7 @@ async function handleGetRequest(event: any) {
         firstTimestamp: klineData[0]?.timestamp || 0,
         lastTimestamp: klineData[klineData.length - 1]?.timestamp || 0,
         count: klineData.length,
-        hasMore: klineData.length >= (params.limit || 2000)
+        hasMore: klineData.length >= (params.limit || 20000)
       }
     }
     

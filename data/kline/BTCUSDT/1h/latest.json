@@ -11997,16 +11997,16 @@
     {
       "timestamp": 1774771200,
       "open": 66632.4,
-      "high": 66658.8,
-      "low": 66611.8,
-      "close": 66623.2,
-      "volume": 112.65
+      "high": 66727.1,
+      "low": 66560,
+      "close": 66635.5,
+      "volume": 837.628
     }
   ],
   "metadata": {
     "firstTimestamp": 1769374800,
     "lastTimestamp": 1774771200,
     "count": 1500,
-    "updatedAt": 1774772224
+    "updatedAt": 1774772663
   }
 }

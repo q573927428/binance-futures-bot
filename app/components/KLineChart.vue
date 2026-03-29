@@ -384,7 +384,7 @@ async function loadChartData() {
   }
   
   try {
-    const limit = props.limit || 2000
+    const limit = props.limit || 20000
     
     // 构建API请求URL
     const params = new URLSearchParams({
