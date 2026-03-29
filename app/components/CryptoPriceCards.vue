@@ -440,22 +440,23 @@ interface WebSocketStatusResponse {
 }
 
 .cards-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 12px;
-  margin-top: 8px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
 .price-card {
   background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
   border: 1px solid #ebeef5;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 6px;
+  padding: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 100px;
+  min-height: 70px;
+  min-width: 138px;
+  flex-shrink: 0;
 }
 
 .price-card:hover {
@@ -478,7 +479,7 @@ interface WebSocketStatusResponse {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .crypto-info {
@@ -489,25 +490,25 @@ interface WebSocketStatusResponse {
 .crypto-symbol {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 16px;
+  gap: 4px;
+  font-size: 14px;
   font-weight: 600;
   color: #303133;
   line-height: 1.2;
 }
 
 .crypto-icon {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .price-change {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 3px 6px;
-  border-radius: 3px;
+  padding: 2px 4px;
+  border-radius: 2px;
 }
 
 .price-change.positive {
@@ -525,7 +526,7 @@ interface WebSocketStatusResponse {
 } */
 
 .current-price {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: #303133;
   line-height: 1.2;
@@ -585,7 +586,7 @@ interface WebSocketStatusResponse {
 }
 
 .price-change-amount {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -598,7 +599,7 @@ interface WebSocketStatusResponse {
 }
 
 .volume-24h {
-  font-size: 12px;
+  font-size: 11px;
   color: #909399;
   font-weight: 500;
 }

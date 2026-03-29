@@ -106,6 +106,8 @@
             </el-card>
             <!-- 当前持仓组件 -->
             <CurrentPositions />
+            <!-- 盈亏与胜率走势图 -->
+            <PnLTrendChart />
             <!-- 手动开仓组件 -->
             <ManualOpenPosition />
             <!-- 系统配置组件 -->
@@ -117,8 +119,6 @@
             <!-- 加密货币价格卡片组件 -->
             <CryptoPriceCards />
 
-            <!-- 盈亏与胜率走势图 -->
-            <PnLTrendChart />
 
             <!-- 交易历史组件 -->
             <TradeHistory :has-position="botStore.hasPosition" />
