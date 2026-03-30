@@ -118,6 +118,79 @@
           </div>
         </div>
       </div>
+      
+      <!-- K线修复卡片 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <h2 class="text-lg font-semibold mb-4">K线数据修复</h2>
+        <div class="space-y-4">
+          <div class="p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p class="text-sm text-yellow-800">
+              <strong>功能说明：</strong>修复最近同步错误的K线数据。它会重新获取每个数据文件的最近100根K线并替换现有数据，用于纠正最近同步更新错了的K线。
+            </p>
+          </div>
+          
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">修复交易对</label>
+              <select v-model="repairSymbol" class="w-full px-3 py-2 border rounded">
+                <option value="all">所有交易对</option>
+                <option value="BTCUSDT">BTCUSDT</option>
+                <option value="ETHUSDT">ETHUSDT</option>
+                <option value="BNBUSDT">BNBUSDT</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">修复周期</label>
+              <select v-model="repairTimeframe" class="w-full px-3 py-2 border rounded">
+                <option value="all">所有周期</option>
+                <option value="15m">15分钟</option>
+                <option value="1h">1小时</option>
+                <option value="4h">4小时</option>
+                <option value="1d">1天</option>
+                <option value="1w">1周</option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">修复条数</label>
+              <input v-model.number="repairRecentBars" type="number" min="10" max="1000" 
+                     class="w-full px-3 py-2 border rounded" placeholder="例如: 100">
+              <p class="text-xs text-gray-500 mt-1">修复最近多少条K线数据（默认100条）</p>
+            </div>
+            
+            <div class="flex items-center">
+              <input v-model="repairForce" type="checkbox" id="repairForce" class="mr-2">
+              <label for="repairForce" class="text-sm text-gray-700">强制修复（即使正在同步）</label>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <button @click="repairSingleKLine" :disabled="repairingSingle" 
+                    class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 disabled:bg-gray-300">
+              {{ repairingSingle ? '修复中...' : '修复单个' }}
+            </button>
+            <button @click="repairAllKLine" :disabled="repairingAll" 
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-300">
+              {{ repairingAll ? '批量修复中...' : '批量修复所有' }}
+            </button>
+          </div>
+          
+          <div v-if="repairResult" class="p-3 rounded" :class="{
+            'bg-green-100 text-green-800': repairResult.success,
+            'bg-red-100 text-red-800': !repairResult.success
+          }">
+            {{ repairResult.message }}
+          </div>
+          
+          <div v-if="repairAllResult" class="p-3 rounded" :class="{
+            'bg-green-100 text-green-800': repairAllResult.success,
+            'bg-red-100 text-red-800': !repairAllResult.success
+          }">
+            {{ repairAllResult.message }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -165,6 +238,16 @@ const historyTimeframe = ref('1h')
 const historyTotalBars = ref(22000)
 const historyResult = ref<SyncResult | null>(null)
 const syncingHistory = ref(false)
+
+// 修复K线相关变量
+const repairSymbol = ref('all')
+const repairTimeframe = ref('all')
+const repairRecentBars = ref(100)
+const repairForce = ref(false)
+const repairResult = ref<SyncResult | null>(null)
+const repairAllResult = ref<SyncResult | null>(null)
+const repairingSingle = ref(false)
+const repairingAll = ref(false)
 
 // 获取状态文本
 const getStatusText = (status: string) => {
@@ -335,6 +418,98 @@ const syncHistory = async () => {
   }
 }
 
+// 修复单个交易对和周期的K线
+const repairSingleKLine = async () => {
+  repairingSingle.value = true
+  repairResult.value = null
+  repairAllResult.value = null
+  
+  try {
+    // 如果选择的是"所有交易对"或"所有周期"，则使用批量修复
+    if (repairSymbol.value === 'all' || repairTimeframe.value === 'all') {
+      const response = await fetch('/api/kline-sync/repair-all', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          recentBars: repairRecentBars.value,
+          force: repairForce.value
+        })
+      })
+      
+      const data = await response.json()
+      repairAllResult.value = data
+    } else {
+      // 修复单个交易对和周期
+      const response = await fetch('/api/kline-sync/repair', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          symbol: repairSymbol.value,
+          timeframe: repairTimeframe.value,
+          recentBars: repairRecentBars.value,
+          force: repairForce.value
+        })
+      })
+      
+      const data = await response.json()
+      repairResult.value = data
+    }
+    
+    // 刷新状态
+    await fetchStatus()
+  } catch (error: any) {
+    const errorResult = {
+      success: false,
+      message: error.message || '请求失败'
+    }
+    
+    if (repairSymbol.value === 'all' || repairTimeframe.value === 'all') {
+      repairAllResult.value = errorResult
+    } else {
+      repairResult.value = errorResult
+    }
+  } finally {
+    repairingSingle.value = false
+  }
+}
+
+// 批量修复所有交易对和周期的K线
+const repairAllKLine = async () => {
+  repairingAll.value = true
+  repairResult.value = null
+  repairAllResult.value = null
+  
+  try {
+    const response = await fetch('/api/kline-sync/repair-all', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        recentBars: repairRecentBars.value,
+        force: repairForce.value
+      })
+    })
+    
+    const data = await response.json()
+    repairAllResult.value = data
+    
+    // 刷新状态
+    await fetchStatus()
+  } catch (error: any) {
+    repairAllResult.value = {
+      success: false,
+      message: error.message || '请求失败'
+    }
+  } finally {
+    repairingAll.value = false
+  }
+}
+
 // 初始化
 onMounted(() => {
   fetchStatus()
@@ -405,4 +580,11 @@ onMounted(() => {
 .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
 .bg-purple-500 { background-color: #8b5cf6; }
 .hover\:bg-purple-600:hover { background-color: #7c3aed; }
+
+/* 修复卡片相关样式 */
+.bg-yellow-50 { background-color: #fffbeb; }
+.border-yellow-200 { border-color: #fde68a; }
+.text-yellow-800 { color: #92400e; }
+.bg-orange-500 { background-color: #f97316; }
+.hover\:bg-orange-600:hover { background-color: #ea580c; }
 </style>
