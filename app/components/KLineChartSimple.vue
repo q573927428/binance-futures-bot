@@ -207,6 +207,10 @@ const loading = ref(false)
 const error = ref('')
 const theme = ref<'light' | 'dark'>('light')
 
+// WebSocket相关
+const isWebSocketConnected = ref(false)
+const lastPriceUpdate = ref<PriceData | null>(null)
+
 // 图表相关
 const chartContainer = ref<HTMLElement | null>(null)
 const tooltipRef = ref<HTMLElement | null>(null)
@@ -686,7 +690,15 @@ watch(() => props.symbol, (newSymbol, oldSymbol) => {
       ema14Series = null
       ema120Series = null
     }
+    
+    // 停止旧的轮询
+    stopPricePolling()
+    
+    // 加载新数据
     loadKLineData()
+    
+    // 重新订阅价格更新
+    subscribeToPriceUpdates()
   }
 })
 
@@ -703,10 +715,229 @@ watch(theme, () => {
   updateChart()
 })
 
+// 获取WebSocket连接状态
+const fetchWebSocketStatus = async () => {
+  try {
+    const response = await fetch('/api/websocket/status')
+    const result = await response.json()
+    if (result.success && result.data?.isConnected !== undefined) {
+      isWebSocketConnected.value = result.data.isConnected
+    }
+  } catch (error) {
+    console.error('获取WebSocket状态失败:', error)
+  }
+}
+
+// 处理实时价格更新
+const handlePriceUpdate = (priceData: PriceData) => {
+  lastPriceUpdate.value = priceData
+  
+  // 如果当前没有K线数据，不处理
+  if (klineData.value.length === 0) return
+  
+  // 获取最后一根K线
+  const lastKline = klineData.value[klineData.value.length - 1]
+  if (!lastKline) return
+  
+  // 获取当前时间
+  const now = Math.floor(Date.now() / 1000)
+  
+  // 根据周期计算当前K线的时间戳
+  const timeframeSeconds = getTimeframeSeconds(selectedTimeframe.value)
+  const currentKlineTimestamp = Math.floor(now / timeframeSeconds) * timeframeSeconds
+  
+  // 检查是否是最后一根K线（当前K线）
+  if (lastKline.t === currentKlineTimestamp) {
+    // 更新最后一根K线的数据
+    updateLastKlineWithPrice(priceData.price, now)
+  }
+}
+
+// 获取时间段的秒数
+const getTimeframeSeconds = (timeframe: string): number => {
+  switch (timeframe) {
+    case '15m': return 15 * 60
+    case '1h': return 60 * 60
+    case '4h': return 4 * 60 * 60
+    case '1d': return 24 * 60 * 60
+    case '1w': return 7 * 24 * 60 * 60
+    default: return 60 * 60
+  }
+}
+
+// 使用实时价格更新最后一根K线
+const updateLastKlineWithPrice = (price: number, timestamp: number) => {
+  if (klineData.value.length === 0) return
+  
+  const lastIndex = klineData.value.length - 1
+  const lastKline = klineData.value[lastIndex]
+  
+  if (!lastKline) return
+  
+  // 创建更新后的K线数据
+  const updatedKline = {
+    ...lastKline,
+    c: price, // 更新收盘价
+    h: Math.max(lastKline.h, price), // 更新最高价
+    l: Math.min(lastKline.l, price), // 更新最低价
+    v: lastKline.v + 0.01 // 增加一点成交量（模拟）
+  }
+  
+  // 更新数据数组
+  klineData.value[lastIndex] = updatedKline
+  
+  // 更新图表
+  updateChartWithLastKline(updatedKline)
+  
+  // 如果当前显示的是最后一根K线，更新浮动面板
+  if (tooltipVisible.value) {
+    const currentKline = findKlineByTime(lastKline.t)
+    if (currentKline && currentKline.t === lastKline.t) {
+      updateTooltip(updatedKline)
+    }
+  }
+  
+  // 更新元数据更新时间
+  meta.value.updated = timestamp
+}
+
+// 更新图表中的最后一根K线
+const updateChartWithLastKline = (updatedKline: SimpleKLineData) => {
+  if (!chart || !candlestickSeries || !volumeSeries) return
+  
+  // 更新K线数据
+  const candlestickData = {
+    time: updatedKline.t,
+    open: updatedKline.o,
+    high: updatedKline.h,
+    low: updatedKline.l,
+    close: updatedKline.c
+  }
+  
+  // 更新成交量数据
+  const volumeData = {
+    time: updatedKline.t,
+    open: updatedKline.v || 0,
+    high: updatedKline.v || 0,
+    low: 0,
+    close: updatedKline.v || 0,
+    color: updatedKline.c >= updatedKline.o ? '#26a69a' : '#ef5350'
+  }
+  
+  // 更新图表数据
+  candlestickSeries.update(candlestickData)
+  volumeSeries.update(volumeData)
+  
+  // 重新计算EMA数据
+  if (ema14Series && ema120Series) {
+    // 计算EMA14数据
+    const ema14Data = calculateEMASeries(klineData.value, 14)
+    if (ema14Data.length > 0) {
+      const lastEma14 = ema14Data[ema14Data.length - 1]
+      if (lastEma14) {
+        ema14Series.update(lastEma14)
+      }
+    }
+    
+    // 计算EMA120数据
+    const ema120Data = calculateEMASeries(klineData.value, 120)
+    if (ema120Data.length > 0) {
+      const lastEma120 = ema120Data[ema120Data.length - 1]
+      if (lastEma120) {
+        ema120Series.update(lastEma120)
+      }
+    }
+  }
+}
+
+// 订阅WebSocket价格更新
+const subscribeToPriceUpdates = async () => {
+  const symbolToUse = props.symbol || 'BTCUSDT'
+  
+  try {
+    // 订阅价格更新
+    const response = await fetch('/api/websocket/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        symbols: [symbolToUse]
+      })
+    })
+    
+    const result = await response.json()
+    if (result.success) {
+      console.log(`已订阅 ${symbolToUse} 的价格更新`)
+      
+      // 设置轮询获取价格更新（因为WebSocket管理器在服务器端）
+      // 这里使用轮询方式获取最新价格
+      startPricePolling()
+    } else {
+      console.error('订阅价格更新失败:', result.message)
+    }
+  } catch (error) {
+    console.error('订阅价格更新失败:', error)
+  }
+}
+
+// 轮询获取最新价格
+let pricePollingInterval: NodeJS.Timeout | null = null
+
+const startPricePolling = () => {
+  if (pricePollingInterval) {
+    clearInterval(pricePollingInterval)
+  }
+  
+  // 每3秒获取一次最新价格
+  pricePollingInterval = setInterval(async () => {
+    const symbolToUse = props.symbol || 'BTCUSDT'
+    
+    try {
+      const response = await fetch(`/api/websocket/prices?symbols=${symbolToUse}`)
+      const result = await response.json()
+      
+      if (result.success && result.data?.prices?.[symbolToUse]) {
+        const priceData = result.data.prices[symbolToUse]
+        handlePriceUpdate({
+          symbol: symbolToUse,
+          price: priceData.price,
+          timestamp: Date.now()
+        })
+      }
+    } catch (error) {
+      console.error('获取最新价格失败:', error)
+    }
+  }, 3000) // 3秒轮询一次
+}
+
+const stopPricePolling = () => {
+  if (pricePollingInterval) {
+    clearInterval(pricePollingInterval)
+    pricePollingInterval = null
+  }
+}
+
 // 组件挂载时初始化
 onMounted(() => {
   initChart()
   loadKLineData()
+  
+  // 获取WebSocket状态
+  fetchWebSocketStatus()
+  
+  // 订阅价格更新
+  subscribeToPriceUpdates()
+})
+
+// 组件卸载时清理
+onUnmounted(() => {
+  stopPricePolling()
+  
+  // 清理图表
+  if (chart) {
+    chart.remove()
+  }
 })
 </script>
 
