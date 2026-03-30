@@ -257,9 +257,9 @@ async function startInitialSync(): Promise<void> {
     
     for (const symbol of config.symbols) {
       for (const timeframe of config.timeframes) {
-        // 构建数据文件路径
+        // 构建数据文件路径 - 注意：文件名格式是 BTCUSDT-15m.json（使用连字符）
         const dataDir = path.join(process.cwd(), 'data', 'kline-simple')
-        const fileName = `${symbol.replace('/', '')}_${timeframe}.json`
+        const fileName = `${symbol.replace('/', '')}-${timeframe}.json`
         const filePath = path.join(dataDir, fileName)
         
         try {
