@@ -6,6 +6,7 @@
         <div class="symbol-badge">{{ displaySymbol }}</div>
 
         <div class="timeframe-selector">
+          <span class="timeframe-label">周期:</span>
           <div class="timeframe-buttons">
             <el-button
               size="small"
@@ -759,6 +760,12 @@ onMounted(() => {
   gap: 8px;
 }
 
+.timeframe-label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+}
+
 .timeframe-buttons {
   display: flex;
   gap: 4px;
@@ -996,6 +1003,12 @@ onMounted(() => {
   
   .timeframe-selector {
     width: 100%;
+  }
+  
+  .timeframe-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
   }
   
   .timeframe-buttons {
