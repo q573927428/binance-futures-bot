@@ -71,8 +71,9 @@
       >
         <div class="tooltip-content">
           <span class="symbol">{{ symbol }}</span>
+          <span class="symbol-info">永续 Binance</span>
           <span class="timeframe">{{ selectedTimeframe }}</span>
-          <span class="time">{{ tooltipTime }}</span>
+          <!-- <span class="time">{{ tooltipTime }}</span> -->
           <span class="data-item">
             <span class="label">开=</span>
             <span class="value" :class="{ 'price-up': tooltipData.close > tooltipData.open, 'price-down': tooltipData.close < tooltipData.open }">
