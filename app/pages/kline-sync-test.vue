@@ -9,23 +9,25 @@
         <div v-if="loadingStatus" class="text-gray-500">加载中...</div>
         <div v-else-if="statusError" class="text-red-500">{{ statusError }}</div>
         <div v-else>
-          <div v-for="item in syncStatus" :key="`${item.symbol}-${item.timeframe}`" 
-               class="mb-3 p-3 border rounded">
-            <div class="flex justify-between items-center">
-              <span class="font-medium">{{ item.symbol }}/{{ item.timeframe }}</span>
-              <span :class="{
-                'bg-green-100 text-green-800': item.status === 'idle',
-                'bg-blue-100 text-blue-800': item.status === 'syncing',
-                'bg-red-100 text-red-800': item.status === 'error'
-              }" class="px-2 py-1 rounded text-xs">
-                {{ getStatusText(item.status) }}
-              </span>
-            </div>
-            <div class="text-sm text-gray-600 mt-1">
-              最后同步: {{ formatTime(item.lastSyncTime) }}
-            </div>
-            <div class="text-sm text-gray-600">
-              总数据: {{ item.totalBars }} 条
+          <div class="sync-status-grid">
+            <div v-for="item in syncStatus" :key="`${item.symbol}-${item.timeframe}`" 
+                 class="sync-status-item">
+              <div class="sync-status-header">
+                <span class="sync-symbol">{{ item.symbol }}/{{ item.timeframe }}</span>
+                <span :class="{
+                  'status-idle': item.status === 'idle',
+                  'status-syncing': item.status === 'syncing',
+                  'status-error': item.status === 'error'
+                }" class="sync-status-badge">
+                  {{ getStatusText(item.status) }}
+                </span>
+              </div>
+              <div class="sync-status-detail">
+                最后同步: {{ formatTime(item.lastSyncTime) }}
+              </div>
+              <div class="sync-status-detail">
+                总数据: {{ item.totalBars }} 条
+              </div>
             </div>
           </div>
         </div>
@@ -587,4 +589,58 @@ onMounted(() => {
 .text-yellow-800 { color: #92400e; }
 .bg-orange-500 { background-color: #f97316; }
 .hover\:bg-orange-600:hover { background-color: #ea580c; }
+
+/* 同步状态网格布局 */
+.sync-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.sync-status-item {
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: white;
+}
+
+.sync-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.sync-symbol {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.sync-status-badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-idle {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-syncing {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.sync-status-detail {
+  font-size: 12px;
+  color: #4b5563;
+  margin-top: 4px;
+}
 </style>
