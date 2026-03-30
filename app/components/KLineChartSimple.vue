@@ -19,16 +19,6 @@
           <el-option label="周线" value="1w" />
         </el-select>
 
-        <el-select
-          v-model="theme"
-          placeholder="主题"
-          size="small"
-          style="width: 100px; margin-left: 8px"
-          @change="toggleTheme"
-        >
-          <el-option label="浅色" value="light" />
-          <el-option label="深色" value="dark" />
-        </el-select>
       </div>
 
       <div class="controls-right">
