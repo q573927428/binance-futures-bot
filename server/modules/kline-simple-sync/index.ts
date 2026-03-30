@@ -269,68 +269,6 @@ export class KLineSimpleSyncService {
     return results
   }
 
-  // 开始定时同步
-  startAutoSync(): void {
-    if (this.syncInterval) {
-      console.warn('定时同步已经在运行')
-      return
-    }
-    
-    console.log(`开始定时同步，间隔: ${this.config.syncInterval}秒`)
-    
-    this.syncInterval = setInterval(async () => {
-      try {
-        console.log('开始定时同步所有K线数据...')
-        const results = await this.syncAllKLine()
-        
-        const successCount = results.filter(r => r.success).length
-        const totalCount = results.reduce((sum, r) => sum + r.count, 0)
-        
-        console.log(`定时同步完成: ${successCount}/${results.length} 成功，共获取 ${totalCount} 条数据`)
-      } catch (error) {
-        console.error('定时同步失败:', error)
-      }
-    }, this.config.syncInterval * 1000)
-  }
-
-  // 停止定时同步
-  stopAutoSync(): void {
-    if (this.syncInterval) {
-      clearInterval(this.syncInterval)
-      this.syncInterval = null
-      console.log('已停止定时同步')
-    }
-  }
-
-  // 获取同步状态
-  getSyncStatus(): SyncStatus[] {
-    return Array.from(this.syncStatus.values())
-  }
-
-  // 获取特定交易对和周期的状态
-  getSymbolSyncStatus(symbol: string, timeframe: KLineTimeframe): SyncStatus | null {
-    const key = this.getStatusKey(symbol, timeframe)
-    return this.syncStatus.get(key) || null
-  }
-
-  // 获取配置
-  getConfig(): KLineSyncConfig {
-    return { ...this.config }
-  }
-
-  // 更新配置
-  updateConfig(newConfig: Partial<KLineSyncConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-    
-    // 重新初始化状态
-    this.initializeStatus()
-    
-    // 如果定时同步在运行，重启它
-    if (this.syncInterval) {
-      this.stopAutoSync()
-      this.startAutoSync()
-    }
-  }
 
   // 手动同步历史数据
   async manualSyncHistory(
@@ -439,6 +377,69 @@ export class KLineSimpleSyncService {
         totalBars: 0,
         batches: 0
       }
+    }
+  }
+
+  // 开始定时同步
+  startAutoSync(): void {
+    if (this.syncInterval) {
+      console.warn('定时同步已经在运行')
+      return
+    }
+    
+    console.log(`开始定时同步，间隔: ${this.config.syncInterval}秒`)
+    
+    this.syncInterval = setInterval(async () => {
+      try {
+        console.log('开始定时同步所有K线数据...')
+        const results = await this.syncAllKLine()
+        
+        const successCount = results.filter(r => r.success).length
+        const totalCount = results.reduce((sum, r) => sum + r.count, 0)
+        
+        console.log(`定时同步完成: ${successCount}/${results.length} 成功，共获取 ${totalCount} 条数据`)
+      } catch (error) {
+        console.error('定时同步失败:', error)
+      }
+    }, this.config.syncInterval * 1000)
+  }
+
+  // 停止定时同步
+  stopAutoSync(): void {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval)
+      this.syncInterval = null
+      console.log('已停止定时同步')
+    }
+  }
+
+  // 获取同步状态
+  getSyncStatus(): SyncStatus[] {
+    return Array.from(this.syncStatus.values())
+  }
+
+  // 获取特定交易对和周期的状态
+  getSymbolSyncStatus(symbol: string, timeframe: KLineTimeframe): SyncStatus | null {
+    const key = this.getStatusKey(symbol, timeframe)
+    return this.syncStatus.get(key) || null
+  }
+
+  // 获取配置
+  getConfig(): KLineSyncConfig {
+    return { ...this.config }
+  }
+
+  // 更新配置
+  updateConfig(newConfig: Partial<KLineSyncConfig>): void {
+    this.config = { ...this.config, ...newConfig }
+    
+    // 重新初始化状态
+    this.initializeStatus()
+    
+    // 如果定时同步在运行，重启它
+    if (this.syncInterval) {
+      this.stopAutoSync()
+      this.startAutoSync()
     }
   }
 }
