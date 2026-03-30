@@ -64,8 +64,7 @@ export function writeSimpleKLineFile(
     // 按时间戳排序
     const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp)
     
-    // 注意：数据应该已经通过 appendSimpleKLineData 中的 Map 去重了
-    // 这里我们仍然保留去重逻辑作为安全措施
+    // 去重（基于时间戳）
     const uniqueData: KLineData[] = []
     const seenTimestamps = new Set<number>()
     
@@ -73,10 +72,6 @@ export function writeSimpleKLineFile(
       if (!seenTimestamps.has(item.timestamp)) {
         seenTimestamps.add(item.timestamp)
         uniqueData.push(item)
-      } else {
-        // 如果遇到重复时间戳，理论上不应该发生，因为 appendSimpleKLineData 已经处理了
-        // 但为了安全，我们记录警告
-        console.warn(`发现重复时间戳: ${item.timestamp}，跳过重复数据`)
       }
     }
     
@@ -119,7 +114,7 @@ export function writeSimpleKLineFile(
   }
 }
 
-// 追加K线数据（自动去重和限制，支持覆盖重叠数据）
+// 追加K线数据（自动去重和限制）
 export function appendSimpleKLineData(
   symbol: string, 
   timeframe: KLineTimeframe, 
@@ -142,21 +137,8 @@ export function appendSimpleKLineData(
       }))
     }
     
-    // 创建时间戳到数据的映射，用于覆盖重叠数据
-    const dataMap = new Map<number, KLineData>()
-    
-    // 先添加现有数据到映射
-    for (const item of existingData) {
-      dataMap.set(item.timestamp, item)
-    }
-    
-    // 用新数据覆盖重叠的时间戳（包括最后一根未收盘的K线）
-    for (const item of newData) {
-      dataMap.set(item.timestamp, item)
-    }
-    
-    // 从映射中获取所有数据，按时间戳排序
-    const allData = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp)
+    // 合并数据
+    const allData = [...existingData, ...newData]
     
     // 写入文件（会自动去重和限制）
     return writeSimpleKLineFile(symbol, timeframe, allData)

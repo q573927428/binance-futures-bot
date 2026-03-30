@@ -1,11 +1,21 @@
 import { 
   appendSimpleKLineData, 
-  getSimpleLastKLineTimestamp,
+  getSimpleLastKLineTimestamp, 
   readSimpleKLineFile,
   writeSimpleKLineFile 
 } from '../../utils/kline-simple-storage'
 import type { KLineData, KLineTimeframe, KLineSyncConfig } from '../../../types/kline-simple'
 import { DEFAULT_CONFIG } from '../../../types/kline-simple'
+
+// Binance K线数据接口
+interface BinanceKLine {
+  timestamp: number
+  open: string
+  high: string
+  low: string
+  close: string
+  volume: string
+}
 
 // 同步状态
 interface SyncStatus {
@@ -75,6 +85,45 @@ export class KLineSimpleSyncService {
     }
   }
 
+  // 获取合约信息
+  private async getSymbolInfo(symbol: string): Promise<{
+    exists: boolean
+    symbol: string
+    status: string
+    onboardDate: number
+    onboardTimestamp: number
+    baseAsset: string
+    quoteAsset: string
+  } | null> {
+    try {
+      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      const symbolInfo = data.symbols.find((s: any) => s.symbol === symbol.replace('/', ''))
+      
+      if (!symbolInfo) {
+        return null
+      }
+      
+      return {
+        exists: true,
+        symbol: symbolInfo.symbol,
+        status: symbolInfo.status,
+        onboardDate: symbolInfo.onboardDate,
+        onboardTimestamp: Math.floor(symbolInfo.onboardDate / 1000),
+        baseAsset: symbolInfo.baseAsset,
+        quoteAsset: symbolInfo.quoteAsset
+      }
+    } catch (error) {
+      console.error(`获取合约信息失败: ${symbol}`, error)
+      return null
+    }
+  }
+
   // 从Binance获取K线数据
   private async fetchKLineFromBinance(
     symbol: string, 
@@ -131,41 +180,13 @@ export class KLineSimpleSyncService {
     }
   }
 
-  // 获取合约信息
-  private async getSymbolInfo(symbol: string): Promise<{
-    onboardTimestamp: number
-    status: string
-  } | null> {
-    try {
-      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo')
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-      
-      const data = await response.json()
-      const symbolInfo = data.symbols.find((s: any) => s.symbol === symbol.replace('/', ''))
-      
-      if (!symbolInfo) {
-        return null
-      }
-      
-      return {
-        onboardTimestamp: Math.floor(symbolInfo.onboardDate / 1000),
-        status: symbolInfo.status
-      }
-    } catch (error) {
-      console.error(`获取合约信息失败: ${symbol}`, error)
-      return null
-    }
-  }
-
-  // 同步单个交易对的K线数据（精简版）
+  // 同步单个交易对的K线数据
   async syncSymbolKLine(
     symbol: string, 
     timeframe: KLineTimeframe, 
     options: {
       force?: boolean
+      initialBars?: number
     } = {}
   ): Promise<{
     success: boolean
@@ -173,8 +194,9 @@ export class KLineSimpleSyncService {
     symbol: string
     timeframe: KLineTimeframe
     count: number
+    newBars: number
   }> {
-    const { force = false } = options
+    const { force = false, initialBars = 1000 } = options
     const key = this.getStatusKey(symbol, timeframe)
     
     try {
@@ -186,7 +208,8 @@ export class KLineSimpleSyncService {
           message: '正在同步中，请稍后再试',
           symbol,
           timeframe,
-          count: 0
+          count: 0,
+          newBars: 0
         }
       }
       
@@ -194,44 +217,155 @@ export class KLineSimpleSyncService {
       this.updateStatus(symbol, timeframe, { status: 'syncing', error: undefined })
       
       // 获取最后一条数据的时间戳
-      const lastTimestamp = getSimpleLastKLineTimestamp(symbol, timeframe)
+      let lastTimestamp = getSimpleLastKLineTimestamp(symbol, timeframe)
       
       if (!lastTimestamp || force) {
-        // 首次同步或强制同步
+        // 首次同步或强制同步，使用manualSyncHistory获取22000条数据
         console.log(`[首次同步] 开始获取历史数据: ${symbol}/${timeframe}`)
-        const result = await this.syncHistoryData(symbol, timeframe)
-        
-        this.updateStatus(symbol, timeframe, { 
-          status: 'idle', 
-          lastSyncTime: Math.floor(Date.now() / 1000),
-          lastSyncCount: result.totalBars,
-          totalBars: result.totalBars
+        const historyResult = await this.manualSyncHistory(symbol, timeframe, {
+          totalBars: 22000,
+          batchSize: 1000
         })
         
-        return {
-          success: result.success,
-          message: result.message,
-          symbol,
-          timeframe,
-          count: result.totalBars
+        if (historyResult.success) {
+          this.updateStatus(symbol, timeframe, { 
+            status: 'idle', 
+            lastSyncTime: Math.floor(Date.now() / 1000),
+            lastSyncCount: historyResult.totalBars,
+            totalBars: historyResult.totalBars
+          })
+          
+          return {
+            success: true,
+            message: `首次同步成功，获取 ${historyResult.totalBars} 条数据`,
+            symbol,
+            timeframe,
+            count: historyResult.totalBars,
+            newBars: historyResult.totalBars
+          }
+        } else {
+          throw new Error(`首次同步失败: ${historyResult.message}`)
         }
       } else {
-        // 增量更新
-        const result = await this.syncIncrementalData(symbol, timeframe, lastTimestamp)
+        // 已经有数据，进行增量更新
+        // 使用 lastTimestamp + intervalSeconds 作为startTime（毫秒），确保获取下一根完整的K线
+        const intervalSeconds = this.getIntervalSeconds(timeframe)
+        const startTime = (lastTimestamp + intervalSeconds) * 1000 // 转换为毫秒
         
+        // 获取数据
+        const klineData = await this.fetchKLineFromBinance(
+          symbol, 
+          timeframe, 
+          startTime, 
+          undefined, // endTime
+          initialBars // limit
+        )
+        
+        // 过滤掉时间戳小于等于lastTimestamp的数据（理论上不应该有，但为了安全）
+        const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
+        
+        if (newKlineData.length === 0) {
+          this.updateStatus(symbol, timeframe, { 
+            status: 'idle', 
+            lastSyncTime: Math.floor(Date.now() / 1000),
+            lastSyncCount: 0
+          })
+          
+          return {
+            success: true,
+            message: '没有新数据',
+            symbol,
+            timeframe,
+            count: 0,
+            newBars: 0
+          }
+        }
+        
+        // 检查数据连续性：第一根新K线的开盘价应该等于最后一根旧K线的收盘价
+        if (newKlineData.length > 0) {
+          const existingFile = await import('../../utils/kline-simple-storage').then(m => m.readSimpleKLineFile(symbol, timeframe))
+          if (existingFile && existingFile.data && existingFile.data.length > 0) {
+            const lastExistingItem = existingFile.data[existingFile.data.length - 1]
+            const firstNewItem = newKlineData[0]
+            
+            if (lastExistingItem && firstNewItem) {
+              // 允许微小的浮点数差异
+              const tolerance = 0.000001
+              const priceDiff = Math.abs(lastExistingItem.c - firstNewItem.open)
+              if (priceDiff > tolerance) {
+                console.warn(`⚠️  K线数据不连续: ${symbol}/${timeframe}`)
+                console.warn(`    最后一条K线收盘价: ${lastExistingItem.c}`)
+                console.warn(`    第一条新K线开盘价: ${firstNewItem.open}`)
+                console.warn(`    差异: ${priceDiff}`)
+                
+                // 尝试修复：重新获取最后几根K线以确保数据连续性
+                // 这可能是因为之前的数据同步有问题，现在重新获取正确的数据
+                console.log(`🔄 尝试修复数据连续性: ${symbol}/${timeframe}`)
+                
+                try {
+                  // 获取最后一条K线的时间戳
+                  const lastKlineTime = lastExistingItem.t
+                  
+                  // 重新获取从最后一条K线开始的数据（包含最后一条）
+                  const repairStartTime = (lastKlineTime - intervalSeconds) * 1000 // 获取前一根K线以确保连续性
+                  const repairData = await this.fetchKLineFromBinance(
+                    symbol,
+                    timeframe,
+                    repairStartTime,
+                    undefined,
+                    10 // 获取10条数据，应该足够覆盖
+                  )
+                  
+                  if (repairData.length > 0) {
+                    // 过滤掉时间戳小于lastKlineTime的数据
+                    const filteredRepairData = repairData.filter(item => item.timestamp >= lastKlineTime)
+                    
+                    if (filteredRepairData.length > 0) {
+                      console.log(`✅ 获取到 ${filteredRepairData.length} 条修复数据`)
+                      
+                      // 检查修复后的数据连续性
+                      const firstRepairItem = filteredRepairData[0]
+                      if (firstRepairItem && Math.abs(lastExistingItem.c - firstRepairItem.open) <= tolerance) {
+                        console.log(`✅ 修复数据连续性成功`)
+                        
+                        // 用修复的数据替换新数据
+                        newKlineData.splice(0, filteredRepairData.length, ...filteredRepairData)
+                      } else {
+                        console.warn(`⚠️  修复数据仍然不连续，保持原数据`)
+                      }
+                    }
+                  }
+                } catch (repairError: any) {
+                  console.warn(`修复数据连续性失败: ${repairError.message}`)
+                  // 继续使用原始数据，不中断同步
+                }
+              }
+            }
+          }
+        }
+        
+        // 保存数据
+        const success = appendSimpleKLineData(symbol, timeframe, newKlineData)
+        
+        if (!success) {
+          throw new Error('保存数据失败')
+        }
+        
+        // 更新状态
         this.updateStatus(symbol, timeframe, { 
           status: 'idle', 
           lastSyncTime: Math.floor(Date.now() / 1000),
-          lastSyncCount: result.count,
-          totalBars: (currentStatus?.totalBars || 0) + result.count
+          lastSyncCount: newKlineData.length,
+          totalBars: (currentStatus?.totalBars || 0) + newKlineData.length
         })
         
         return {
-          success: result.success,
-          message: result.message,
+          success: true,
+          message: `增量同步成功，获取 ${newKlineData.length} 条数据`,
           symbol,
           timeframe,
-          count: result.count
+          count: newKlineData.length,
+          newBars: newKlineData.length
         }
       }
       
@@ -248,195 +382,8 @@ export class KLineSimpleSyncService {
         message: `同步失败: ${error.message}`,
         symbol,
         timeframe,
-        count: 0
-      }
-    }
-  }
-
-  // 同步历史数据（首次同步）
-  private async syncHistoryData(
-    symbol: string, 
-    timeframe: KLineTimeframe
-  ): Promise<{
-    success: boolean
-    message: string
-    totalBars: number
-  }> {
-    try {
-      // 获取合约信息
-      const symbolInfo = await this.getSymbolInfo(symbol)
-      if (!symbolInfo) {
-        return {
-          success: false,
-          message: `合约 ${symbol} 不存在`,
-          totalBars: 0
-        }
-      }
-      
-      const intervalSeconds = this.getIntervalSeconds(timeframe)
-      const now = Math.floor(Date.now() / 1000)
-      const targetBars = 22000
-      const totalSeconds = targetBars * intervalSeconds
-      
-      // 计算开始时间
-      const theoreticalStartTimestamp = now - totalSeconds
-      const actualStartTimestamp = Math.max(theoreticalStartTimestamp, symbolInfo.onboardTimestamp)
-      
-      // 计算实际可获取的数据量
-      const availableSeconds = now - actualStartTimestamp
-      const maxAvailableBars = Math.floor(availableSeconds / intervalSeconds)
-      const actualTargetBars = Math.min(targetBars, maxAvailableBars)
-      
-      if (actualTargetBars <= 0) {
-        return {
-          success: false,
-          message: '合约上线时间太短，无法获取任何数据',
-          totalBars: 0
-        }
-      }
-      
-      console.log(`[历史同步] 开始获取 ${symbol}/${timeframe} 的历史数据，目标: ${actualTargetBars} 条`)
-      
-      let currentStartTime = actualStartTimestamp
-      let fetchedBars = 0
-      const allData: KLineData[] = []
-      
-      while (fetchedBars < actualTargetBars) {
-        const remaining = actualTargetBars - fetchedBars
-        const batchSize = Math.min(1000, remaining)
-        
-        const batchData = await this.fetchKLineFromBinance(
-          symbol, 
-          timeframe, 
-          currentStartTime * 1000,
-          undefined,
-          batchSize
-        )
-        
-        if (batchData.length === 0) {
-          break
-        }
-        
-        allData.push(...batchData)
-        fetchedBars += batchData.length
-        
-        // 更新下一个批次的开始时间
-        const lastItem = batchData[batchData.length - 1]
-        if (lastItem) {
-          currentStartTime = lastItem.timestamp + intervalSeconds
-        } else {
-          break
-        }
-        
-        // 避免请求过于频繁
-        await new Promise(resolve => setTimeout(resolve, 200))
-      }
-      
-      if (allData.length > 0) {
-        const success = writeSimpleKLineFile(symbol, timeframe, allData)
-        
-        if (!success) {
-          throw new Error('保存数据失败')
-        }
-        
-        console.log(`[历史同步] 完成! 获取 ${allData.length} 条数据`)
-        
-        return {
-          success: true,
-          message: `历史同步完成，获取 ${allData.length} 条数据`,
-          totalBars: allData.length
-        }
-      } else {
-        return {
-          success: false,
-          message: '没有获取到任何数据',
-          totalBars: 0
-        }
-      }
-      
-    } catch (error: any) {
-      console.error(`[历史同步] 失败: ${symbol}/${timeframe}`, error)
-      return {
-        success: false,
-        message: `历史同步失败: ${error.message}`,
-        totalBars: 0
-      }
-    }
-  }
-
-  // 同步增量数据（避免获取未完成K线）
-  private async syncIncrementalData(
-    symbol: string, 
-    timeframe: KLineTimeframe,
-    lastTimestamp: number
-  ): Promise<{
-    success: boolean
-    message: string
-    count: number
-  }> {
-    try {
-      const intervalSeconds = this.getIntervalSeconds(timeframe)
-      
-      // 计算开始时间：从最后一条数据的下一个周期开始
-      // 避免获取最后一根未完成的K线
-      const startTime = (lastTimestamp + intervalSeconds) * 1000
-      
-      // 获取数据
-      const klineData = await this.fetchKLineFromBinance(
-        symbol, 
-        timeframe, 
-        startTime, 
-        undefined,
-        1000
-      )
-      
-      // 过滤掉时间戳小于等于lastTimestamp的数据
-      // 确保只获取新的、已完成的K线
-      const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
-      
-      if (newKlineData.length === 0) {
-        return {
-          success: true,
-          message: '没有新数据',
-          count: 0
-        }
-      }
-      
-      // 检查是否有未完成的K线（当前周期的K线）
-      const now = Math.floor(Date.now() / 1000)
-      const currentKlineStart = now - (now % intervalSeconds)
-      
-      // 过滤掉当前未完成的K线
-      const completedKlineData = newKlineData.filter(item => item.timestamp < currentKlineStart)
-      
-      if (completedKlineData.length === 0) {
-        return {
-          success: true,
-          message: '只有未完成的K线，等待下一周期',
-          count: 0
-        }
-      }
-      
-      const success = appendSimpleKLineData(symbol, timeframe, completedKlineData)
-      
-      if (!success) {
-        throw new Error('保存数据失败')
-      }
-      
-      console.log(`[增量同步] ${symbol}/${timeframe}: 获取 ${completedKlineData.length} 条新数据`)
-      
-      return {
-        success: true,
-        message: `增量同步成功，获取 ${completedKlineData.length} 条数据`,
-        count: completedKlineData.length
-      }
-      
-    } catch (error: any) {
-      console.error(`[增量同步] 失败: ${symbol}/${timeframe}`, error)
-      return {
-        success: false,
-        message: `增量同步失败: ${error.message}`,
-        count: 0
+        count: 0,
+        newBars: 0
       }
     }
   }
@@ -475,6 +422,251 @@ export class KLineSimpleSyncService {
     return results
   }
 
+
+  // 手动同步历史数据（优化版，参考scripts/fetch-binance-history-fixed.cjs）
+  async manualSyncHistory(
+    symbol: string, 
+    timeframe: KLineTimeframe, 
+    options: {
+      totalBars?: number
+      batchSize?: number
+      startTime?: number
+      endTime?: number
+    } = {}
+  ): Promise<{
+    success: boolean
+    message: string
+    symbol: string
+    timeframe: KLineTimeframe
+    totalBars: number
+    batches: number
+    duration?: number
+    symbolInfo?: {
+      onboardDate: number
+      status: string
+    }
+  }> {
+    const { totalBars = 22000, batchSize = 1000, startTime, endTime } = options
+    const startTimestamp = Date.now()
+    
+    try {
+      // 1. 先获取合约信息，包括上线时间
+      console.log(`[手动同步] 获取合约信息: ${symbol}`)
+      const symbolInfo = await this.getSymbolInfo(symbol)
+      
+      if (!symbolInfo) {
+        const message = `合约 ${symbol} 不存在`
+        console.log(`[手动同步] ${message}`)
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0
+        }
+      }
+      
+      // 2. 计算实际可获取的时间范围
+      const now = Math.floor(Date.now() / 1000)
+      const intervalSeconds = this.getIntervalSeconds(timeframe)
+      const totalSeconds = totalBars * intervalSeconds
+      
+      // 合约上线时间（秒）
+      const onboardTimestamp = symbolInfo.onboardTimestamp
+      
+      // 计算理论开始时间（从当前时间往前推）
+      const theoreticalStartTimestamp = now - totalSeconds
+      
+      // 实际开始时间：取理论开始时间和上线时间的较大值（不能早于上线时间）
+      const actualStartTimestamp = Math.max(theoreticalStartTimestamp, onboardTimestamp)
+      
+      // 3. 计算实际可获取的数据量
+      const availableSeconds = now - actualStartTimestamp
+      const maxAvailableBars = Math.floor(availableSeconds / intervalSeconds)
+      const actualTargetBars = Math.min(totalBars, maxAvailableBars)
+      
+      if (actualTargetBars <= 0) {
+        const message = `合约上线时间太短，无法获取任何数据`
+        console.log(`[手动同步] ${message}`)
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
+      }
+      
+      if (actualTargetBars < totalBars) {
+        console.log(`[手动同步] 注意：合约上线时间较短，只能获取 ${actualTargetBars} 条数据（原目标: ${totalBars} 条）`)
+      }
+      
+      // 4. 开始批量获取数据
+      this.updateStatus(symbol, timeframe, { status: 'syncing', error: undefined })
+      
+      let currentStartTime = startTime || actualStartTimestamp
+      let fetchedBars = 0
+      let batches = 0
+      const allData: KLineData[] = []
+      let consecutiveEmptyBatches = 0
+      const maxConsecutiveEmptyBatches = 3
+      
+      console.log(`[手动同步] 开始获取历史数据: ${symbol}/${timeframe}，目标: ${actualTargetBars} 条`)
+      
+      while (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
+        const remaining = actualTargetBars - fetchedBars
+        const currentBatchSize = Math.min(batchSize, remaining)
+        
+        // 计算结束时间（当前批次）
+        const batchEndTime = currentStartTime + (currentBatchSize * intervalSeconds)
+        
+        try {
+          const batchData = await this.fetchKLineFromBinance(
+            symbol, 
+            timeframe, 
+            currentStartTime * 1000, // 转换为毫秒
+            batchEndTime * 1000,     // 转换为毫秒
+            currentBatchSize
+          )
+          
+          if (batchData.length === 0) {
+            consecutiveEmptyBatches++
+            
+            if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+              console.log(`[手动同步] 连续 ${maxConsecutiveEmptyBatches} 个批次返回空数据，停止获取`)
+              break
+            }
+            
+            // 跳过一段时间继续尝试
+            currentStartTime = batchEndTime + 1
+          } else {
+            consecutiveEmptyBatches = 0 // 重置连续空批次计数
+            allData.push(...batchData)
+            fetchedBars += batchData.length
+            batches++
+            
+            // 每5个批次或最后一批显示进度
+            if (batches % 5 === 0 || fetchedBars >= actualTargetBars) {
+              const progress = Math.round((fetchedBars / actualTargetBars) * 100)
+              console.log(`[手动同步] 进度: ${fetchedBars}/${actualTargetBars} (${progress}%)，批次: ${batches}`)
+            }
+            
+            // 更新下一个批次的开始时间
+            const lastItem = batchData[batchData.length - 1]
+            if (lastItem) {
+              currentStartTime = lastItem.timestamp + intervalSeconds
+            } else {
+              console.log('[手动同步] 批次数据异常，停止获取')
+              break
+            }
+          }
+        } catch (batchError: any) {
+          console.log(`[手动同步] 批次 ${batches + 1} 获取失败: ${batchError.message}`)
+          consecutiveEmptyBatches++
+          
+          if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+            console.log(`[手动同步] 连续 ${maxConsecutiveEmptyBatches} 个批次失败，停止获取`)
+            break
+          }
+          
+          // 跳过一段时间继续尝试
+          currentStartTime = batchEndTime + 1
+        }
+        
+        // 避免请求过于频繁
+        if (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
+      }
+      
+      // 5. 保存所有数据
+      if (allData.length > 0) {
+        console.log(`[手动同步] 保存数据到文件...`)
+        const success = appendSimpleKLineData(symbol, timeframe, allData)
+        
+        if (!success) {
+          throw new Error('保存数据失败')
+        }
+        
+        const endTimestamp = Date.now()
+        const duration = (endTimestamp - startTimestamp) / 1000
+        
+        // 更新状态
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000),
+          lastSyncCount: allData.length,
+          totalBars: allData.length
+        })
+        
+        console.log(`[手动同步] 完成! 获取 ${allData.length} 条数据，${batches} 个批次，耗时 ${duration.toFixed(2)} 秒`)
+        
+        return {
+          success: true,
+          message: `手动同步完成，获取 ${allData.length} 条数据，共 ${batches} 个批次`,
+          symbol,
+          timeframe,
+          totalBars: allData.length,
+          batches,
+          duration,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
+      } else {
+        const message = '没有获取到任何数据'
+        console.log(`[手动同步] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000),
+          lastSyncCount: 0
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0,
+          duration: (Date.now() - startTimestamp) / 1000,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
+      }
+      
+    } catch (error: any) {
+      console.error(`[手动同步] 失败: ${symbol}/${timeframe}`, error)
+      
+      this.updateStatus(symbol, timeframe, { 
+        status: 'error', 
+        error: error.message 
+      })
+      
+      const duration = (Date.now() - startTimestamp) / 1000
+      
+      return {
+        success: false,
+        message: `手动同步失败: ${error.message}`,
+        symbol,
+        timeframe,
+        totalBars: 0,
+        batches: 0,
+        duration
+      }
+    }
+  }
+
   // 开始定时同步
   startAutoSync(): void {
     if (this.syncInterval) {
@@ -506,6 +698,269 @@ export class KLineSimpleSyncService {
       this.syncInterval = null
       console.log('已停止定时同步')
     }
+  }
+
+  // 修复最近K线数据（重新获取最近的N条K线并替换）
+  async repairRecentKLine(
+    symbol: string, 
+    timeframe: KLineTimeframe, 
+    options: {
+      recentBars?: number
+      force?: boolean
+    } = {}
+  ): Promise<{
+    success: boolean
+    message: string
+    symbol: string
+    timeframe: KLineTimeframe
+    totalBars: number
+    repairedBars: number
+    keptBars: number
+  }> {
+    const { recentBars = 100, force = false } = options
+    const key = this.getStatusKey(symbol, timeframe)
+    const startTimestamp = Date.now()
+    
+    try {
+      // 检查是否正在同步
+      const currentStatus = this.syncStatus.get(key)
+      if (currentStatus?.status === 'syncing' && !force) {
+        return {
+          success: false,
+          message: '正在同步中，请稍后再试',
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        }
+      }
+      
+      // 更新状态为同步中
+      this.updateStatus(symbol, timeframe, { status: 'syncing', error: undefined })
+      
+      console.log(`[修复K线] 开始修复 ${symbol}/${timeframe} 的最近 ${recentBars} 条K线数据`)
+      
+      // 1. 读取现有数据
+      const existingFile = readSimpleKLineFile(symbol, timeframe)
+      
+      if (!existingFile || !existingFile.data || existingFile.data.length === 0) {
+        const message = `没有找到现有数据，无法修复`
+        console.log(`[修复K线] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000)
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        }
+      }
+      
+      // 2. 计算需要保留的历史数据
+      const totalBars = existingFile.data.length
+      const keepBars = Math.max(0, totalBars - recentBars)
+      
+      console.log(`[修复K线] 现有数据: ${totalBars} 条，保留: ${keepBars} 条，修复: ${recentBars} 条`)
+      
+      // 3. 保留历史数据（如果需要保留）
+      let historicalData: KLineData[] = []
+      if (keepBars > 0) {
+        historicalData = existingFile.data
+          .slice(0, keepBars)
+          .map(item => ({
+            timestamp: item.t,
+            open: item.o,
+            high: item.h,
+            low: item.l,
+            close: item.c,
+            volume: item.v
+          }))
+      }
+      
+      // 4. 计算需要获取的最近K线的开始时间
+      let startTime: number | undefined
+      if (keepBars > 0) {
+        // 如果有历史数据，从最后一条历史数据的时间戳开始
+        const lastHistoricalItem = existingFile.data[keepBars - 1]
+        if (lastHistoricalItem) {
+          const intervalSeconds = this.getIntervalSeconds(timeframe)
+          startTime = (lastHistoricalItem.t + intervalSeconds) * 1000 // 转换为毫秒
+        } else {
+          // 如果无法获取最后一条历史数据，使用默认逻辑
+          const intervalSeconds = this.getIntervalSeconds(timeframe)
+          const now = Math.floor(Date.now() / 1000)
+          const startTimestamp = now - (recentBars * intervalSeconds)
+          startTime = startTimestamp * 1000
+        }
+      } else {
+        // 如果没有历史数据，获取最近的recentBars条数据
+        // 计算开始时间：当前时间往前推 (recentBars * intervalSeconds) 秒
+        const intervalSeconds = this.getIntervalSeconds(timeframe)
+        const now = Math.floor(Date.now() / 1000)
+        const startTimestamp = now - (recentBars * intervalSeconds)
+        startTime = startTimestamp * 1000
+      }
+      
+      // 5. 从Binance获取最近的K线数据
+      console.log(`[修复K线] 从Binance获取最近 ${recentBars} 条K线数据...`)
+      
+      const recentKlineData = await this.fetchKLineFromBinance(
+        symbol,
+        timeframe,
+        startTime,
+        undefined, // endTime
+        recentBars + 10 // 多获取一些数据，确保有足够的数据
+      )
+      
+      if (recentKlineData.length === 0) {
+        const message = '从Binance获取数据失败，没有获取到任何数据'
+        console.log(`[修复K线] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000)
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: keepBars
+        }
+      }
+      
+      // 6. 限制获取的数据数量为recentBars条
+      const limitedRecentData = recentKlineData.slice(-recentBars)
+      
+      // 7. 合并历史数据和新的最近数据
+      const allData = [...historicalData, ...limitedRecentData]
+      
+      // 8. 写入文件（替换整个文件）
+      console.log(`[修复K线] 保存修复后的数据...`)
+      const success = writeSimpleKLineFile(symbol, timeframe, allData)
+      
+      if (!success) {
+        throw new Error('保存修复数据失败')
+      }
+      
+      const endTimestamp = Date.now()
+      const duration = (endTimestamp - startTimestamp) / 1000
+      
+      // 9. 更新状态
+      this.updateStatus(symbol, timeframe, { 
+        status: 'idle', 
+        lastSyncTime: Math.floor(Date.now() / 1000),
+        lastSyncCount: limitedRecentData.length,
+        totalBars: allData.length
+      })
+      
+      console.log(`[修复K线] 完成! 总数据: ${allData.length} 条，修复: ${limitedRecentData.length} 条，保留: ${historicalData.length} 条，耗时 ${duration.toFixed(2)} 秒`)
+      
+      return {
+        success: true,
+        message: `修复完成，总数据: ${allData.length} 条，修复: ${limitedRecentData.length} 条，保留: ${historicalData.length} 条`,
+        symbol,
+        timeframe,
+        totalBars: allData.length,
+        repairedBars: limitedRecentData.length,
+        keptBars: historicalData.length
+      }
+      
+    } catch (error: any) {
+      console.error(`[修复K线] 失败: ${symbol}/${timeframe}`, error)
+      
+      this.updateStatus(symbol, timeframe, { 
+        status: 'error', 
+        error: error.message 
+      })
+      
+      return {
+        success: false,
+        message: `修复失败: ${error.message}`,
+        symbol,
+        timeframe,
+        totalBars: 0,
+        repairedBars: 0,
+        keptBars: 0
+      }
+    }
+  }
+
+  // 批量修复所有交易对和周期的最近K线
+  async repairAllRecentKLine(options: {
+    recentBars?: number
+    force?: boolean
+  } = {}): Promise<Array<{
+    success: boolean
+    message: string
+    symbol: string
+    timeframe: KLineTimeframe
+    totalBars: number
+    repairedBars: number
+    keptBars: number
+  }>> {
+    const { recentBars = 100, force = false } = options
+    const results = []
+    
+    console.log(`[批量修复] 开始批量修复所有交易对和周期的最近 ${recentBars} 条K线数据`)
+    
+    // 获取所有现有的数据文件
+    const storedSymbols = await import('../../utils/kline-simple-storage').then(m => m.getSimpleStoredSymbols())
+    
+    if (storedSymbols.length === 0) {
+      console.log('[批量修复] 没有找到任何数据文件')
+      return []
+    }
+    
+    console.log(`[批量修复] 找到 ${storedSymbols.length} 个数据文件`)
+    
+    for (const stored of storedSymbols) {
+      try {
+        console.log(`[批量修复] 处理: ${stored.symbol}/${stored.timeframe} (${stored.count} 条数据)`)
+        
+        const result = await this.repairRecentKLine(
+          stored.symbol,
+          stored.timeframe as KLineTimeframe,
+          { recentBars, force }
+        )
+        
+        results.push(result)
+        
+        // 避免请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+      } catch (error: any) {
+        results.push({
+          success: false,
+          message: `修复失败: ${error.message}`,
+          symbol: stored.symbol,
+          timeframe: stored.timeframe as KLineTimeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        })
+      }
+    }
+    
+    // 统计结果
+    const successCount = results.filter(r => r.success).length
+    const totalRepaired = results.reduce((sum, r) => sum + r.repairedBars, 0)
+    const totalKept = results.reduce((sum, r) => sum + r.keptBars, 0)
+    
+    console.log(`[批量修复] 完成! ${successCount}/${results.length} 成功，修复: ${totalRepaired} 条，保留: ${totalKept} 条`)
+    
+    return results
   }
 
   // 获取同步状态
