@@ -1,11 +1,11 @@
 import { webSocketManager } from '../../../server/utils/websocket-manager'
 import type { ApiResponse } from '../../../types'
 
-// 存储客户端回调函数的映射（与unsubscribe共享）
+// 存储客户端回调函数的映射（与subscribe共享）
 // 格式: { [clientId]: { [symbol]: callback } }
 const clientCallbacks = new Map<string, Map<string, (data: any) => void>>()
 
-// 存储客户端最后活动时间
+// 存储客户端最后活动时间（与subscribe共享）
 const clientLastActivity = new Map<string, number>()
 
 // 生成客户端ID
@@ -38,7 +38,7 @@ function cleanupExpiredClients(): void {
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event)
-    const { symbols, clientId: providedClientId } = body
+    const { symbols, clientId } = body
 
     if (!symbols || !Array.isArray(symbols) || symbols.length === 0) {
       const response: ApiResponse = {
@@ -48,65 +48,73 @@ export default defineEventHandler(async (event) => {
       return response
     }
 
+    if (!clientId) {
+      const response: ApiResponse = {
+        success: false,
+        message: '请提供clientId'
+      }
+      return response
+    }
+
     // 确保WebSocket已连接
     await webSocketManager.initialize()
 
-    // 生成或使用提供的客户端ID
-    const clientId = providedClientId || generateClientId()
-    
     // 清理过期客户端
     cleanupExpiredClients()
     
     // 更新客户端最后活动时间
     clientLastActivity.set(clientId, Date.now())
+
+    // 获取客户端的回调函数映射
+    const symbolCallbacks = clientCallbacks.get(clientId)
     
-    // 获取或创建客户端的回调函数映射
-    if (!clientCallbacks.has(clientId)) {
-      clientCallbacks.set(clientId, new Map())
-    }
-    const symbolCallbacks = clientCallbacks.get(clientId)!
-
-    // 为每个交易对创建回调函数
-    const priceCallback = (priceData: any) => {
-      // 这里可以处理价格更新，例如记录日志或触发其他操作
-      // console.log(`📈 客户端 ${clientId} 收到价格更新: ${priceData.symbol} = ${priceData.price}`)
-    }
-
-    // 订阅所有交易对
-    symbols.forEach(symbol => {
-      // 如果已经订阅了这个交易对，先取消旧的订阅
-      const existingCallback = symbolCallbacks.get(symbol)
-      if (existingCallback) {
-        webSocketManager.unsubscribePrice(symbol, existingCallback)
+    if (!symbolCallbacks) {
+      const response: ApiResponse = {
+        success: true,
+        message: `客户端 ${clientId} 没有找到订阅记录`,
+        data: {
+          clientId,
+          requestedUnsubscribeSymbols: symbols,
+          actualUnsubscribed: []
+        }
       }
-      
-      // 订阅新的
-      webSocketManager.subscribePrice(symbol, priceCallback)
-      symbolCallbacks.set(symbol, priceCallback)
-      
-      console.log(`✅ 客户端 ${clientId} 订阅: ${symbol}`)
-    })
-    
+      return response
+    }
+
+    const unsubscribedSymbols: string[] = []
+
+    // 取消订阅每个交易对
+    for (const symbol of symbols) {
+      const callback = symbolCallbacks.get(symbol)
+      if (callback) {
+        // 从WebSocket管理器取消订阅
+        webSocketManager.unsubscribePrice(symbol, callback)
+        
+        // 从客户端映射中移除
+        symbolCallbacks.delete(symbol)
+        unsubscribedSymbols.push(symbol)
+        
+        console.log(`✅ 客户端 ${clientId} 取消订阅: ${symbol}`)
+      }
+    }
+
+    // 如果客户端没有更多订阅，清理映射
+    if (symbolCallbacks.size === 0) {
+      clientCallbacks.delete(clientId)
+      console.log(`🗑️  清理客户端 ${clientId} 的订阅记录`)
+    }
+
     const state = webSocketManager.getWebSocketState()
-    const prices = new Map<string, any>()
-    
-    // 获取当前价格（如果有缓存）
-    symbols.forEach(symbol => {
-      const price = webSocketManager.getPrice(symbol)
-      if (price) {
-        prices.set(symbol, price)
-      }
-    })
 
     const response: ApiResponse = {
       success: true,
-      message: `已订阅 ${symbols.length} 个交易对`,
+      message: `取消订阅完成: ${unsubscribedSymbols.length} 个交易对`,
       data: {
         clientId,
-        subscribedSymbols: symbols,
-        currentPrices: Object.fromEntries(prices),
-        webSocketState: state,
-        note: '请保存clientId用于后续取消订阅'
+        requestedUnsubscribeSymbols: symbols,
+        actualUnsubscribed: unsubscribedSymbols,
+        remainingSubscriptions: symbolCallbacks ? Array.from(symbolCallbacks.keys()) : [],
+        webSocketState: state
       }
     }
     
@@ -114,7 +122,7 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     const response: ApiResponse = {
       success: false,
-      message: `订阅价格失败: ${error.message}`
+      message: `取消订阅失败: ${error.message}`
     }
     
     return response

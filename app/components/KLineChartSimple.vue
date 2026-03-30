@@ -210,6 +210,7 @@ const theme = ref<'light' | 'dark'>('light')
 // WebSocket相关
 const isWebSocketConnected = ref(false)
 const lastPriceUpdate = ref<PriceData | null>(null)
+const webSocketClientId = ref<string>('')
 
 // 图表相关
 const chartContainer = ref<HTMLElement | null>(null)
@@ -850,11 +851,21 @@ const updateChartWithLastKline = (updatedKline: SimpleKLineData) => {
   }
 }
 
+// 生成客户端ID
+const generateClientId = (): string => {
+  return `kline_chart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
+
 // 订阅WebSocket价格更新
 const subscribeToPriceUpdates = async () => {
   const symbolToUse = props.symbol || 'BTCUSDT'
   
   try {
+    // 如果没有clientId，生成一个
+    if (!webSocketClientId.value) {
+      webSocketClientId.value = generateClientId()
+    }
+    
     // 订阅价格更新
     const response = await fetch('/api/websocket/subscribe', {
       method: 'POST',
@@ -862,13 +873,14 @@ const subscribeToPriceUpdates = async () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        symbols: [symbolToUse]
+        symbols: [symbolToUse],
+        clientId: webSocketClientId.value
       })
     })
     
     const result = await response.json()
     if (result.success) {
-      console.log(`已订阅 ${symbolToUse} 的价格更新`)
+      console.log(`客户端 ${webSocketClientId.value} 已订阅 ${symbolToUse} 的价格更新`)
       
       // 设置轮询获取价格更新（因为WebSocket管理器在服务器端）
       // 这里使用轮询方式获取最新价格
@@ -878,6 +890,39 @@ const subscribeToPriceUpdates = async () => {
     }
   } catch (error) {
     console.error('订阅价格更新失败:', error)
+  }
+}
+
+// 取消订阅WebSocket价格更新
+const unsubscribeFromPriceUpdates = async () => {
+  const symbolToUse = props.symbol || 'BTCUSDT'
+  
+  try {
+    if (!webSocketClientId.value) {
+      console.log('没有clientId，无需取消订阅')
+      return
+    }
+    
+    // 调用取消订阅API
+    const response = await fetch('/api/websocket/unsubscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        symbols: [symbolToUse],
+        clientId: webSocketClientId.value
+      })
+    })
+    
+    const result = await response.json()
+    if (result.success) {
+      console.log(`客户端 ${webSocketClientId.value} 已取消订阅 ${symbolToUse} 的价格更新`)
+    } else {
+      console.error('取消订阅价格更新失败:', result.message)
+    }
+  } catch (error) {
+    console.error('取消订阅价格更新失败:', error)
   }
 }
 
@@ -933,6 +978,9 @@ onMounted(() => {
 // 组件卸载时清理
 onUnmounted(() => {
   stopPricePolling()
+  
+  // 取消订阅价格更新
+  unsubscribeFromPriceUpdates()
   
   // 清理图表
   if (chart) {
