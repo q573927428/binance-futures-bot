@@ -495,8 +495,8 @@ async function main() {
   console.log('🚀 币安历史K线数据获取工具（修复时区显示）');
   console.log('========================================\n');
   
-  const symbol = 'XAGUSDT';
-  const timeframe = '1h';
+  const symbol = 'BTCUSDT';
+  const timeframe = '4h';
   const totalBars = 22000;
   const batchSize = 1000;
 
