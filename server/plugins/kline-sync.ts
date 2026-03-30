@@ -162,40 +162,6 @@ function registerApiEndpoints(nitroApp: NitroApp): void {
     }
   }))
   
-  // 手动同步历史数据
-  nitroApp.router?.post('/api/kline-sync/history', eventHandler(async (event) => {
-    try {
-      const body = await readBody(event)
-      const { symbol, timeframe, totalBars = 22000, batchSize = 1000 } = body
-      
-      if (!syncService) {
-        throw new Error('同步服务未初始化')
-      }
-      
-      if (!symbol || !timeframe) {
-        throw new Error('缺少必要参数: symbol 和 timeframe')
-      }
-      
-      const result = await syncService.manualSyncHistory(symbol, timeframe, {
-        totalBars,
-        batchSize
-      })
-      
-      return {
-        success: result.success,
-        data: result,
-        message: result.message,
-        timestamp: Date.now()
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-        timestamp: Date.now()
-      }
-    }
-  }))
-  
   // 启动/停止定时同步
   nitroApp.router?.post('/api/kline-sync/auto-sync', eventHandler(async (event) => {
     try {
@@ -222,75 +188,6 @@ function registerApiEndpoints(nitroApp: NitroApp): void {
         }
       } else {
         throw new Error('无效的action参数，必须是 "start" 或 "stop"')
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-        timestamp: Date.now()
-      }
-    }
-  }))
-  
-  // 修复单个交易对和周期的最近K线
-  nitroApp.router?.post('/api/kline-sync/repair', eventHandler(async (event) => {
-    try {
-      const body = await readBody(event)
-      const { symbol, timeframe, recentBars = 100, force = false } = body
-      
-      if (!syncService) {
-        throw new Error('同步服务未初始化')
-      }
-      
-      if (!symbol || !timeframe) {
-        throw new Error('缺少必要参数: symbol 和 timeframe')
-      }
-      
-      const result = await syncService.repairRecentKLine(symbol, timeframe, {
-        recentBars,
-        force
-      })
-      
-      return {
-        success: result.success,
-        data: result,
-        message: result.message,
-        timestamp: Date.now()
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-        timestamp: Date.now()
-      }
-    }
-  }))
-  
-  // 批量修复所有交易对和周期的最近K线
-  nitroApp.router?.post('/api/kline-sync/repair-all', eventHandler(async (event) => {
-    try {
-      const body = await readBody(event)
-      const { recentBars = 100, force = false } = body
-      
-      if (!syncService) {
-        throw new Error('同步服务未初始化')
-      }
-      
-      const results = await syncService.repairAllRecentKLine({
-        recentBars,
-        force
-      })
-      
-      // 统计结果
-      const successCount = results.filter(r => r.success).length
-      const totalRepaired = results.reduce((sum, r) => sum + r.repairedBars, 0)
-      const totalKept = results.reduce((sum, r) => sum + r.keptBars, 0)
-      
-      return {
-        success: successCount > 0,
-        data: results,
-        message: `批量修复完成: ${successCount}/${results.length} 成功，修复: ${totalRepaired} 条，保留: ${totalKept} 条`,
-        timestamp: Date.now()
       }
     } catch (error: any) {
       return {
