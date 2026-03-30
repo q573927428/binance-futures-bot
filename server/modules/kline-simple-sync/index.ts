@@ -68,11 +68,63 @@ export class KLineSimpleSyncService {
     }
   }
 
+  // 获取时间间隔秒数
+  private getIntervalSeconds(timeframe: KLineTimeframe): number {
+    switch (timeframe) {
+      case '15m': return 15 * 60
+      case '1h': return 60 * 60
+      case '4h': return 4 * 60 * 60
+      case '1d': return 24 * 60 * 60
+      case '1w': return 7 * 24 * 60 * 60
+      default: return 60 * 60
+    }
+  }
+
+  // 获取合约信息
+  private async getSymbolInfo(symbol: string): Promise<{
+    exists: boolean
+    symbol: string
+    status: string
+    onboardDate: number
+    onboardTimestamp: number
+    baseAsset: string
+    quoteAsset: string
+  } | null> {
+    try {
+      const response = await fetch('https://fapi.binance.com/fapi/v1/exchangeInfo')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      const symbolInfo = data.symbols.find((s: any) => s.symbol === symbol.replace('/', ''))
+      
+      if (!symbolInfo) {
+        return null
+      }
+      
+      return {
+        exists: true,
+        symbol: symbolInfo.symbol,
+        status: symbolInfo.status,
+        onboardDate: symbolInfo.onboardDate,
+        onboardTimestamp: Math.floor(symbolInfo.onboardDate / 1000),
+        baseAsset: symbolInfo.baseAsset,
+        quoteAsset: symbolInfo.quoteAsset
+      }
+    } catch (error) {
+      console.error(`获取合约信息失败: ${symbol}`, error)
+      return null
+    }
+  }
+
   // 从Binance获取K线数据
   private async fetchKLineFromBinance(
     symbol: string, 
     timeframe: KLineTimeframe, 
     startTime?: number, 
+    endTime?: number,
     limit: number = 1000
   ): Promise<KLineData[]> {
     try {
@@ -92,6 +144,10 @@ export class KLineSimpleSyncService {
       
       if (startTime) {
         url += `&startTime=${startTime}`
+      }
+      
+      if (endTime) {
+        url += `&endTime=${endTime}`
       }
       
       // 发送请求
@@ -270,7 +326,7 @@ export class KLineSimpleSyncService {
   }
 
 
-  // 手动同步历史数据
+  // 手动同步历史数据（优化版，参考scripts/fetch-binance-history-fixed.cjs）
   async manualSyncHistory(
     symbol: string, 
     timeframe: KLineTimeframe, 
@@ -287,87 +343,220 @@ export class KLineSimpleSyncService {
     timeframe: KLineTimeframe
     totalBars: number
     batches: number
+    duration?: number
+    symbolInfo?: {
+      onboardDate: number
+      status: string
+    }
   }> {
     const { totalBars = 22000, batchSize = 1000, startTime, endTime } = options
+    const startTimestamp = Date.now()
     
     try {
+      // 1. 先获取合约信息，包括上线时间
+      console.log(`[手动同步] 获取合约信息: ${symbol}`)
+      const symbolInfo = await this.getSymbolInfo(symbol)
+      
+      if (!symbolInfo) {
+        const message = `合约 ${symbol} 不存在`
+        console.log(`[手动同步] ${message}`)
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0
+        }
+      }
+      
+      // 2. 计算实际可获取的时间范围
+      const now = Math.floor(Date.now() / 1000)
+      const intervalSeconds = this.getIntervalSeconds(timeframe)
+      const totalSeconds = totalBars * intervalSeconds
+      
+      // 合约上线时间（秒）
+      const onboardTimestamp = symbolInfo.onboardTimestamp
+      
+      // 计算理论开始时间（从当前时间往前推）
+      const theoreticalStartTimestamp = now - totalSeconds
+      
+      // 实际开始时间：取理论开始时间和上线时间的较大值（不能早于上线时间）
+      const actualStartTimestamp = Math.max(theoreticalStartTimestamp, onboardTimestamp)
+      
+      // 3. 计算实际可获取的数据量
+      const availableSeconds = now - actualStartTimestamp
+      const maxAvailableBars = Math.floor(availableSeconds / intervalSeconds)
+      const actualTargetBars = Math.min(totalBars, maxAvailableBars)
+      
+      if (actualTargetBars <= 0) {
+        const message = `合约上线时间太短，无法获取任何数据`
+        console.log(`[手动同步] ${message}`)
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
+      }
+      
+      if (actualTargetBars < totalBars) {
+        console.log(`[手动同步] 注意：合约上线时间较短，只能获取 ${actualTargetBars} 条数据（原目标: ${totalBars} 条）`)
+      }
+      
+      // 4. 开始批量获取数据
       this.updateStatus(symbol, timeframe, { status: 'syncing', error: undefined })
       
-      let currentStartTime = startTime
+      let currentStartTime = startTime || actualStartTimestamp
       let fetchedBars = 0
       let batches = 0
       const allData: KLineData[] = []
+      let consecutiveEmptyBatches = 0
+      const maxConsecutiveEmptyBatches = 3
       
-      while (fetchedBars < totalBars) {
-        const remaining = totalBars - fetchedBars
+      console.log(`[手动同步] 开始获取历史数据: ${symbol}/${timeframe}，目标: ${actualTargetBars} 条`)
+      
+      while (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
+        const remaining = actualTargetBars - fetchedBars
         const currentBatchSize = Math.min(batchSize, remaining)
         
-        console.log(`获取批次 ${batches + 1}: ${symbol}/${timeframe}, 开始时间: ${currentStartTime}`)
+        // 计算结束时间（当前批次）
+        const batchEndTime = currentStartTime + (currentBatchSize * intervalSeconds)
         
-        const batchData = await this.fetchKLineFromBinance(
-          symbol, 
-          timeframe, 
-          currentStartTime, 
-          currentBatchSize
-        )
-        
-        if (batchData.length === 0) {
-          break // 没有更多数据
-        }
-        
-        allData.push(...batchData)
-        fetchedBars += batchData.length
-        batches++
-        
-        // 更新下一个批次的开始时间
-        const lastItem = batchData[batchData.length - 1]
-        if (lastItem) {
-          currentStartTime = lastItem.timestamp + 1
-        } else {
-          break // 如果没有数据，退出循环
-        }
-        
-        // 检查是否达到结束时间
-        if (endTime && currentStartTime > endTime) {
-          break
+        try {
+          const batchData = await this.fetchKLineFromBinance(
+            symbol, 
+            timeframe, 
+            currentStartTime * 1000, // 转换为毫秒
+            batchEndTime * 1000,     // 转换为毫秒
+            currentBatchSize
+          )
+          
+          if (batchData.length === 0) {
+            consecutiveEmptyBatches++
+            
+            if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+              console.log(`[手动同步] 连续 ${maxConsecutiveEmptyBatches} 个批次返回空数据，停止获取`)
+              break
+            }
+            
+            // 跳过一段时间继续尝试
+            currentStartTime = batchEndTime + 1
+          } else {
+            consecutiveEmptyBatches = 0 // 重置连续空批次计数
+            allData.push(...batchData)
+            fetchedBars += batchData.length
+            batches++
+            
+            // 每5个批次或最后一批显示进度
+            if (batches % 5 === 0 || fetchedBars >= actualTargetBars) {
+              const progress = Math.round((fetchedBars / actualTargetBars) * 100)
+              console.log(`[手动同步] 进度: ${fetchedBars}/${actualTargetBars} (${progress}%)，批次: ${batches}`)
+            }
+            
+            // 更新下一个批次的开始时间
+            const lastItem = batchData[batchData.length - 1]
+            if (lastItem) {
+              currentStartTime = lastItem.timestamp + intervalSeconds
+            } else {
+              console.log('[手动同步] 批次数据异常，停止获取')
+              break
+            }
+          }
+        } catch (batchError: any) {
+          console.log(`[手动同步] 批次 ${batches + 1} 获取失败: ${batchError.message}`)
+          consecutiveEmptyBatches++
+          
+          if (consecutiveEmptyBatches >= maxConsecutiveEmptyBatches) {
+            console.log(`[手动同步] 连续 ${maxConsecutiveEmptyBatches} 个批次失败，停止获取`)
+            break
+          }
+          
+          // 跳过一段时间继续尝试
+          currentStartTime = batchEndTime + 1
         }
         
         // 避免请求过于频繁
-        await new Promise(resolve => setTimeout(resolve, 200))
+        if (fetchedBars < actualTargetBars && consecutiveEmptyBatches < maxConsecutiveEmptyBatches) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+        }
       }
       
-      // 保存所有数据
+      // 5. 保存所有数据
       if (allData.length > 0) {
+        console.log(`[手动同步] 保存数据到文件...`)
         const success = appendSimpleKLineData(symbol, timeframe, allData)
         
         if (!success) {
           throw new Error('保存数据失败')
         }
-      }
-      
-      this.updateStatus(symbol, timeframe, { 
-        status: 'idle', 
-        lastSyncTime: Math.floor(Date.now() / 1000),
-        lastSyncCount: allData.length,
-        totalBars: allData.length
-      })
-      
-      return {
-        success: true,
-        message: `手动同步完成，获取 ${allData.length} 条数据，共 ${batches} 个批次`,
-        symbol,
-        timeframe,
-        totalBars: allData.length,
-        batches
+        
+        const endTimestamp = Date.now()
+        const duration = (endTimestamp - startTimestamp) / 1000
+        
+        // 更新状态
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000),
+          lastSyncCount: allData.length,
+          totalBars: allData.length
+        })
+        
+        console.log(`[手动同步] 完成! 获取 ${allData.length} 条数据，${batches} 个批次，耗时 ${duration.toFixed(2)} 秒`)
+        
+        return {
+          success: true,
+          message: `手动同步完成，获取 ${allData.length} 条数据，共 ${batches} 个批次`,
+          symbol,
+          timeframe,
+          totalBars: allData.length,
+          batches,
+          duration,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
+      } else {
+        const message = '没有获取到任何数据'
+        console.log(`[手动同步] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000),
+          lastSyncCount: 0
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          batches: 0,
+          duration: (Date.now() - startTimestamp) / 1000,
+          symbolInfo: {
+            onboardDate: symbolInfo.onboardDate,
+            status: symbolInfo.status
+          }
+        }
       }
       
     } catch (error: any) {
-      console.error(`手动同步历史数据失败: ${symbol}/${timeframe}`, error)
+      console.error(`[手动同步] 失败: ${symbol}/${timeframe}`, error)
       
       this.updateStatus(symbol, timeframe, { 
         status: 'error', 
         error: error.message 
       })
+      
+      const duration = (Date.now() - startTimestamp) / 1000
       
       return {
         success: false,
@@ -375,7 +564,8 @@ export class KLineSimpleSyncService {
         symbol,
         timeframe,
         totalBars: 0,
-        batches: 0
+        batches: 0,
+        duration
       }
     }
   }
