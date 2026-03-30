@@ -622,53 +622,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-/* 响应式设计 - 平板端 (768px以下) */
-@media (max-width: 768px) {
-  .chart-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    padding: 12px 16px;
-  }
-  
-  .controls-left {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-  }
-  
-  .controls-left .el-select {
-    flex: 1;
-    min-width: 120px;
-  }
-  
-  .controls-right .el-button-group {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-  }
-  
-  .controls-right .el-button {
-    flex: 1;
-    min-width: 60px;
-  }
-  
-  .chart-wrapper {
-    margin: 12px;
-    min-height: 250px;
-  }
-  
-  .kline-chart {
-    min-height: 250px;
-  }
-  
-  .chart-info {
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 16px;
-  }
-}
-
 /* 响应式设计 - 手机端 (480px以下) */
 @media (max-width: 480px) {
   .symbol-badge {
