@@ -64,7 +64,8 @@ export function writeSimpleKLineFile(
     // 按时间戳排序
     const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp)
     
-    // 去重（基于时间戳）
+    // 注意：数据应该已经通过 appendSimpleKLineData 中的 Map 去重了
+    // 这里我们仍然保留去重逻辑作为安全措施
     const uniqueData: KLineData[] = []
     const seenTimestamps = new Set<number>()
     
@@ -72,6 +73,10 @@ export function writeSimpleKLineFile(
       if (!seenTimestamps.has(item.timestamp)) {
         seenTimestamps.add(item.timestamp)
         uniqueData.push(item)
+      } else {
+        // 如果遇到重复时间戳，理论上不应该发生，因为 appendSimpleKLineData 已经处理了
+        // 但为了安全，我们记录警告
+        console.warn(`发现重复时间戳: ${item.timestamp}，跳过重复数据`)
       }
     }
     
