@@ -247,12 +247,35 @@ async function startInitialSync(): Promise<void> {
   try {
     console.log('📊 开始K线数据初始同步...')
     
-    // 检查是否需要初始同步
-    const status = syncService.getSyncStatus()
-    const needsInitialSync = status.every(s => s.lastSyncTime === 0)
+    // 检查是否需要初始同步 - 通过检查数据文件是否存在
+    const config = syncService.getConfig()
+    let needsInitialSync = false
+    
+    // 导入文件系统模块来检查文件是否存在
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    
+    for (const symbol of config.symbols) {
+      for (const timeframe of config.timeframes) {
+        // 构建数据文件路径
+        const dataDir = path.join(process.cwd(), 'data', 'kline-simple')
+        const fileName = `${symbol.replace('/', '')}_${timeframe}.json`
+        const filePath = path.join(dataDir, fileName)
+        
+        try {
+          // 检查文件是否存在
+          await fs.access(filePath)
+          console.log(`✅ 数据文件已存在: ${symbol}/${timeframe}`)
+        } catch {
+          // 文件不存在，需要初始同步
+          console.log(`⚠️  数据文件不存在: ${symbol}/${timeframe}，需要初始同步`)
+          needsInitialSync = true
+        }
+      }
+    }
     
     if (needsInitialSync) {
-      console.log('🔄 检测到首次运行，开始初始同步...')
+      console.log('🔄 检测到缺少数据文件，开始初始同步...')
       const results = await syncService.syncAllKLine({ force: true })
       
       const successCount = results.filter(r => r.success).length
@@ -260,9 +283,18 @@ async function startInitialSync(): Promise<void> {
       
       console.log(`✅ 初始同步完成: ${successCount}/${results.length} 成功，共获取 ${totalBars} 条数据`)
     } else {
-      console.log('✅ 已有同步数据，跳过初始同步')
+      console.log('✅ 所有数据文件已存在，进行增量同步...')
+      
+      // 进行增量同步
+      const results = await syncService.syncAllKLine({ force: false })
+      
+      const successCount = results.filter(r => r.success).length
+      const totalBars = results.reduce((sum, r) => sum + r.count, 0)
+      
+      console.log(`✅ 增量同步完成: ${successCount}/${results.length} 成功，共获取 ${totalBars} 条数据`)
       
       // 显示当前状态
+      const status = syncService.getSyncStatus()
       status.forEach(s => {
         console.log(`  ${s.symbol}/${s.timeframe}: 最后同步: ${new Date(s.lastSyncTime * 1000).toLocaleString()}, 总数据: ${s.totalBars}`)
       })
