@@ -228,7 +228,8 @@ export class KLineSimpleSyncService {
         symbol, 
         timeframe, 
         startTime, 
-        initialBars
+        undefined, // endTime
+        initialBars // limit
       )
       
       if (klineData.length === 0) {
