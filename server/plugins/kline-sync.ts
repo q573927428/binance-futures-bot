@@ -16,7 +16,7 @@ const DEFAULT_SYNC_CONFIG: KLineSyncConfig = {
   symbols: ['BTCUSDT'],
   timeframes: ['15m', '1h', '4h', '1d', '1w'],
   maxBars: 22000,
-  syncInterval: 150000 // 5分钟 300秒
+  syncInterval: 300 // 5分钟 300秒
 }
 
 export default defineNitroPlugin(async (nitroApp: NitroApp) => {
