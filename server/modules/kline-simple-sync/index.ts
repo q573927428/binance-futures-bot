@@ -1,4 +1,9 @@
-import { appendSimpleKLineData, getSimpleLastKLineTimestamp } from '../../utils/kline-simple-storage'
+import { 
+  appendSimpleKLineData, 
+  getSimpleLastKLineTimestamp, 
+  readSimpleKLineFile,
+  writeSimpleKLineFile 
+} from '../../utils/kline-simple-storage'
 import type { KLineData, KLineTimeframe, KLineSyncConfig } from '../../../types/kline-simple'
 import { DEFAULT_CONFIG } from '../../../types/kline-simple'
 
@@ -693,6 +698,269 @@ export class KLineSimpleSyncService {
       this.syncInterval = null
       console.log('已停止定时同步')
     }
+  }
+
+  // 修复最近K线数据（重新获取最近的N条K线并替换）
+  async repairRecentKLine(
+    symbol: string, 
+    timeframe: KLineTimeframe, 
+    options: {
+      recentBars?: number
+      force?: boolean
+    } = {}
+  ): Promise<{
+    success: boolean
+    message: string
+    symbol: string
+    timeframe: KLineTimeframe
+    totalBars: number
+    repairedBars: number
+    keptBars: number
+  }> {
+    const { recentBars = 100, force = false } = options
+    const key = this.getStatusKey(symbol, timeframe)
+    const startTimestamp = Date.now()
+    
+    try {
+      // 检查是否正在同步
+      const currentStatus = this.syncStatus.get(key)
+      if (currentStatus?.status === 'syncing' && !force) {
+        return {
+          success: false,
+          message: '正在同步中，请稍后再试',
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        }
+      }
+      
+      // 更新状态为同步中
+      this.updateStatus(symbol, timeframe, { status: 'syncing', error: undefined })
+      
+      console.log(`[修复K线] 开始修复 ${symbol}/${timeframe} 的最近 ${recentBars} 条K线数据`)
+      
+      // 1. 读取现有数据
+      const existingFile = readSimpleKLineFile(symbol, timeframe)
+      
+      if (!existingFile || !existingFile.data || existingFile.data.length === 0) {
+        const message = `没有找到现有数据，无法修复`
+        console.log(`[修复K线] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000)
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        }
+      }
+      
+      // 2. 计算需要保留的历史数据
+      const totalBars = existingFile.data.length
+      const keepBars = Math.max(0, totalBars - recentBars)
+      
+      console.log(`[修复K线] 现有数据: ${totalBars} 条，保留: ${keepBars} 条，修复: ${recentBars} 条`)
+      
+      // 3. 保留历史数据（如果需要保留）
+      let historicalData: KLineData[] = []
+      if (keepBars > 0) {
+        historicalData = existingFile.data
+          .slice(0, keepBars)
+          .map(item => ({
+            timestamp: item.t,
+            open: item.o,
+            high: item.h,
+            low: item.l,
+            close: item.c,
+            volume: item.v
+          }))
+      }
+      
+      // 4. 计算需要获取的最近K线的开始时间
+      let startTime: number | undefined
+      if (keepBars > 0) {
+        // 如果有历史数据，从最后一条历史数据的时间戳开始
+        const lastHistoricalItem = existingFile.data[keepBars - 1]
+        if (lastHistoricalItem) {
+          const intervalSeconds = this.getIntervalSeconds(timeframe)
+          startTime = (lastHistoricalItem.t + intervalSeconds) * 1000 // 转换为毫秒
+        } else {
+          // 如果无法获取最后一条历史数据，使用默认逻辑
+          const intervalSeconds = this.getIntervalSeconds(timeframe)
+          const now = Math.floor(Date.now() / 1000)
+          const startTimestamp = now - (recentBars * intervalSeconds)
+          startTime = startTimestamp * 1000
+        }
+      } else {
+        // 如果没有历史数据，获取最近的recentBars条数据
+        // 计算开始时间：当前时间往前推 (recentBars * intervalSeconds) 秒
+        const intervalSeconds = this.getIntervalSeconds(timeframe)
+        const now = Math.floor(Date.now() / 1000)
+        const startTimestamp = now - (recentBars * intervalSeconds)
+        startTime = startTimestamp * 1000
+      }
+      
+      // 5. 从Binance获取最近的K线数据
+      console.log(`[修复K线] 从Binance获取最近 ${recentBars} 条K线数据...`)
+      
+      const recentKlineData = await this.fetchKLineFromBinance(
+        symbol,
+        timeframe,
+        startTime,
+        undefined, // endTime
+        recentBars + 10 // 多获取一些数据，确保有足够的数据
+      )
+      
+      if (recentKlineData.length === 0) {
+        const message = '从Binance获取数据失败，没有获取到任何数据'
+        console.log(`[修复K线] ${message}`)
+        
+        this.updateStatus(symbol, timeframe, { 
+          status: 'idle', 
+          lastSyncTime: Math.floor(Date.now() / 1000)
+        })
+        
+        return {
+          success: false,
+          message,
+          symbol,
+          timeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: keepBars
+        }
+      }
+      
+      // 6. 限制获取的数据数量为recentBars条
+      const limitedRecentData = recentKlineData.slice(-recentBars)
+      
+      // 7. 合并历史数据和新的最近数据
+      const allData = [...historicalData, ...limitedRecentData]
+      
+      // 8. 写入文件（替换整个文件）
+      console.log(`[修复K线] 保存修复后的数据...`)
+      const success = writeSimpleKLineFile(symbol, timeframe, allData)
+      
+      if (!success) {
+        throw new Error('保存修复数据失败')
+      }
+      
+      const endTimestamp = Date.now()
+      const duration = (endTimestamp - startTimestamp) / 1000
+      
+      // 9. 更新状态
+      this.updateStatus(symbol, timeframe, { 
+        status: 'idle', 
+        lastSyncTime: Math.floor(Date.now() / 1000),
+        lastSyncCount: limitedRecentData.length,
+        totalBars: allData.length
+      })
+      
+      console.log(`[修复K线] 完成! 总数据: ${allData.length} 条，修复: ${limitedRecentData.length} 条，保留: ${historicalData.length} 条，耗时 ${duration.toFixed(2)} 秒`)
+      
+      return {
+        success: true,
+        message: `修复完成，总数据: ${allData.length} 条，修复: ${limitedRecentData.length} 条，保留: ${historicalData.length} 条`,
+        symbol,
+        timeframe,
+        totalBars: allData.length,
+        repairedBars: limitedRecentData.length,
+        keptBars: historicalData.length
+      }
+      
+    } catch (error: any) {
+      console.error(`[修复K线] 失败: ${symbol}/${timeframe}`, error)
+      
+      this.updateStatus(symbol, timeframe, { 
+        status: 'error', 
+        error: error.message 
+      })
+      
+      return {
+        success: false,
+        message: `修复失败: ${error.message}`,
+        symbol,
+        timeframe,
+        totalBars: 0,
+        repairedBars: 0,
+        keptBars: 0
+      }
+    }
+  }
+
+  // 批量修复所有交易对和周期的最近K线
+  async repairAllRecentKLine(options: {
+    recentBars?: number
+    force?: boolean
+  } = {}): Promise<Array<{
+    success: boolean
+    message: string
+    symbol: string
+    timeframe: KLineTimeframe
+    totalBars: number
+    repairedBars: number
+    keptBars: number
+  }>> {
+    const { recentBars = 100, force = false } = options
+    const results = []
+    
+    console.log(`[批量修复] 开始批量修复所有交易对和周期的最近 ${recentBars} 条K线数据`)
+    
+    // 获取所有现有的数据文件
+    const storedSymbols = await import('../../utils/kline-simple-storage').then(m => m.getSimpleStoredSymbols())
+    
+    if (storedSymbols.length === 0) {
+      console.log('[批量修复] 没有找到任何数据文件')
+      return []
+    }
+    
+    console.log(`[批量修复] 找到 ${storedSymbols.length} 个数据文件`)
+    
+    for (const stored of storedSymbols) {
+      try {
+        console.log(`[批量修复] 处理: ${stored.symbol}/${stored.timeframe} (${stored.count} 条数据)`)
+        
+        const result = await this.repairRecentKLine(
+          stored.symbol,
+          stored.timeframe as KLineTimeframe,
+          { recentBars, force }
+        )
+        
+        results.push(result)
+        
+        // 避免请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 200))
+        
+      } catch (error: any) {
+        results.push({
+          success: false,
+          message: `修复失败: ${error.message}`,
+          symbol: stored.symbol,
+          timeframe: stored.timeframe as KLineTimeframe,
+          totalBars: 0,
+          repairedBars: 0,
+          keptBars: 0
+        })
+      }
+    }
+    
+    // 统计结果
+    const successCount = results.filter(r => r.success).length
+    const totalRepaired = results.reduce((sum, r) => sum + r.repairedBars, 0)
+    const totalKept = results.reduce((sum, r) => sum + r.keptBars, 0)
+    
+    console.log(`[批量修复] 完成! ${successCount}/${results.length} 成功，修复: ${totalRepaired} 条，保留: ${totalKept} 条`)
+    
+    return results
   }
 
   // 获取同步状态
