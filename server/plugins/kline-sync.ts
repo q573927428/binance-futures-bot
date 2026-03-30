@@ -13,7 +13,7 @@ let syncService: KLineSimpleSyncService | null = null
 
 // 默认配置
 const DEFAULT_SYNC_CONFIG: KLineSyncConfig = {
-  symbols: ['BTCUSDT'],
+  symbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'HYPEUSDT', 'XAUUSDT', 'XAGUSDT', 'BNBUSDT' ],
   timeframes: ['15m', '1h', '4h', '1d', '1w'],
   maxBars: 22000,
   syncInterval: 300 // 5分钟 300秒
