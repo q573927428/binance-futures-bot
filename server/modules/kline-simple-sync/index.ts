@@ -243,9 +243,9 @@ export class KLineSimpleSyncService {
         }
       } else {
         // 已经有数据，进行增量更新
-        // 使用 lastTimestamp + 1 作为startTime（毫秒），避免获取重复数据
-        // 但需要确保不会跳过整点K线
-        const startTime = (lastTimestamp + 1) * 1000 // 转换为毫秒
+        // 使用 lastTimestamp + intervalSeconds 作为startTime（毫秒），确保获取下一根完整的K线
+        const intervalSeconds = this.getIntervalSeconds(timeframe)
+        const startTime = (lastTimestamp + intervalSeconds) * 1000 // 转换为毫秒
         
         // 获取数据
         const klineData = await this.fetchKLineFromBinance(
@@ -256,7 +256,7 @@ export class KLineSimpleSyncService {
           initialBars // limit
         )
         
-        // 由于使用了 +1，应该不会包含重复数据，但为了安全还是过滤一下
+        // 过滤掉时间戳小于等于lastTimestamp的数据（理论上不应该有，但为了安全）
         const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
         
         if (newKlineData.length === 0) {
@@ -273,6 +273,69 @@ export class KLineSimpleSyncService {
             timeframe,
             count: 0,
             newBars: 0
+          }
+        }
+        
+        // 检查数据连续性：第一根新K线的开盘价应该等于最后一根旧K线的收盘价
+        if (newKlineData.length > 0) {
+          const existingFile = await import('../../utils/kline-simple-storage').then(m => m.readSimpleKLineFile(symbol, timeframe))
+          if (existingFile && existingFile.data && existingFile.data.length > 0) {
+            const lastExistingItem = existingFile.data[existingFile.data.length - 1]
+            const firstNewItem = newKlineData[0]
+            
+            if (lastExistingItem && firstNewItem) {
+              // 允许微小的浮点数差异
+              const tolerance = 0.000001
+              const priceDiff = Math.abs(lastExistingItem.c - firstNewItem.open)
+              if (priceDiff > tolerance) {
+                console.warn(`⚠️  K线数据不连续: ${symbol}/${timeframe}`)
+                console.warn(`    最后一条K线收盘价: ${lastExistingItem.c}`)
+                console.warn(`    第一条新K线开盘价: ${firstNewItem.open}`)
+                console.warn(`    差异: ${priceDiff}`)
+                
+                // 尝试修复：重新获取最后几根K线以确保数据连续性
+                // 这可能是因为之前的数据同步有问题，现在重新获取正确的数据
+                console.log(`🔄 尝试修复数据连续性: ${symbol}/${timeframe}`)
+                
+                try {
+                  // 获取最后一条K线的时间戳
+                  const lastKlineTime = lastExistingItem.t
+                  
+                  // 重新获取从最后一条K线开始的数据（包含最后一条）
+                  const repairStartTime = (lastKlineTime - intervalSeconds) * 1000 // 获取前一根K线以确保连续性
+                  const repairData = await this.fetchKLineFromBinance(
+                    symbol,
+                    timeframe,
+                    repairStartTime,
+                    undefined,
+                    10 // 获取10条数据，应该足够覆盖
+                  )
+                  
+                  if (repairData.length > 0) {
+                    // 过滤掉时间戳小于lastKlineTime的数据
+                    const filteredRepairData = repairData.filter(item => item.timestamp >= lastKlineTime)
+                    
+                    if (filteredRepairData.length > 0) {
+                      console.log(`✅ 获取到 ${filteredRepairData.length} 条修复数据`)
+                      
+                      // 检查修复后的数据连续性
+                      const firstRepairItem = filteredRepairData[0]
+                      if (firstRepairItem && Math.abs(lastExistingItem.c - firstRepairItem.open) <= tolerance) {
+                        console.log(`✅ 修复数据连续性成功`)
+                        
+                        // 用修复的数据替换新数据
+                        newKlineData.splice(0, filteredRepairData.length, ...filteredRepairData)
+                      } else {
+                        console.warn(`⚠️  修复数据仍然不连续，保持原数据`)
+                      }
+                    }
+                  }
+                } catch (repairError: any) {
+                  console.warn(`修复数据连续性失败: ${repairError.message}`)
+                  // 继续使用原始数据，不中断同步
+                }
+              }
+            }
           }
         }
         
