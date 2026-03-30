@@ -5,19 +5,45 @@
       <div class="controls-left">
         <div class="symbol-badge">{{ displaySymbol }}</div>
 
-        <el-select
-          v-model="selectedTimeframe"
-          placeholder="选择周期"
-          size="small"
-          style="width: 100px; margin-left: 8px"
-          @change="loadKLineData"
-        >
-          <el-option label="15分钟" value="15m" />
-          <el-option label="1小时" value="1h" />
-          <el-option label="4小时" value="4h" />
-          <el-option label="日线" value="1d" />
-          <el-option label="周线" value="1w" />
-        </el-select>
+        <div class="timeframe-selector">
+          <div class="timeframe-buttons">
+            <el-button
+              size="small"
+              :type="selectedTimeframe === '15m' ? 'primary' : 'default'"
+              @click="selectTimeframe('15m')"
+            >
+              15分钟
+            </el-button>
+            <el-button
+              size="small"
+              :type="selectedTimeframe === '1h' ? 'primary' : 'default'"
+              @click="selectTimeframe('1h')"
+            >
+              1小时
+            </el-button>
+            <el-button
+              size="small"
+              :type="selectedTimeframe === '4h' ? 'primary' : 'default'"
+              @click="selectTimeframe('4h')"
+            >
+              4小时
+            </el-button>
+            <el-button
+              size="small"
+              :type="selectedTimeframe === '1d' ? 'primary' : 'default'"
+              @click="selectTimeframe('1d')"
+            >
+              日线
+            </el-button>
+            <el-button
+              size="small"
+              :type="selectedTimeframe === '1w' ? 'primary' : 'default'"
+              @click="selectTimeframe('1w')"
+            >
+              周线
+            </el-button>
+          </div>
+        </div>
 
       </div>
 
@@ -217,6 +243,13 @@ const isDOGESymbol = computed(() => {
   const symbol = props.symbol || 'BTCUSDT'
   return symbol.toUpperCase().includes('DOGE')
 })
+
+// 选择周期
+const selectTimeframe = (timeframe: string) => {
+  if (selectedTimeframe.value === timeframe) return
+  selectedTimeframe.value = timeframe
+  loadKLineData()
+}
 
 // 加载K线数据
 const loadKLineData = async () => {
@@ -719,6 +752,24 @@ onMounted(() => {
   font-weight: 500;
 }
 
+/* 周期选择器 */
+.timeframe-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeframe-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.timeframe-buttons .el-button {
+  min-width: 60px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
 /* 图表容器 */
 .chart-wrapper {
   position: relative;
@@ -943,14 +994,22 @@ onMounted(() => {
     width: 100%;
   }
   
-  .controls-left .el-select {
-    width: 100% !important;
-    margin-left: 0 !important;
-    margin-bottom: 0;
+  .timeframe-selector {
+    width: 100%;
   }
   
-  .controls-left .el-select:last-child {
-    margin-bottom: 0;
+  .timeframe-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    width: 100%;
+  }
+  
+  .timeframe-buttons .el-button {
+    min-width: auto;
+    width: 100%;
+    padding: 4px 2px;
+    font-size: 11px;
   }
   
   .controls-right {
