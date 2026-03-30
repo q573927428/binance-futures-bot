@@ -180,6 +180,7 @@ import type {
   KLineApiResponse 
 } from '../../types/kline-simple'
 import { calculateEMASeries, getEMAColor, getEMAWidth } from '../utils/ema-calculator'
+import type { PriceData } from '../../types/websocket'
 
 // 定义props
 interface Props {
