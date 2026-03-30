@@ -138,6 +138,11 @@
                 <option value="all">所有交易对</option>
                 <option value="BTCUSDT">BTCUSDT</option>
                 <option value="ETHUSDT">ETHUSDT</option>
+                <option value="SOLUSDT">SOLUSDT</option>
+                <option value="DOGEUSDT">DOGEUSDT</option>
+                <option value="HYPEUSDT">HYPEUSDT</option>
+                <option value="XAUUSDT">XAUUSDT</option>
+                <option value="XAGUSDT">XAGUSDT</option>
                 <option value="BNBUSDT">BNBUSDT</option>
               </select>
             </div>
