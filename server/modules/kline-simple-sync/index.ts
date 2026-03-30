@@ -262,8 +262,8 @@ export class KLineSimpleSyncService {
           initialBars // limit
         )
         
-        // 过滤掉时间戳小于等于lastTimestamp的数据，但保留前两根K线用于连续性检查
-        const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
+        // 过滤掉时间戳小于lastTimestamp的数据，但保留时间戳等于lastTimestamp的数据（最后一根未收盘的K线需要覆盖）
+        const newKlineData = klineData.filter(item => item.timestamp >= lastTimestamp)
         
         if (newKlineData.length === 0) {
           this.updateStatus(symbol, timeframe, { 

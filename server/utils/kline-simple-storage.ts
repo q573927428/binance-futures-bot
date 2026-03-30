@@ -114,7 +114,7 @@ export function writeSimpleKLineFile(
   }
 }
 
-// 追加K线数据（自动去重和限制）
+// 追加K线数据（自动去重和限制，支持覆盖重叠数据）
 export function appendSimpleKLineData(
   symbol: string, 
   timeframe: KLineTimeframe, 
@@ -137,8 +137,21 @@ export function appendSimpleKLineData(
       }))
     }
     
-    // 合并数据
-    const allData = [...existingData, ...newData]
+    // 创建时间戳到数据的映射，用于覆盖重叠数据
+    const dataMap = new Map<number, KLineData>()
+    
+    // 先添加现有数据到映射
+    for (const item of existingData) {
+      dataMap.set(item.timestamp, item)
+    }
+    
+    // 用新数据覆盖重叠的时间戳（包括最后一根未收盘的K线）
+    for (const item of newData) {
+      dataMap.set(item.timestamp, item)
+    }
+    
+    // 从映射中获取所有数据，按时间戳排序
+    const allData = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp)
     
     // 写入文件（会自动去重和限制）
     return writeSimpleKLineFile(symbol, timeframe, allData)
