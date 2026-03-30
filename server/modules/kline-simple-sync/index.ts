@@ -88,10 +88,10 @@ export class KLineSimpleSyncService {
       const interval = intervalMap[timeframe]
       const binanceSymbol = symbol.replace('/', '')
       
-      let url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`
+      let url = `https://fapi.binance.com/fapi/v1/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`
       
       if (startTime) {
-        url += `&startTime=${startTime * 1000}`
+        url += `&startTime=${startTime}`
       }
       
       // 发送请求
