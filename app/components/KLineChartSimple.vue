@@ -62,6 +62,56 @@
     <div class="chart-wrapper">
       <div ref="chartContainer" class="kline-chart"></div>
 
+      <!-- K线数据浮动面板 -->
+      <div 
+        ref="tooltipRef" 
+        class="kline-tooltip"
+        :class="{ 'tooltip-visible': tooltipVisible }"
+        :style="tooltipStyle"
+      >
+        <div class="tooltip-content">
+          <span class="symbol">{{ symbol }}</span>
+          <span class="timeframe">{{ selectedTimeframe }}</span>
+          <span class="time">{{ tooltipTime }}</span>
+          <span class="data-item">
+            <span class="label">开=</span>
+            <span class="value" :class="{ 'price-up': tooltipData.close > tooltipData.open, 'price-down': tooltipData.close < tooltipData.open }">
+              {{ formatPrice(tooltipData.open) }}
+            </span>
+          </span>
+          <span class="data-item">
+            <span class="label">高=</span>
+            <span class="value" :class="{ 'price-up': tooltipData.close > tooltipData.open, 'price-down': tooltipData.close < tooltipData.open }">
+              {{ formatPrice(tooltipData.high) }}
+            </span>
+          </span>
+          <span class="data-item">
+            <span class="label">低=</span>
+            <span class="value" :class="{ 'price-up': tooltipData.close > tooltipData.open, 'price-down': tooltipData.close < tooltipData.open }">
+              {{ formatPrice(tooltipData.low) }}
+            </span>
+          </span>
+          <span class="data-item">
+            <span class="label">收=</span>
+            <span class="value" :class="{ 'price-up': tooltipData.close > tooltipData.open, 'price-down': tooltipData.close < tooltipData.open }">
+              {{ formatPrice(tooltipData.close) }}
+            </span>
+          </span>
+          <span class="data-item">
+            <span class="label">量:</span>
+            <span class="value">
+              {{ formatVolume(tooltipData.volume) }}
+            </span>
+          </span>
+          <span class="data-item">
+            <span class="label">涨跌:</span>
+            <span class="value" :class="{ 'price-up': tooltipData.changePercent > 0, 'price-down': tooltipData.changePercent < 0 }">
+              {{ formatPercent(tooltipData.changePercent) }}
+            </span>
+          </span>
+        </div>
+      </div>
+
       <!-- 加载状态 -->
       <div v-if="loading" class="chart-loading">
         <el-skeleton :rows="5" animated />
@@ -140,11 +190,28 @@ const theme = ref<'light' | 'dark'>('light')
 
 // 图表相关
 const chartContainer = ref<HTMLElement | null>(null)
+const tooltipRef = ref<HTMLElement | null>(null)
 let chart: any = null
 let candlestickSeries: any = null
 let volumeSeries: any = null
 let ema14Series: any = null
 let ema120Series: any = null
+
+// 浮动面板相关
+const tooltipVisible = ref(false)
+const tooltipData = ref({
+  open: 0,
+  high: 0,
+  low: 0,
+  close: 0,
+  volume: 0,
+  changePercent: 0
+})
+const tooltipTime = ref('')
+const tooltipStyle = ref({
+  left: '20px',
+  top: '20px'
+})
 
 // EMA周期配置
 const emaPeriods = [14, 120]
@@ -183,14 +250,21 @@ const loadKLineData = async () => {
       
       // 更新图表
       updateChart()
+      
+      // 显示最新K线数据
+      showLatestKline()
     } else {
       error.value = result.message || '获取数据失败'
       klineData.value = []
+      // 清空浮动面板数据
+      hideTooltip()
     }
   } catch (err: any) {
     console.error('加载K线数据失败:', err)
     error.value = `加载失败: ${err.message}`
     klineData.value = []
+    // 清空浮动面板数据
+    hideTooltip()
   } finally {
     loading.value = false
   }
@@ -318,6 +392,24 @@ const loadKLineData = async () => {
   
   resizeObserver.observe(chartContainer.value)
   
+  // 监听鼠标移动事件
+  chart.subscribeCrosshairMove((param: any) => {
+    if (param.time) {
+      // 找到对应的K线数据
+      const kline = findKlineByTime(param.time)
+      if (kline) {
+        // 更新浮动面板数据
+        updateTooltip(kline, param.point)
+      }
+    } else {
+      // 鼠标离开K线区域，显示最新K线数据
+      showLatestKline()
+    }
+  })
+  
+  // 初始化时显示最新K线数据
+  showLatestKline()
+  
   // 清理函数
   onUnmounted(() => {
     resizeObserver.disconnect()
@@ -443,6 +535,111 @@ const formatTime = (timestamp: number): string => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 格式化价格
+const formatPrice = (price: number): string => {
+  if (!price) return '--'
+  const precision = isDOGESymbol.value ? 3 : 2
+  return price.toFixed(precision)
+}
+
+// 格式化成交量
+const formatVolume = (volume: number): string => {
+  if (!volume) return '--'
+  if (volume >= 1000000) {
+    return (volume / 1000000).toFixed(2) + 'M'
+  } else if (volume >= 1000) {
+    return (volume / 1000).toFixed(2) + 'K'
+  }
+  return volume.toFixed(2)
+}
+
+// 格式化百分比
+const formatPercent = (percent: number): string => {
+  if (!percent) return '--'
+  return (percent > 0 ? '+' : '') + percent.toFixed(2) + '%'
+}
+
+// 根据时间查找K线数据
+const findKlineByTime = (time: number): SimpleKLineData | null => {
+  if (!klineData.value.length) return null
+  
+  // 使用二分查找找到最接近的时间
+  let left = 0
+  let right = klineData.value.length - 1
+  
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2)
+    const midKline = klineData.value[mid]
+    if (!midKline) return null
+    
+    const midTime = midKline.t
+    
+    if (midTime === time) {
+      return midKline
+    } else if (midTime < time) {
+      left = mid + 1
+    } else {
+      right = mid - 1
+    }
+  }
+  
+  // 如果没有精确匹配，返回最接近的数据
+  if (right >= 0 && right < klineData.value.length) {
+    const kline = klineData.value[right]
+    return kline || null
+  }
+  
+  return null
+}
+
+// 更新浮动面板数据
+const updateTooltip = (kline: SimpleKLineData, point?: { x: number; y: number }) => {
+  if (!kline) return
+  
+  // 计算涨跌幅
+  const changePercent = ((kline.c - kline.o) / kline.o) * 100
+  
+  // 更新数据
+  tooltipData.value = {
+    open: kline.o,
+    high: kline.h,
+    low: kline.l,
+    close: kline.c,
+    volume: kline.v || 0,
+    changePercent
+  }
+  
+  // 更新时间
+  tooltipTime.value = formatTime(kline.t)
+  
+  // 显示面板
+  tooltipVisible.value = true
+  
+  // 如果需要，可以更新面板位置（这里固定在左上角）
+  if (point && chartContainer.value) {
+    const containerRect = chartContainer.value.getBoundingClientRect()
+    tooltipStyle.value = {
+      left: '20px',
+      top: '20px'
+    }
+  }
+}
+
+// 隐藏浮动面板
+const hideTooltip = () => {
+  tooltipVisible.value = false
+}
+
+// 显示最新K线数据
+const showLatestKline = () => {
+  if (klineData.value.length > 0) {
+    const latestKline = klineData.value[klineData.value.length - 1]
+    if (latestKline) {
+      updateTooltip(latestKline)
+    }
+  }
 }
 
 // 监听symbol变化
@@ -596,6 +793,114 @@ onMounted(() => {
   z-index: 10;
 }
 
+/* K线数据浮动面板 */
+.kline-tooltip {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  background: transparent;
+  z-index: 20;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.kline-tooltip.tooltip-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+}
+
+.tooltip-content .symbol {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.tooltip-content .timeframe {
+  font-size: 11px;
+  color: #6c757d;
+  background: #f0f2f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.tooltip-content .time {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.tooltip-content .data-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.tooltip-content .data-item .label {
+  color: #6c757d;
+  /* font-weight: 500; */
+  font-size: 11px;
+}
+
+.tooltip-content .data-item .value {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  min-width: 50px;
+  text-align: right;
+}
+
+.tooltip-content .data-item .value.price-up {
+  padding-top: 3px;
+  color: #67c23a;
+}
+
+.tooltip-content .data-item .value.price-down {
+  padding-top: 3px;
+  color: #f56c6c;
+}
+
+/* 深色主题下的浮动面板 */
+:global(.dark) .kline-tooltip {
+  background: transparent;
+}
+
+:global(.dark) .tooltip-content {
+  color: #e4e7ed;
+}
+
+:global(.dark) .tooltip-content .symbol {
+  color: #66b3ff;
+}
+
+:global(.dark) .tooltip-content .timeframe {
+  background: #2c2e33;
+  color: #a0a4ad;
+}
+
+:global(.dark) .tooltip-content .time {
+  color: #a0a4ad;
+}
+
+:global(.dark) .tooltip-content .data-item .label {
+  color: #a0a4ad;
+}
+
+:global(.dark) .tooltip-content .data-item .value.price-up {
+  color: #85ce61;
+}
+
+:global(.dark) .tooltip-content .data-item .value.price-down {
+  color: #f78989;
+}
+
 /* 图表信息 */
 .chart-info {
   padding: 12px 20px;
@@ -720,6 +1025,34 @@ onMounted(() => {
   
   .info-row {
     justify-content: space-between;
+  }
+  
+  /* 移动端浮动面板优化 */
+  .kline-tooltip {
+    left: 10px !important;
+    top: 10px !important;
+  }
+  
+  .tooltip-content {
+    font-size: 11px;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-width: 95vw;
+  }
+  
+  .tooltip-content .symbol,
+  .tooltip-content .timeframe,
+  .tooltip-content .time {
+    font-size: 10px;
+  }
+  
+  .tooltip-content .data-item {
+    font-size: 10px;
+  }
+  
+  .tooltip-content .data-item .value {
+    min-width: 40px;
+    font-size: 10px;
   }
 }
 </style>
