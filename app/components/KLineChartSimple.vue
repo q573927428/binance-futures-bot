@@ -856,15 +856,14 @@ onMounted(() => {
   font-family: 'Courier New', monospace;
   min-width: 50px;
   text-align: right;
+  padding-top: 3px;
 }
 
 .tooltip-content .data-item .value.price-up {
-  padding-top: 3px;
   color: #67c23a;
 }
 
 .tooltip-content .data-item .value.price-down {
-  padding-top: 3px;
   color: #f56c6c;
 }
 

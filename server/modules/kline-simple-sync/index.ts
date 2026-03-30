@@ -243,7 +243,9 @@ export class KLineSimpleSyncService {
         }
       } else {
         // 已经有数据，进行增量更新
-        const startTime = lastTimestamp + 1
+        // 使用 lastTimestamp + 1 作为startTime（毫秒），避免获取重复数据
+        // 但需要确保不会跳过整点K线
+        const startTime = (lastTimestamp + 1) * 1000 // 转换为毫秒
         
         // 获取数据
         const klineData = await this.fetchKLineFromBinance(
@@ -254,7 +256,10 @@ export class KLineSimpleSyncService {
           initialBars // limit
         )
         
-        if (klineData.length === 0) {
+        // 由于使用了 +1，应该不会包含重复数据，但为了安全还是过滤一下
+        const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
+        
+        if (newKlineData.length === 0) {
           this.updateStatus(symbol, timeframe, { 
             status: 'idle', 
             lastSyncTime: Math.floor(Date.now() / 1000),
@@ -272,7 +277,7 @@ export class KLineSimpleSyncService {
         }
         
         // 保存数据
-        const success = appendSimpleKLineData(symbol, timeframe, klineData)
+        const success = appendSimpleKLineData(symbol, timeframe, newKlineData)
         
         if (!success) {
           throw new Error('保存数据失败')
@@ -282,17 +287,17 @@ export class KLineSimpleSyncService {
         this.updateStatus(symbol, timeframe, { 
           status: 'idle', 
           lastSyncTime: Math.floor(Date.now() / 1000),
-          lastSyncCount: klineData.length,
-          totalBars: (currentStatus?.totalBars || 0) + klineData.length
+          lastSyncCount: newKlineData.length,
+          totalBars: (currentStatus?.totalBars || 0) + newKlineData.length
         })
         
         return {
           success: true,
-          message: `增量同步成功，获取 ${klineData.length} 条数据`,
+          message: `增量同步成功，获取 ${newKlineData.length} 条数据`,
           symbol,
           timeframe,
-          count: klineData.length,
-          newBars: klineData.length
+          count: newKlineData.length,
+          newBars: newKlineData.length
         }
       }
       
