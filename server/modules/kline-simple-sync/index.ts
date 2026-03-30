@@ -245,7 +245,7 @@ export class KLineSimpleSyncService {
         // 已经有数据，进行增量更新
         // 使用 lastTimestamp + 1 作为startTime（毫秒），避免获取重复数据
         // 但需要确保不会跳过整点K线
-        const startTime = (lastTimestamp + 1) * 1000 // 转换为毫秒
+        const startTime = (lastTimestamp) * 1000 // 转换为毫秒
         
         // 获取数据
         const klineData = await this.fetchKLineFromBinance(
