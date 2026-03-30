@@ -221,7 +221,31 @@ const loadKLineData = async () => {
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 12, // 右侧留出一点距离，避免K线紧贴Y轴
-        borderColor: '#CCCCCC' // X轴颜色设置为浅灰色
+        borderColor: '#CCCCCC', // X轴颜色设置为浅灰色
+        tickMarkFormatter: (time: number) => {
+          // 将UTC时间戳转换为本地时间
+          const date = new Date(time * 1000)
+          return date.toLocaleString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          })
+        }
+      },
+      localization: {
+        timeFormatter: (time: number) => {
+          return new Date(time * 1000).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+          })
+        }
       },
       rightPriceScale: {
         borderColor: '#CCCCCC', // Y轴边框颜色设置为浅灰色
