@@ -3,7 +3,7 @@
     <!-- 图表控制栏 -->
     <div class="chart-controls">
       <div class="controls-left">
-        <div class="symbol-badge">{{ symbol }}</div>
+        <div class="symbol-badge">{{ displaySymbol }}</div>
 
         <el-select
           v-model="selectedTimeframe"
@@ -60,7 +60,7 @@
         :style="tooltipStyle"
       >
         <div class="tooltip-content">
-          <span class="symbol">{{ symbol }}</span>
+          <span class="symbol">{{ displaySymbol }}</span>
           <span class="symbol-info">永续 Binance</span>
           <span class="timeframe">{{ selectedTimeframe }}</span>
           <!-- <span class="time">{{ tooltipTime }}</span> -->
@@ -206,6 +206,11 @@ const tooltipStyle = ref({
 
 // EMA周期配置
 const emaPeriods = [14, 120]
+
+// 计算显示的symbol（使用默认值如果props.symbol为空）
+const displaySymbol = computed(() => {
+  return props.symbol || 'BTCUSDT'
+})
 
 // 判断是否为DOGE交易对
 const isDOGESymbol = computed(() => {
@@ -718,7 +723,6 @@ onMounted(() => {
 .chart-wrapper {
   position: relative;
   min-height: 450px;
-  margin: 20px;
   border: 1px solid #e4e7ed;
   border-radius: 8px;
   overflow: hidden;
