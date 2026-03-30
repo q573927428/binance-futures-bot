@@ -293,7 +293,7 @@ export class KLineSimpleSyncService {
           const updateSuccess = updateLastKLine(symbol, timeframe, updateBar)
           if (updateSuccess) {
             updatedCount = 1
-            console.log(`已更新最后一根未收盘K线: ${symbol}/${timeframe} 时间戳: ${updateBar.timestamp}`)
+            // console.log(`已更新最后一根未收盘K线: ${symbol}/${timeframe} 时间戳: ${updateBar.timestamp}`)
           }
         }
         

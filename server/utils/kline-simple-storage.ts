@@ -254,7 +254,7 @@ export function updateLastKLine(
     const filePath = getFilePath(symbol, timeframe)
     fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2), 'utf-8')
     
-    console.log(`已更新最后一根K线: ${symbol}/${timeframe} 时间戳: ${bar.timestamp}`)
+    // console.log(`已更新最后一根K线: ${symbol}/${timeframe} 时间戳: ${bar.timestamp}`)
     return true
   } catch (error) {
     console.error(`更新最后一根K线失败: ${symbol}/${timeframe}`, error)

@@ -265,7 +265,7 @@ async function startInitialSync(): Promise<void> {
         try {
           // 检查文件是否存在
           await fs.access(filePath)
-          console.log(`✅ 数据文件已存在: ${symbol}/${timeframe}`)
+          // console.log(`✅ 数据文件已存在: ${symbol}/${timeframe}`)
         } catch {
           // 文件不存在，需要初始同步
           console.log(`⚠️  数据文件不存在: ${symbol}/${timeframe}，需要初始同步`)
@@ -283,7 +283,7 @@ async function startInitialSync(): Promise<void> {
       
       console.log(`✅ 初始同步完成: ${successCount}/${results.length} 成功，共获取 ${totalBars} 条数据`)
     } else {
-      console.log('✅ 所有数据文件已存在，进行增量同步...')
+      // console.log('✅ 所有数据文件已存在，进行增量同步...')
       
       // 进行增量同步
       const results = await syncService.syncAllKLine({ force: false })
@@ -296,7 +296,7 @@ async function startInitialSync(): Promise<void> {
       // 显示当前状态
       const status = syncService.getSyncStatus()
       status.forEach(s => {
-        console.log(`  ${s.symbol}/${s.timeframe}: 最后同步: ${new Date(s.lastSyncTime * 1000).toLocaleString()}, 总数据: ${s.totalBars}`)
+        // console.log(`  ${s.symbol}/${s.timeframe}: 最后同步: ${new Date(s.lastSyncTime * 1000).toLocaleString()}, 总数据: ${s.totalBars}`)
       })
     }
     
