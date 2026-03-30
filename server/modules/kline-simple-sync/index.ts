@@ -251,7 +251,7 @@ export class KLineSimpleSyncService {
         // 修改：多获取前两根K线，确保数据连续性
         // 使用 lastTimestamp - (2 * intervalSeconds) 作为startTime（毫秒），获取前两根K线
         const intervalSeconds = this.getIntervalSeconds(timeframe)
-        const startTime = (lastTimestamp - (2 * intervalSeconds)) * 1000 // 转换为毫秒，获取前两根K线
+        const startTime = (lastTimestamp - (3 * intervalSeconds)) * 1000 // 转换为毫秒，获取前两根K线
         
         // 获取数据，多获取一些以确保有足够的数据
         const klineData = await this.fetchKLineFromBinance(
@@ -282,31 +282,6 @@ export class KLineSimpleSyncService {
           }
         }
         
-        // 注意：由于我们多获取了前两根K线，数据连续性检查可以移除
-        // 因为即使上一根K线数据不完善，我们也会重新获取并覆盖
-        // 但为了安全起见，我们仍然保留一个简化的检查逻辑
-        
-        // 简化的数据连续性检查：只记录警告，不尝试修复
-        const existingFile = await import('../../utils/kline-simple-storage').then(m => m.readSimpleKLineFile(symbol, timeframe))
-        if (existingFile && existingFile.data && existingFile.data.length > 0) {
-          const lastExistingItem = existingFile.data[existingFile.data.length - 1]
-          const firstNewItem = newKlineData[0]
-          
-          if (lastExistingItem && firstNewItem) {
-            // 允许微小的浮点数差异
-            const tolerance = 0.000001
-            const priceDiff = Math.abs(lastExistingItem.c - firstNewItem.open)
-            if (priceDiff > tolerance) {
-              console.warn(`⚠️  K线数据不连续: ${symbol}/${timeframe}`)
-              console.warn(`    最后一条K线收盘价: ${lastExistingItem.c}`)
-              console.warn(`    第一条新K线开盘价: ${firstNewItem.open}`)
-              console.warn(`    差异: ${priceDiff}`)
-              console.warn(`    注意：由于已多获取前两根K线，系统将自动覆盖不连续的数据`)
-            }
-          }
-        }
-        
-        // 保存数据
         const success = appendSimpleKLineData(symbol, timeframe, newKlineData)
         
         if (!success) {
