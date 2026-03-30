@@ -213,64 +213,87 @@ export class KLineSimpleSyncService {
       
       // 获取最后一条数据的时间戳
       let lastTimestamp = getSimpleLastKLineTimestamp(symbol, timeframe)
-      let startTime: number | undefined
       
-      if (lastTimestamp && !force) {
-        // 从最后一条数据之后开始获取
-        startTime = lastTimestamp + 1
+      if (!lastTimestamp || force) {
+        // 首次同步或强制同步，使用manualSyncHistory获取22000条数据
+        console.log(`[首次同步] 开始获取历史数据: ${symbol}/${timeframe}`)
+        const historyResult = await this.manualSyncHistory(symbol, timeframe, {
+          totalBars: 22000,
+          batchSize: 1000
+        })
+        
+        if (historyResult.success) {
+          this.updateStatus(symbol, timeframe, { 
+            status: 'idle', 
+            lastSyncTime: Math.floor(Date.now() / 1000),
+            lastSyncCount: historyResult.totalBars,
+            totalBars: historyResult.totalBars
+          })
+          
+          return {
+            success: true,
+            message: `首次同步成功，获取 ${historyResult.totalBars} 条数据`,
+            symbol,
+            timeframe,
+            count: historyResult.totalBars,
+            newBars: historyResult.totalBars
+          }
+        } else {
+          throw new Error(`首次同步失败: ${historyResult.message}`)
+        }
       } else {
-        // 首次同步或强制同步，获取初始数据
-        startTime = undefined
-      }
-      
-      // 获取数据
-      const klineData = await this.fetchKLineFromBinance(
-        symbol, 
-        timeframe, 
-        startTime, 
-        undefined, // endTime
-        initialBars // limit
-      )
-      
-      if (klineData.length === 0) {
+        // 已经有数据，进行增量更新
+        const startTime = lastTimestamp + 1
+        
+        // 获取数据
+        const klineData = await this.fetchKLineFromBinance(
+          symbol, 
+          timeframe, 
+          startTime, 
+          undefined, // endTime
+          initialBars // limit
+        )
+        
+        if (klineData.length === 0) {
+          this.updateStatus(symbol, timeframe, { 
+            status: 'idle', 
+            lastSyncTime: Math.floor(Date.now() / 1000),
+            lastSyncCount: 0
+          })
+          
+          return {
+            success: true,
+            message: '没有新数据',
+            symbol,
+            timeframe,
+            count: 0,
+            newBars: 0
+          }
+        }
+        
+        // 保存数据
+        const success = appendSimpleKLineData(symbol, timeframe, klineData)
+        
+        if (!success) {
+          throw new Error('保存数据失败')
+        }
+        
+        // 更新状态
         this.updateStatus(symbol, timeframe, { 
           status: 'idle', 
           lastSyncTime: Math.floor(Date.now() / 1000),
-          lastSyncCount: 0
+          lastSyncCount: klineData.length,
+          totalBars: (currentStatus?.totalBars || 0) + klineData.length
         })
         
         return {
           success: true,
-          message: '没有新数据',
+          message: `增量同步成功，获取 ${klineData.length} 条数据`,
           symbol,
           timeframe,
-          count: 0,
-          newBars: 0
+          count: klineData.length,
+          newBars: klineData.length
         }
-      }
-      
-      // 保存数据
-      const success = appendSimpleKLineData(symbol, timeframe, klineData)
-      
-      if (!success) {
-        throw new Error('保存数据失败')
-      }
-      
-      // 更新状态
-      this.updateStatus(symbol, timeframe, { 
-        status: 'idle', 
-        lastSyncTime: Math.floor(Date.now() / 1000),
-        lastSyncCount: klineData.length,
-        totalBars: (currentStatus?.totalBars || 0) + klineData.length
-      })
-      
-      return {
-        success: true,
-        message: `同步成功，获取 ${klineData.length} 条数据`,
-        symbol,
-        timeframe,
-        count: klineData.length,
-        newBars: klineData.length
       }
       
     } catch (error: any) {
