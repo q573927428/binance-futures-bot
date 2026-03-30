@@ -189,25 +189,78 @@ export function getSimpleKLineData(
   }
 }
 
-  // 获取最后一条K线数据的时间戳
-  export function getSimpleLastKLineTimestamp(
-    symbol: string, 
-    timeframe: KLineTimeframe
-  ): number | null {
-    try {
-      const fileData = readSimpleKLineFile(symbol, timeframe)
-      
-      if (fileData && fileData.data && fileData.data.length > 0) {
-        const lastItem = fileData.data[fileData.data.length - 1]
-        return lastItem?.t || null
-      }
-      
-      return null
-    } catch (error) {
-      console.error(`获取最后K线时间戳失败: ${symbol}/${timeframe}`, error)
-      return null
+// 获取最后一条K线数据的时间戳
+export function getSimpleLastKLineTimestamp(
+  symbol: string, 
+  timeframe: KLineTimeframe
+): number | null {
+  try {
+    const fileData = readSimpleKLineFile(symbol, timeframe)
+    
+    if (fileData && fileData.data && fileData.data.length > 0) {
+      const lastItem = fileData.data[fileData.data.length - 1]
+      return lastItem?.t || null
     }
+    
+    return null
+  } catch (error) {
+    console.error(`获取最后K线时间戳失败: ${symbol}/${timeframe}`, error)
+    return null
   }
+}
+
+// 更新最后一根K线数据（用于未收盘K线）
+export function updateLastKLine(
+  symbol: string,
+  timeframe: KLineTimeframe,
+  bar: KLineData
+): boolean {
+  try {
+    const fileData = readSimpleKLineFile(symbol, timeframe)
+    
+    if (!fileData || !fileData.data || fileData.data.length === 0) {
+      console.warn(`无法更新最后一根K线：文件不存在或为空 ${symbol}/${timeframe}`)
+      return false
+    }
+    
+    const lastIndex = fileData.data.length - 1
+    const lastBar = fileData.data[lastIndex]
+    
+    if (!lastBar) {
+      console.warn(`无法获取最后一根K线数据: ${symbol}/${timeframe}`)
+      return false
+    }
+    
+    // 检查时间戳是否匹配
+    if (lastBar.t !== bar.timestamp) {
+      console.warn(`时间戳不匹配：文件最后时间戳 ${lastBar.t}，新数据时间戳 ${bar.timestamp}`)
+      return false
+    }
+    
+    // 更新最后一根K线
+    fileData.data[lastIndex] = {
+      t: bar.timestamp,
+      o: bar.open,
+      h: bar.high,
+      l: bar.low,
+      c: bar.close,
+      v: bar.volume
+    }
+    
+    // 更新元数据
+    fileData.meta.updated = Math.floor(Date.now() / 1000)
+    
+    // 写入文件
+    const filePath = getFilePath(symbol, timeframe)
+    fs.writeFileSync(filePath, JSON.stringify(fileData, null, 2), 'utf-8')
+    
+    console.log(`已更新最后一根K线: ${symbol}/${timeframe} 时间戳: ${bar.timestamp}`)
+    return true
+  } catch (error) {
+    console.error(`更新最后一根K线失败: ${symbol}/${timeframe}`, error)
+    return false
+  }
+}
 
 // 获取所有已存储的交易对和周期
 export function getSimpleStoredSymbols(): Array<{

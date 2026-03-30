@@ -1,4 +1,4 @@
-import { appendSimpleKLineData, getSimpleLastKLineTimestamp } from '../../utils/kline-simple-storage'
+import { appendSimpleKLineData, getSimpleLastKLineTimestamp, updateLastKLine } from '../../utils/kline-simple-storage'
 import type { KLineData, KLineTimeframe, KLineSyncConfig } from '../../../types/kline-simple'
 import { DEFAULT_CONFIG } from '../../../types/kline-simple'
 
@@ -243,9 +243,9 @@ export class KLineSimpleSyncService {
         }
       } else {
         // 已经有数据，进行增量更新
-        // 使用 lastTimestamp + 1 作为startTime（毫秒），避免获取重复数据
-        // 但需要确保不会跳过整点K线
-        const startTime = (lastTimestamp) * 1000 // 转换为毫秒
+        // 修复：不要使用 lastTimestamp + 1，直接使用 lastTimestamp
+        // 这样可以确保获取到最后一根未收盘K线
+        const startTime = lastTimestamp * 1000 // 转换为毫秒
         
         // 获取数据
         const klineData = await this.fetchKLineFromBinance(
@@ -256,10 +256,7 @@ export class KLineSimpleSyncService {
           initialBars // limit
         )
         
-        // 由于使用了 +1，应该不会包含重复数据，但为了安全还是过滤一下
-        const newKlineData = klineData.filter(item => item.timestamp > lastTimestamp)
-        
-        if (newKlineData.length === 0) {
+        if (klineData.length === 0) {
           this.updateStatus(symbol, timeframe, { 
             status: 'idle', 
             lastSyncTime: Math.floor(Date.now() / 1000),
@@ -276,28 +273,67 @@ export class KLineSimpleSyncService {
           }
         }
         
-        // 保存数据
-        const success = appendSimpleKLineData(symbol, timeframe, newKlineData)
+        // 分离数据：新K线和需要更新的最后一根K线
+        let newBars: KLineData[] = []
+        let updateBar: KLineData | null = null
         
-        if (!success) {
-          throw new Error('保存数据失败')
+        for (const item of klineData) {
+          if (item.timestamp > lastTimestamp) {
+            newBars.push(item) // 新K线
+          } else if (item.timestamp === lastTimestamp) {
+            updateBar = item // 未收盘K线（需要更新）
+          }
         }
+        
+        let updatedCount = 0
+        let appendedCount = 0
+        
+        // 1. 更新最后一根K线（如果存在未收盘K线）
+        if (updateBar) {
+          const updateSuccess = updateLastKLine(symbol, timeframe, updateBar)
+          if (updateSuccess) {
+            updatedCount = 1
+            console.log(`已更新最后一根未收盘K线: ${symbol}/${timeframe} 时间戳: ${updateBar.timestamp}`)
+          }
+        }
+        
+        // 2. 追加新K线
+        if (newBars.length > 0) {
+          const appendSuccess = appendSimpleKLineData(symbol, timeframe, newBars)
+          if (!appendSuccess) {
+            throw new Error('保存新K线数据失败')
+          }
+          appendedCount = newBars.length
+        }
+        
+        const totalCount = updatedCount + appendedCount
         
         // 更新状态
         this.updateStatus(symbol, timeframe, { 
           status: 'idle', 
           lastSyncTime: Math.floor(Date.now() / 1000),
-          lastSyncCount: newKlineData.length,
-          totalBars: (currentStatus?.totalBars || 0) + newKlineData.length
+          lastSyncCount: totalCount,
+          totalBars: (currentStatus?.totalBars || 0) + appendedCount
         })
+        
+        let message = ''
+        if (updatedCount > 0 && appendedCount > 0) {
+          message = `增量同步成功，更新 ${updatedCount} 条未收盘K线，追加 ${appendedCount} 条新K线`
+        } else if (updatedCount > 0) {
+          message = `增量同步成功，更新 ${updatedCount} 条未收盘K线`
+        } else if (appendedCount > 0) {
+          message = `增量同步成功，追加 ${appendedCount} 条新K线`
+        } else {
+          message = '没有新数据'
+        }
         
         return {
           success: true,
-          message: `增量同步成功，获取 ${newKlineData.length} 条数据`,
+          message,
           symbol,
           timeframe,
-          count: newKlineData.length,
-          newBars: newKlineData.length
+          count: totalCount,
+          newBars: appendedCount
         }
       }
       
