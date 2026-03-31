@@ -506,24 +506,38 @@ const stopPricePolling = () => {
   }
 }
 
-// 防抖的symbol变化处理函数
+// symbol变化处理函数
 const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
   if (newSymbol && newSymbol !== oldSymbol) {
-    console.log('🔄 Symbol变化:', oldSymbol, '->', newSymbol)
+    console.log(`🔄 Symbol变化: ${oldSymbol} -> ${newSymbol}`)
     
-    // 停止旧的轮询
+    // 1. 立即清空当前显示的K线数据，避免显示旧数据
+    klineData.value = []
+    tradeHistory.value = []
+    hideTooltip()
+    
+    // 2. 停止旧的轮询
     stopPricePolling()
     
-    // 清理旧的WebSocket订阅
+    // 3. 清理旧的WebSocket订阅
     if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
+      console.log(`🔄 清理旧的WebSocket订阅: ${oldSymbol}`)
       await cleanupOldSubscription()
     }
     
-    // 加载新数据
-    loadKLineData()
+    // 4. 重置WebSocket客户端ID，确保新订阅使用新的ID
+    webSocketClientId.value = ''
+    currentSubscriptionSymbol.value = ''
     
-    // 重新订阅价格更新
-    subscribeToPriceUpdates()
+    // 5. 加载新数据
+    console.log(`📊 加载新交易对数据: ${newSymbol}`)
+    await loadKLineData()
+    
+    // 6. 重新订阅价格更新
+    console.log(`🔗 订阅新交易对价格更新: ${newSymbol}`)
+    await subscribeToPriceUpdates()
+    
+    console.log(`✅ Symbol切换完成: ${oldSymbol} -> ${newSymbol}`)
   }
 }
 

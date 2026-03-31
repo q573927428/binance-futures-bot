@@ -89,9 +89,15 @@ const priceFormat = computed(() => ({
 const initChart = () => {
   if (!chartContainer.value) return
   
+  console.log(`📈 初始化图表 (symbol: ${props.symbol}, timeframe: ${props.timeframe})`)
+  
   // 清理现有图表
   if (chart) {
-    chart.remove()
+    try {
+      chart.remove()
+    } catch (error) {
+      console.warn('清理现有图表失败:', error)
+    }
   }
   
   // 创建新图表
@@ -103,6 +109,10 @@ const initChart = () => {
   
   chart = createChart(chartContainer.value, chartOptions)
   
+  // 获取当前价格格式
+  const currentPriceFormat = priceFormat.value
+  console.log(`💰 价格格式配置: precision=${currentPriceFormat.precision}, minMove=${currentPriceFormat.minMove}`)
+  
   // 添加K线系列
   candlestickSeries = chart.addSeries(CandlestickSeries, {
     upColor: '#26a69a',
@@ -110,7 +120,7 @@ const initChart = () => {
     borderVisible: false,
     wickUpColor: '#26a69a',
     wickDownColor: '#ef5350',
-    priceFormat: priceFormat.value
+    priceFormat: currentPriceFormat
   })
   
   // 添加成交量系列
@@ -133,7 +143,7 @@ const initChart = () => {
     color: getEMAColor(14),
     lineWidth: getEMAWidth(14),
     title: 'EMA14',
-    priceFormat: priceFormat.value
+    priceFormat: currentPriceFormat
   })
   
   // 添加EMA120线
@@ -141,7 +151,7 @@ const initChart = () => {
     color: getEMAColor(120),
     lineWidth: getEMAWidth(120),
     title: 'EMA120',
-    priceFormat: priceFormat.value
+    priceFormat: currentPriceFormat
   })
   
   // 响应窗口大小变化
@@ -170,6 +180,8 @@ const initChart = () => {
   
   // 添加订单标记
   addOrderMarkers()
+  
+  console.log(`✅ 图表初始化完成 (symbol: ${props.symbol})`)
 }
 
 // 根据时间查找K线数据
