@@ -10,12 +10,41 @@ import type {
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const DATA_DIR = path.join(__dirname, '../../data/kline-simple')
+
+// 获取数据目录路径
+function getDataDir(): string {
+  // 优先使用环境变量配置的目录
+  if (process.env.KLINE_DATA_DIR) {
+    return process.env.KLINE_DATA_DIR
+  }
+  
+  // 其次尝试使用项目根目录下的 data/kline-simple
+  const projectDataDir = path.join(process.cwd(), 'data', 'kline-simple')
+  
+  // 如果项目目录不可用，使用基于当前文件位置的相对路径
+  try {
+    // 检查项目目录是否可写
+    fs.accessSync(path.join(process.cwd(), 'package.json'), fs.constants.R_OK)
+    return projectDataDir
+  } catch {
+    // 如果无法访问项目根目录，使用相对路径
+    return path.join(__dirname, '../../data/kline-simple')
+  }
+}
+
+const DATA_DIR = getDataDir()
 
 // 确保数据目录存在
 function ensureDataDir(): void {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true })
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+      console.log(`已创建数据目录: ${DATA_DIR}`)
+    }
+  } catch (error: any) {
+    console.error(`无法创建数据目录 ${DATA_DIR}:`, error.message)
+    console.error('请检查目录权限或设置 KLINE_DATA_DIR 环境变量指定可写目录')
+    throw error
   }
 }
 
