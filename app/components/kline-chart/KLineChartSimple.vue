@@ -57,12 +57,18 @@ import KLineChartCanvas from './KLineChartCanvas.vue'
 import KLineTooltip from './KLineTooltip.vue'
 import KLineChartInfo from './KLineChartInfo.vue'
 
+// 导入bot store
+import { useBotStore } from '../../stores/bot'
+
 // 图表组件引用
 const chartCanvasRef = ref<InstanceType<typeof KLineChartCanvas> | null>(null)
 
 // 导入工具函数
 import { formatTime } from './utils/kline-formatters'
 import { generateClientId, isDOGESymbol } from './utils/kline-helpers'
+
+// 初始化bot store
+const botStore = useBotStore()
 
 // 防抖函数
 const debounce = <T extends (...args: any[]) => any>(
@@ -94,8 +100,26 @@ const props = withDefaults(defineProps<Props>(), {
   timeframe: '1h'
 })
 
+// 计算显示的symbol
+const displaySymbol = computed(() => {
+  return props.symbol || 'BTCUSDT'
+})
+
+// 根据策略模式计算timeframe
+const computedTimeframe = computed(() => {
+  // 如果props提供了timeframe，则使用提供的值
+  if (props.timeframe) return props.timeframe
+  
+  // 否则根据策略模式自动选择
+  if (!botStore.config) return '1h' // 默认值
+  
+  const strategyMode = botStore.config.strategyMode
+  // medium_term 使用 1h，其他（short_term）使用 15m
+  return strategyMode === 'medium_term' ? '1h' : '15m'
+})
+
 // 响应式数据
-const selectedTimeframe = ref(props.timeframe)
+const selectedTimeframe = ref(computedTimeframe.value)
 const klineData = ref<SimpleKLineData[]>([])
 const meta = ref({
   first: 0,
@@ -132,11 +156,6 @@ const tooltipTime = ref('')
 const tooltipPosition = ref({
   left: '20px',
   top: '20px'
-})
-
-// 计算显示的symbol
-const displaySymbol = computed(() => {
-  return props.symbol || 'BTCUSDT'
 })
 
 // 选择周期
@@ -558,6 +577,18 @@ watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
   if (newTimeframe && newTimeframe !== oldTimeframe) {
     selectedTimeframe.value = newTimeframe
     loadKLineData()
+  }
+})
+
+// 监听配置变化，当配置加载后更新timeframe
+watch(() => botStore.config, (newConfig) => {
+  if (newConfig) {
+    const newTimeframe = computedTimeframe.value
+    if (selectedTimeframe.value !== newTimeframe) {
+      console.log(`🔄 配置已加载，更新timeframe: ${selectedTimeframe.value} -> ${newTimeframe}`)
+      selectedTimeframe.value = newTimeframe
+      loadKLineData()
+    }
   }
 })
 

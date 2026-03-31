@@ -42,7 +42,7 @@ interface Props {
   tradeHistory?: TradeHistory[]
   theme?: 'light' | 'dark'
   symbol?: string
-  timeframe?: string
+  timeframe?: string  // 如果提供，则使用提供的timeframe；否则根据策略模式自动选择
   loading?: boolean
   error?: string
 }
@@ -52,7 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
   tradeHistory: () => [],
   theme: 'light',
   symbol: 'BTCUSDT',
-  timeframe: '1h',
+  timeframe: '',  // 默认为空，根据策略模式自动选择
   loading: false,
   error: ''
 })
@@ -86,6 +86,19 @@ const emaPeriods = computed(() => {
   return [emaConfig.fast, emaConfig.slow]
 })
 
+// 根据策略模式计算timeframe
+const computedTimeframe = computed(() => {
+  // 如果props提供了timeframe，则使用提供的值
+  if (props.timeframe) return props.timeframe
+  
+  // 否则根据策略模式自动选择
+  if (!botStore.config) return '1h' // 默认值
+  
+  const strategyMode = botStore.config.strategyMode
+  // medium_term 使用 1h，其他（short_term）使用 15m
+  return strategyMode === 'medium_term' ? '1h' : '15m'
+})
+
 // 判断是否为DOGE交易对
 const isDOGE = computed(() => isDOGESymbol(props.symbol))
 
@@ -100,7 +113,7 @@ const priceFormat = computed(() => ({
 const initChart = () => {
   if (!chartContainer.value) return
   
-  console.log(`📈 初始化图表 (symbol: ${props.symbol}, timeframe: ${props.timeframe})`)
+  console.log(`📈 初始化图表 (symbol: ${props.symbol}, timeframe: ${computedTimeframe.value})`)
   
   // 清理现有图表
   if (chart) {
@@ -388,8 +401,8 @@ const addOrderMarkers = () => {
   
   const markers = props.tradeHistory!.flatMap(order => {
     // 转换时间格式：毫秒 -> 秒
-    const openTime = alignToKlineTime(order.openTime, props.timeframe)
-    const closeTime = alignToKlineTime(order.closeTime, props.timeframe)
+    const openTime = alignToKlineTime(order.openTime, computedTimeframe.value)
+    const closeTime = alignToKlineTime(order.closeTime, computedTimeframe.value)
     
     // 开仓标记
     const openMarker = {
@@ -560,7 +573,7 @@ watch(() => props.symbol, (newSymbol, oldSymbol) => {
 })
 
 // 监听timeframe变化，清理并重新初始化图表
-watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
+watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
   if (newTimeframe && newTimeframe !== oldTimeframe) {
     console.log(`🔄 Timeframe变化: ${oldTimeframe} -> ${newTimeframe}, 重新初始化图表`)
     

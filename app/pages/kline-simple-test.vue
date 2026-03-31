@@ -1,6 +1,6 @@
 <template>
   <!-- <div class="kline-simple-test-page">
-    <KLineChartSimple symbol="BTCUSDT" timeframe="1h" />
+    <KLineChartSimple symbol="BTCUSDT" />
   </div> -->
 </template>
 

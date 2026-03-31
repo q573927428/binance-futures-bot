@@ -28,7 +28,7 @@
     </template>
 
      <!-- TradingView弹窗 -->
-    <KLineChartSimple :symbol="selectedSymbol || 'BTCUSDT'"  timeframe="1h" />
+    <KLineChartSimple :symbol="selectedSymbol || 'BTCUSDT'" />
     
     <!-- 水平线 -->
      <div class="horizontal-line"></div>
