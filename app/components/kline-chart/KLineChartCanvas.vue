@@ -455,20 +455,75 @@ onMounted(() => {
   })
 })
 
-// 组件卸载前清理
-onUnmounted(() => {
+// 清理图表资源
+const cleanupChart = () => {
+  console.log('🧹 清理图表资源...')
+  
+  // 取消所有事件监听
   if (chart) {
+    try {
+      // 取消订阅鼠标移动事件
+      chart.unsubscribeCrosshairMove()
+    } catch (error) {
+      console.warn('取消订阅图表事件失败:', error)
+    }
+    
+    // 移除图表
     chart.remove()
     chart = null
-    candlestickSeries = null
-    volumeSeries = null
-    ema14Series = null
-    ema120Series = null
   }
   
+  // 清理系列引用
+  candlestickSeries = null
+  volumeSeries = null
+  ema14Series = null
+  ema120Series = null
+  
+  // 清理ResizeObserver
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
+  }
+  
+  console.log('✅ 图表资源清理完成')
+}
+
+// 组件卸载前清理
+onUnmounted(() => {
+  cleanupChart()
+})
+
+// 监听symbol变化，清理并重新初始化图表
+watch(() => props.symbol, (newSymbol, oldSymbol) => {
+  if (newSymbol && newSymbol !== oldSymbol) {
+    console.log(`🔄 Symbol变化: ${oldSymbol} -> ${newSymbol}, 重新初始化图表`)
+    
+    // 清理旧图表
+    cleanupChart()
+    
+    // 重新初始化图表
+    nextTick(() => {
+      if (chartContainer.value) {
+        initChart()
+      }
+    })
+  }
+})
+
+// 监听timeframe变化，清理并重新初始化图表
+watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
+  if (newTimeframe && newTimeframe !== oldTimeframe) {
+    console.log(`🔄 Timeframe变化: ${oldTimeframe} -> ${newTimeframe}, 重新初始化图表`)
+    
+    // 清理旧图表
+    cleanupChart()
+    
+    // 重新初始化图表
+    nextTick(() => {
+      if (chartContainer.value) {
+        initChart()
+      }
+    })
   }
 })
 

@@ -64,6 +64,24 @@ const chartCanvasRef = ref<InstanceType<typeof KLineChartCanvas> | null>(null)
 import { formatTime } from './utils/kline-formatters'
 import { generateClientId, isDOGESymbol } from './utils/kline-helpers'
 
+// 防抖函数
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | null = null
+  
+  return (...args: Parameters<T>) => {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    
+    timeout = setTimeout(() => {
+      func(...args)
+    }, wait)
+  }
+}
+
 // 定义props
 interface Props {
   symbol?: string
@@ -97,6 +115,7 @@ const loadingHistory = ref(false)
 const isWebSocketConnected = ref(false)
 const lastPriceUpdate = ref<PriceData | null>(null)
 const webSocketClientId = ref<string>('')
+const currentSubscriptionSymbol = ref<string>('') // 跟踪当前订阅的交易对
 
 // 浮动面板相关
 const tooltipVisible = ref(false)
@@ -319,9 +338,51 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
   }
 }
 
+// 清理旧的WebSocket订阅
+const cleanupOldSubscription = async (): Promise<boolean> => {
+  if (!webSocketClientId.value || !currentSubscriptionSymbol.value) {
+    return true
+  }
+  
+  const oldSymbol = currentSubscriptionSymbol.value
+  const clientId = webSocketClientId.value
+  
+  console.log(`🔄 清理旧的订阅: ${oldSymbol} (客户端: ${clientId})`)
+  
+  try {
+    const response = await fetch('/api/websocket/unsubscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        symbols: [oldSymbol],
+        clientId: clientId
+      })
+    })
+    
+    const result = await response.json()
+    if (result.success) {
+      console.log(`✅ 已清理旧的订阅: ${oldSymbol}`)
+      return true
+    } else {
+      console.warn(`⚠️ 清理旧订阅失败: ${result.message}`)
+      return false
+    }
+  } catch (error: any) {
+    console.warn(`⚠️ 清理旧订阅异常: ${error.message}`)
+    return false
+  }
+}
+
 // 订阅WebSocket价格更新
 const subscribeToPriceUpdates = async () => {
   const symbolToUse = props.symbol || 'BTCUSDT'
+  
+  // 如果当前已经有订阅，先清理旧的
+  if (currentSubscriptionSymbol.value && currentSubscriptionSymbol.value !== symbolToUse) {
+    await cleanupOldSubscription()
+  }
   
   try {
     if (!webSocketClientId.value) {
@@ -342,6 +403,7 @@ const subscribeToPriceUpdates = async () => {
     const result = await response.json()
     if (result.success) {
       console.log(`客户端 ${webSocketClientId.value} 已订阅 ${symbolToUse} 的价格更新`)
+      currentSubscriptionSymbol.value = symbolToUse
       startPricePolling()
     } else {
       console.error('订阅价格更新失败:', result.message)
@@ -444,19 +506,34 @@ const stopPricePolling = () => {
   }
 }
 
-// 监听symbol变化
-watch(() => props.symbol, (newSymbol, oldSymbol) => {
+// 防抖的symbol变化处理函数
+const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
   if (newSymbol && newSymbol !== oldSymbol) {
-    console.log('Symbol changed:', oldSymbol, '->', newSymbol)
+    console.log('🔄 Symbol变化:', oldSymbol, '->', newSymbol)
     
     // 停止旧的轮询
     stopPricePolling()
+    
+    // 清理旧的WebSocket订阅
+    if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
+      await cleanupOldSubscription()
+    }
     
     // 加载新数据
     loadKLineData()
     
     // 重新订阅价格更新
     subscribeToPriceUpdates()
+  }
+}
+
+// 创建防抖函数（500ms延迟）
+const debouncedHandleSymbolChange = debounce(handleSymbolChange, 500)
+
+// 监听symbol变化（使用防抖）
+watch(() => props.symbol, (newSymbol, oldSymbol) => {
+  if (newSymbol && newSymbol !== oldSymbol) {
+    debouncedHandleSymbolChange(newSymbol, oldSymbol)
   }
 })
 
