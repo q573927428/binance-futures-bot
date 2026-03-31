@@ -297,11 +297,24 @@ const loadTradeHistory = async () => {
   }
 }
 
-const alignTimeToKline = (timestamp: number, timeframe: string): number => {
-  const seconds = Math.floor(timestamp / 1000)
-  const tf = getTimeframeSeconds(timeframe)
-  
-  return Math.floor(seconds / tf) * tf
+const findNearestKlineTime = (timestamp: number): number | null => {
+  const [first] = klineData.value
+  if (!first) return null
+
+  const target = Math.floor(timestamp / 1000)
+
+  let closest = first
+  let minDiff = Math.abs(closest.t - target)
+
+  for (const k of klineData.value) {
+    const diff = Math.abs(k.t - target)
+    if (diff < minDiff) {
+      minDiff = diff
+      closest = k
+    }
+  }
+
+  return closest.t
 }
 
 // 添加订单标记到图表
@@ -310,13 +323,13 @@ const addOrderMarkers = (orders: TradeHistory[]) => {
   
   const markers = orders.flatMap(order => {
     // 转换时间格式：毫秒 -> 秒
-    const openTime = alignTimeToKline(order.openTime, selectedTimeframe.value)
-    const closeTime = alignTimeToKline(order.closeTime, selectedTimeframe.value)
-    
+    const openTime = findNearestKlineTime(order.openTime)
+    const closeTime = findNearestKlineTime(order.closeTime)
     // 开仓标记
     const openMarker = {
       time: openTime,
       position: 'aboveBar' as const,
+      price: order.entryPrice, // 👈 加这个
       color: order.direction === 'LONG' ? '#26a69a' : '#ef5350',
       shape: (order.direction === 'LONG' ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
       text: `${order.direction} @ ${order.entryPrice.toFixed(2)}`
@@ -326,6 +339,7 @@ const addOrderMarkers = (orders: TradeHistory[]) => {
     const closeMarker = {
       time: closeTime,
       position: 'belowBar' as const,
+      price: order.exitPrice,
       color: order.pnl >= 0 ? '#26a69a' : '#ef5350',
       shape: 'circle' as SeriesMarkerShape,
       text: `平仓 @ ${order.exitPrice.toFixed(2)} (${order.pnl >= 0 ? '+' : ''}${order.pnlPercentage.toFixed(2)}%)`
