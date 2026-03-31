@@ -24,12 +24,12 @@ function cleanupExpiredClients(): void {
         // 取消订阅所有交易对
         for (const [symbol, callback] of symbolCallbacks.entries()) {
           webSocketManager.unsubscribePrice(symbol, callback)
-          console.log(`🗑️  清理过期客户端 ${clientId} 的订阅: ${symbol}`)
+          // console.log(`🗑️  清理过期客户端 ${clientId} 的订阅: ${symbol}`)
         }
         clientCallbacks.delete(clientId)
       }
       clientLastActivity.delete(clientId)
-      console.log(`🗑️  已清理过期客户端: ${clientId}`)
+      // console.log(`🗑️  已清理过期客户端: ${clientId}`)
     }
   }
 }

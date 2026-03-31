@@ -81,8 +81,8 @@ const isDOGE = computed(() => isDOGESymbol(props.symbol))
 // 价格格式配置
 const priceFormat = computed(() => ({
   type: 'price' as const,
-  precision: isDOGE.value ? 3 : 2,
-  minMove: isDOGE.value ? 0.001 : 0.01
+  precision: isDOGE.value ? 5 : 2,
+  minMove: isDOGE.value ? 0.00001 : 0.01
 }))
 
 // 初始化图表
