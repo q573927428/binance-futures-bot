@@ -226,6 +226,7 @@ let candlestickSeries: any = null
 let volumeSeries: any = null
 let ema14Series: any = null
 let ema120Series: any = null
+let resizeObserver: ResizeObserver | null = null
 
 // 浮动面板相关
 const tooltipVisible = ref(false)
@@ -583,7 +584,7 @@ const loadKLineData = async () => {
   })
   
   // 响应窗口大小变化
-  const resizeObserver = new ResizeObserver(() => {
+  resizeObserver = new ResizeObserver(() => {
     if (chart && chartContainer.value) {
       chart.applyOptions({ width: chartContainer.value.clientWidth })
     }
@@ -608,14 +609,6 @@ const loadKLineData = async () => {
   
   // 初始化时显示最新K线数据
   showLatestKline()
-  
-  // 清理函数
-  onUnmounted(() => {
-    resizeObserver.disconnect()
-    if (chart) {
-      chart.remove()
-    }
-  })
 }
 
 // 更新图表数据
@@ -1148,6 +1141,11 @@ onUnmounted(() => {
   // 清理图表
   if (chart) {
     chart.remove()
+  }
+  
+  // 清理resizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect()
   }
 })
 </script>
