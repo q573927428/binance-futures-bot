@@ -457,27 +457,39 @@ onMounted(() => {
 
 // 清理图表资源
 const cleanupChart = () => {
-  console.log('🧹 清理图表资源...')
+  console.log(`🧹 清理图表资源 (当前symbol: ${props.symbol})...`)
   
-  // 取消所有事件监听
+  // 停止所有可能的动画或更新
   if (chart) {
     try {
-      // 取消订阅鼠标移动事件
+      // 取消订阅所有事件监听
       chart.unsubscribeCrosshairMove()
+      
+      // 移除所有系列
+      if (candlestickSeries) {
+        chart.removeSeries(candlestickSeries)
+        candlestickSeries = null
+      }
+      if (volumeSeries) {
+        chart.removeSeries(volumeSeries)
+        volumeSeries = null
+      }
+      if (ema14Series) {
+        chart.removeSeries(ema14Series)
+        ema14Series = null
+      }
+      if (ema120Series) {
+        chart.removeSeries(ema120Series)
+        ema120Series = null
+      }
+      
+      // 移除图表
+      chart.remove()
+      chart = null
     } catch (error) {
-      console.warn('取消订阅图表事件失败:', error)
+      console.warn('清理图表资源失败:', error)
     }
-    
-    // 移除图表
-    chart.remove()
-    chart = null
   }
-  
-  // 清理系列引用
-  candlestickSeries = null
-  volumeSeries = null
-  ema14Series = null
-  ema120Series = null
   
   // 清理ResizeObserver
   if (resizeObserver) {
@@ -485,7 +497,10 @@ const cleanupChart = () => {
     resizeObserver = null
   }
   
-  console.log('✅ 图表资源清理完成')
+  // 重置标记状态
+  markersAdded.value = false
+  
+  console.log(`✅ 图表资源清理完成 (symbol: ${props.symbol})`)
 }
 
 // 组件卸载前清理

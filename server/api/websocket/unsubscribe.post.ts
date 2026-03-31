@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
     // 如果客户端没有更多订阅，清理映射
     if (symbolCallbacks.size === 0) {
       deleteClientCallbacks(clientId)
-      console.log(`🗑️  清理客户端 ${clientId} 的订阅记录`)
+      // console.log(`🗑️  清理客户端 ${clientId} 的订阅记录`)
     }
 
     const state = webSocketManager.getWebSocketState()
