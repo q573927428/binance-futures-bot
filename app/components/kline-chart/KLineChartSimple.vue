@@ -97,7 +97,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   symbol: 'BTCUSDT',
-  timeframe: '1h'
+  timeframe: ''  // 默认为空字符串，表示没有提供timeframe
 })
 
 // 计算显示的symbol
@@ -594,6 +594,7 @@ watch(() => botStore.config, (newConfig) => {
 
 // 组件挂载时初始化
 onMounted(() => {
+  // 直接加载K线数据
   loadKLineData()
   fetchWebSocketStatus()
   subscribeToPriceUpdates()
