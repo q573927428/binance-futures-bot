@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import KLineChartSimple from '../components/KLineChartSimple.vue'
+import KLineChartSimple from '../components/kline-chart/KLineChartSimple.vue'
 
 const testResult = ref<any>(null)
 const syncStatus = ref<any>(null)

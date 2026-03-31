@@ -135,6 +135,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import TradingViewChartModal from './TradingViewChartModal.vue'
+import KLineChartSimple from '../components/kline-chart/KLineChartSimple.vue'
 
 // 默认加密货币列表
 const DEFAULT_CRYPTOS = [
