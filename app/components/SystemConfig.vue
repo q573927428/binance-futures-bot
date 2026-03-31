@@ -307,27 +307,27 @@
 
       <el-divider>EMA周期配置</el-divider>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}快速EMA`">
+      <el-form-item label="短期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.fast" :min="5" :max="250" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}中速EMA`">
+      <el-form-item label="短期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.medium" :min="5" :max="250" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '短期' : '中长期'}慢速EMA`">
+      <el-form-item label="短期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.short_term.slow" :min="5" :max="250" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}快速EMA`">
+      <el-form-item label="中长期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.fast" :min="5" :max="250" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}中速EMA`">
+      <el-form-item label="中长期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.medium" :min="5" :max="250" />
       </el-form-item>
 
-      <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '中长期' : '短期'}慢速EMA`">
+      <el-form-item label="中长期快速EMA">
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="5" :max="250" />
       </el-form-item>
 
