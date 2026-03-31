@@ -174,7 +174,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { createChart, ColorType, CandlestickSeries, BarSeries, LineSeries } from 'lightweight-charts'
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts'
 import type { 
   SimpleKLineData,
   KLineApiResponse 
@@ -386,8 +386,8 @@ const loadKLineData = async () => {
     priceFormat: priceFormat
   })
   
-  // 添加成交量系列 - 使用正确的5.1.0版本API
-  volumeSeries = chart.addSeries(BarSeries, {
+  // 添加成交量系列 - 使用HistogramSeries显示柱状图
+  volumeSeries = chart.addSeries(HistogramSeries, {
     color: '#26a69a',
     priceFormat: {
       type: 'volume'
@@ -472,15 +472,12 @@ const updateChart = () => {
     close: item.c
   }))
   
-  // 准备成交量数据 - BarSeries需要open、high、low、close字段
+  // 准备成交量数据 - HistogramSeries只需要value字段
   const volumeData = klineData.value.map(item => {
     const volumeValue = item.v || 0
     return {
       time: item.t,
-      open: volumeValue,
-      high: volumeValue,
-      low: 0,
-      close: volumeValue,
+      value: volumeValue,
       color: item.c >= item.o ? '#26a69a' : '#ef5350'
     }
   })
@@ -815,13 +812,10 @@ const updateChartWithLastKline = (updatedKline: SimpleKLineData) => {
     close: updatedKline.c
   }
   
-  // 更新成交量数据
+  // 更新成交量数据 - HistogramSeries格式
   const volumeData = {
     time: updatedKline.t,
-    open: updatedKline.v || 0,
-    high: updatedKline.v || 0,
-    low: 0,
-    close: updatedKline.v || 0,
+    value: updatedKline.v || 0,
     color: updatedKline.c >= updatedKline.o ? '#26a69a' : '#ef5350'
   }
   
