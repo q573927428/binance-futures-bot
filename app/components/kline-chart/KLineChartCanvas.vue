@@ -296,8 +296,8 @@ const updateLastKline = (updatedKline: SimpleKLineData) => {
     }
     
     // 如果tooltip正在显示，更新tooltip
-    if (chart) {
-      const crosshairPosition = chart.crosshairPosition()
+    if (chart && typeof chart.getCrosshairPosition === 'function') {
+      const crosshairPosition = chart.getCrosshairPosition()
       if (crosshairPosition && crosshairPosition.time === updatedKline.t) {
         emitTooltipUpdate(updatedKline)
       }
