@@ -446,7 +446,7 @@ interface WebSocketStatusResponse {
   gap: 8px;
 }
 .horizontal-line{
-  margin-bottom: 10px;
+  margin-bottom: 30px;
 }
 
 .price-card {
