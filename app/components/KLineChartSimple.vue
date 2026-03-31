@@ -173,13 +173,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts'
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts'
 import type { 
   SimpleKLineData,
   KLineApiResponse 
 } from '../../types/kline-simple'
 import { calculateEMASeries, getEMAColor, getEMAWidth } from '../utils/ema-calculator'
 import type { PriceData } from '../../types/websocket'
+import type { TradeHistory } from '../../types'
+import type { SeriesMarkerShape } from 'lightweight-charts'
 
 // 定义props
 interface Props {
@@ -205,6 +207,11 @@ const meta = ref({
 const loading = ref(false)
 const error = ref('')
 const theme = ref<'light' | 'dark'>('light')
+
+// 历史订单数据
+const tradeHistory = ref<TradeHistory[]>([])
+const loadingHistory = ref(false)
+const markersAdded = ref(false) // 标记是否已经添加了标记
 
 // WebSocket相关
 const isWebSocketConnected = ref(false)
@@ -257,6 +264,157 @@ const selectTimeframe = (timeframe: string) => {
   loadKLineData()
 }
 
+// 加载历史订单数据
+const loadTradeHistory = async () => {
+  const symbolToUse = props.symbol || 'BTCUSDT'
+  if (!symbolToUse) return
+  
+  loadingHistory.value = true
+  
+  try {
+    // 获取所有历史订单数据
+    const response = await fetch(`/api/bot/history?page=1&pageSize=100`)
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      // 过滤当前symbol的订单
+      const filteredOrders = result.data.filter((order: TradeHistory) => {
+        // 标准化symbol格式比较（移除斜杠）
+        const orderSymbol = order.symbol.replace('/', '')
+        const currentSymbol = symbolToUse.replace('/', '')
+        return orderSymbol === currentSymbol
+      })
+      
+      tradeHistory.value = filteredOrders
+      
+      // 添加订单标记到图表
+      addOrderMarkers(filteredOrders)
+    }
+  } catch (err: any) {
+    console.error('加载交易历史失败:', err)
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
+// 添加订单标记到图表
+const addOrderMarkers = (orders: TradeHistory[]) => {
+  if (!candlestickSeries || orders.length === 0 || markersAdded.value) return
+  
+  const markers = orders.flatMap(order => {
+    // 转换时间格式：毫秒 -> 秒
+    const openTime = Math.floor(order.openTime / 1000)
+    const closeTime = Math.floor(order.closeTime / 1000)
+    
+    // 开仓标记
+    const openMarker = {
+      time: openTime,
+      position: 'aboveBar' as const,
+      color: order.direction === 'LONG' ? '#26a69a' : '#ef5350',
+      shape: (order.direction === 'LONG' ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
+      text: `${order.direction} @ ${order.entryPrice.toFixed(2)}`
+    }
+    
+    // 平仓标记
+    const closeMarker = {
+      time: closeTime,
+      position: 'belowBar' as const,
+      color: order.pnl >= 0 ? '#26a69a' : '#ef5350',
+      shape: 'circle' as SeriesMarkerShape,
+      text: `平仓 @ ${order.exitPrice.toFixed(2)} (${order.pnl >= 0 ? '+' : ''}${order.pnlPercentage.toFixed(2)}%)`
+    }
+    
+    return [openMarker, closeMarker]
+  })
+  
+  // 使用createSeriesMarkers创建标记（lightweight-charts v5 API）
+  createSeriesMarkers(candlestickSeries, markers)
+  markersAdded.value = true
+}
+
+// 更新图表时同时更新标记
+const updateChartWithMarkers = () => {
+  if (!chart || !candlestickSeries || !volumeSeries) {
+    initChart()
+  }
+  
+  if (klineData.value.length === 0) return
+  
+  // 准备K线数据
+  const candlestickData = klineData.value.map(item => ({
+    time: item.t,
+    open: item.o,
+    high: item.h,
+    low: item.l,
+    close: item.c
+  }))
+  
+  // 准备成交量数据 - HistogramSeries只需要value字段
+  const volumeData = klineData.value.map(item => {
+    const volumeValue = item.v || 0
+    return {
+      time: item.t,
+      value: volumeValue,
+      color: item.c >= item.o ? '#26a69a' : '#ef5350'
+    }
+  })
+  
+  // 设置数据
+  candlestickSeries.setData(candlestickData)
+  volumeSeries.setData(volumeData)
+  
+  // 计算并设置EMA数据
+  if (ema14Series && ema120Series) {
+    // 计算EMA14数据
+    const ema14Data = calculateEMASeries(klineData.value, 14)
+    if (ema14Data.length > 0) {
+      ema14Series.setData(ema14Data)
+    }
+    
+    // 计算EMA120数据
+    const ema120Data = calculateEMASeries(klineData.value, 120)
+    if (ema120Data.length > 0) {
+      ema120Series.setData(ema120Data)
+    }
+  }
+  
+  // 设置默认显示200根K线
+  if (candlestickData.length > 0) {
+    const visibleBarCount = 200
+    const totalBars = candlestickData.length
+    
+    // 如果数据量少于200根，显示所有数据
+    if (totalBars <= visibleBarCount) {
+      chart.timeScale().fitContent()
+    } else {
+      // 显示最新的200根K线
+      const fromIndex = totalBars - visibleBarCount
+      const fromItem = candlestickData[fromIndex]
+      const toItem = candlestickData[totalBars - 1]
+      
+      if (fromItem && toItem) {
+        // 先设置可见范围
+        chart.timeScale().setVisibleRange({
+          from: fromItem.time,
+          to: toItem.time
+        })
+        
+        // 然后应用rightOffset，确保右侧有留白
+        // 使用setTimeout确保在下一帧应用，避免冲突
+        setTimeout(() => {
+          if (chart) {
+            chart.timeScale().applyOptions({
+              rightOffset: 12
+            })
+          }
+        }, 0)
+      } else {
+        chart.timeScale().fitContent()
+      }
+    }
+  }
+}
+
 // 加载K线数据
 const loadKLineData = async () => {
   // 使用默认值如果symbol为空
@@ -279,12 +437,15 @@ const loadKLineData = async () => {
     const response = await fetch(`/api/kline-simple?${params}`)
     const result: KLineApiResponse = await response.json()
     
-    if (result.success && result.data) {
+      if (result.success && result.data) {
       klineData.value = result.data.data
       meta.value = result.data.meta
       
-      // 更新图表
-      updateChart()
+      // 更新图表（包含标记）
+      updateChartWithMarkers()
+      
+      // 加载历史订单数据
+      loadTradeHistory()
       
       // 显示最新K线数据
       showLatestKline()
@@ -688,6 +849,9 @@ watch(() => props.symbol, (newSymbol, oldSymbol) => {
       ema120Series = null
     }
     
+    // 重置标记状态
+    markersAdded.value = false
+    
     // 停止旧的轮询
     stopPricePolling()
     
@@ -966,6 +1130,9 @@ onMounted(() => {
   
   // 订阅价格更新
   subscribeToPriceUpdates()
+  
+  // 加载历史订单数据
+  loadTradeHistory()
 })
 
 // 组件卸载时清理
