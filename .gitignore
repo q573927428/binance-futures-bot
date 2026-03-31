@@ -25,3 +25,7 @@ data/kline-simple/*.json
 .env
 .env.*
 !.env.example
+
+
+app\components\KLineChartSimple.vue.backup
+app\components\kline-chart\KLineChartSimple.vue.old
