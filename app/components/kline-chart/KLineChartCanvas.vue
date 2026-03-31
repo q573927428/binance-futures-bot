@@ -67,8 +67,7 @@ const chartContainer = ref<HTMLElement | null>(null)
 let chart: any = null
 let candlestickSeries: any = null
 let volumeSeries: any = null
-let ema14Series: any = null
-let ema120Series: any = null
+let emaSeries: any[] = []
 let resizeObserver: ResizeObserver | null = null
 const markersAdded = ref(false)
 
@@ -138,21 +137,19 @@ const initChart = () => {
     }
   })
   
-  // 添加EMA14线
-  ema14Series = chart.addSeries(LineSeries, {
-    color: getEMAColor(14),
-    lineWidth: getEMAWidth(14),
-    title: 'EMA14',
-    priceFormat: currentPriceFormat
-  })
+  // 清空EMA系列数组
+  emaSeries = []
   
-  // 添加EMA120线
-  ema120Series = chart.addSeries(LineSeries, {
-    color: getEMAColor(120),
-    lineWidth: getEMAWidth(120),
-    title: 'EMA120',
-    priceFormat: currentPriceFormat
-  })
+  // 添加EMA线（根据emaPeriods配置）
+  for (const period of emaPeriods) {
+    const emaSeriesItem = chart.addSeries(LineSeries, {
+      color: getEMAColor(period),
+      lineWidth: getEMAWidth(period),
+      title: `EMA${period}`,
+      priceFormat: currentPriceFormat
+    })
+    emaSeries.push(emaSeriesItem)
+  }
   
   // 响应窗口大小变化
   resizeObserver = new ResizeObserver(() => {
@@ -240,7 +237,7 @@ const emitTooltipUpdate = (kline: SimpleKLineData) => {
 
 // 更新最后一根K线数据
 const updateLastKline = (updatedKline: SimpleKLineData) => {
-  if (!candlestickSeries || !volumeSeries || !ema14Series || !ema120Series) return
+  if (!candlestickSeries || !volumeSeries || emaSeries.length === 0) return
   
   try {
     // 更新K线数据
@@ -274,23 +271,20 @@ const updateLastKline = (updatedKline: SimpleKLineData) => {
     if (lastIndex >= 0) {
       updatedKlineData[lastIndex] = updatedKline
       
-      // 计算更新后的EMA14序列
-      const ema14Data = calculateEMASeries(updatedKlineData, 14)
-      if (ema14Data.length > 0) {
-        // 只更新最后一根K线的EMA值
-        const lastEma14 = ema14Data[ema14Data.length - 1]
-        if (lastEma14) {
-          ema14Series.update(lastEma14)
-        }
-      }
-      
-      // 计算更新后的EMA120序列
-      const ema120Data = calculateEMASeries(updatedKlineData, 120)
-      if (ema120Data.length > 0) {
-        // 只更新最后一根K线的EMA值
-        const lastEma120 = ema120Data[ema120Data.length - 1]
-        if (lastEma120) {
-          ema120Series.update(lastEma120)
+      // 为每个EMA周期更新最后一根K线的EMA值
+      for (let i = 0; i < emaPeriods.length; i++) {
+        const period = emaPeriods[i]
+        const emaSeriesItem = emaSeries[i]
+        
+        if (period && emaSeriesItem) {
+          const emaData = calculateEMASeries(updatedKlineData, period)
+          if (emaData.length > 0) {
+            // 只更新最后一根K线的EMA值
+            const lastEma = emaData[emaData.length - 1]
+            if (lastEma) {
+              emaSeriesItem.update(lastEma)
+            }
+          }
         }
       }
     }
@@ -325,15 +319,17 @@ const updateChart = () => {
   volumeSeries.setData(volumeData)
   
   // 计算并设置EMA数据
-  if (ema14Series && ema120Series) {
-    const ema14Data = calculateEMASeries(props.klineData, 14)
-    if (ema14Data.length > 0) {
-      ema14Series.setData(ema14Data)
-    }
-    
-    const ema120Data = calculateEMASeries(props.klineData, 120)
-    if (ema120Data.length > 0) {
-      ema120Series.setData(ema120Data)
+  if (emaSeries.length > 0) {
+    for (let i = 0; i < emaPeriods.length; i++) {
+      const period = emaPeriods[i]
+      const emaSeriesItem = emaSeries[i]
+      
+      if (period && emaSeriesItem) {
+        const emaData = calculateEMASeries(props.klineData, period)
+        if (emaData.length > 0) {
+          emaSeriesItem.setData(emaData)
+        }
+      }
     }
   }
   
@@ -487,14 +483,13 @@ const cleanupChart = () => {
         chart.removeSeries(volumeSeries)
         volumeSeries = null
       }
-      if (ema14Series) {
-        chart.removeSeries(ema14Series)
-        ema14Series = null
+      // 移除所有EMA系列
+      for (const emaSeriesItem of emaSeries) {
+        if (emaSeriesItem) {
+          chart.removeSeries(emaSeriesItem)
+        }
       }
-      if (ema120Series) {
-        chart.removeSeries(ema120Series)
-        ema120Series = null
-      }
+      emaSeries = []
       
       // 移除图表
       chart.remove()
