@@ -107,7 +107,9 @@
             <!-- 当前持仓组件 -->
             <CurrentPositions />
             <!-- 盈亏与胜率走势图 -->
-            <!--<PnLTrendChart />-->
+            <ClientOnly>
+              <PnLTrendChart />
+            </ClientOnly>
             <!-- 手动开仓组件 -->
             <ManualOpenPosition />
             <!-- 系统配置组件 -->
@@ -142,7 +144,7 @@ import TradeHistory from '../components/TradeHistory.vue'
 import SystemLogs from '../components/SystemLogs.vue'
 import SystemConfig from '../components/SystemConfig.vue'
 import CurrentPositions from '../components/CurrentPositions.vue'
-// import PnLTrendChart from '../components/PnLTrendChart.vue'
+import PnLTrendChart from '../components/PnLTrendChart.vue'
 import CryptoPriceCards from '../components/CryptoPriceCards.vue'
 import ManualOpenPosition from '../components/ManualOpenPosition.vue'
 

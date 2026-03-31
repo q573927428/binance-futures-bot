@@ -77,7 +77,6 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 import type { EChartsOption } from 'echarts'
-import { ElMessage } from 'element-plus'
 import type { TradeHistory, HistoryResponse } from '../../types'
 
 const botStore = useBotStore()
@@ -531,11 +530,11 @@ function updateChart() {
 }
 
 // 监听数据变化
-watch(chartHistory, () => {
-  if (hasData.value) {
-    initChart()
-  }
-}, { deep: true })
+// watch(chartHistory, () => {
+//   if (hasData.value) {
+//     initChart()
+//   }
+// }, { deep: true })
 
 // 监听图表模式变化
 watch(chartMode, () => {
@@ -558,11 +557,7 @@ onMounted(async () => {
   await fetchChartHistory()
   
   // 延迟初始化图表，确保DOM已渲染
-  setTimeout(() => {
-    if (hasData.value) {
-      initChart()
-    }
-  }, 100)
+  initChart()
 })
 
 // 组件卸载时清理
