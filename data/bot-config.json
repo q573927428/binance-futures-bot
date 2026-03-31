@@ -1,6 +1,5 @@
 {
   "strategyMode": "medium_term",
-  "initialBars": 1000,
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -11,12 +10,12 @@
     "XAG/USDT",
     "BNB/USDT"
   ],
-  "leverage": 10,
+  "leverage": 8,
   "maxRiskPercentage": 20,
-  "stopLossATRMultiplier": 2.5,
+  "stopLossATRMultiplier": 3,
   "maxStopLossPercentage": 2,
   "positionTimeoutHours": 120,
-  "scanInterval": 18000,
+  "scanInterval": 180,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 7200,
   "aiConfig": {
@@ -39,17 +38,17 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 5,
+      "tp1RiskRewardRatio": 3.8,
       "tp2RiskRewardRatio": 5,
       "tp2MinProfitRatio": 1,
       "rsiExtreme": {
-        "long": 78,
-        "short": 22
+        "long": 80,
+        "short": 20
       },
-      "adxDecreaseThreshold": 0.8,
+      "adxDecreaseThreshold": 1.8,
       "adxSlopePeriod": 3
     },
-    "dailyTradeLimit": 5
+    "dailyTradeLimit": 3
   },
   "dynamicLeverageConfig": {
     "enabled": false,
@@ -88,7 +87,7 @@
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
-      "emaDeviationThreshold": 0.01,
+      "emaDeviationThreshold": 0.012,
       "emaDeviationEnabled": true,
       "emaSlowDeviationThreshold": 0.03,
       "emaSlowDeviationEnabled": true,
@@ -100,7 +99,7 @@
       "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
-      "emaDeviationThreshold": 0.01,
+      "emaDeviationThreshold": 0.012,
       "emaDeviationEnabled": true,
       "emaSlowDeviationThreshold": 0.03,
       "emaSlowDeviationEnabled": true,
