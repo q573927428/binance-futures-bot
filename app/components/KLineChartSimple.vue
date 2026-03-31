@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, onBeforeUnmount } from 'vue'
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts'
 import type { 
   SimpleKLineData,
@@ -1046,38 +1046,67 @@ const subscribeToPriceUpdates = async () => {
   }
 }
 
-// 取消订阅WebSocket价格更新
-const unsubscribeFromPriceUpdates = async () => {
+// 取消订阅WebSocket价格更新（改进版，添加重试和超时机制）
+const unsubscribeFromPriceUpdates = async (): Promise<boolean> => {
   const symbolToUse = props.symbol || 'BTCUSDT'
   
-  try {
-    if (!webSocketClientId.value) {
-      console.log('没有clientId，无需取消订阅')
-      return
-    }
-    
-    // 调用取消订阅API
-    const response = await fetch('/api/websocket/unsubscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        symbols: [symbolToUse],
-        clientId: webSocketClientId.value
-      })
-    })
-    
-    const result = await response.json()
-    if (result.success) {
-      console.log(`客户端 ${webSocketClientId.value} 已取消订阅 ${symbolToUse} 的价格更新`)
-    } else {
-      console.error('取消订阅价格更新失败:', result.message)
-    }
-  } catch (error) {
-    console.error('取消订阅价格更新失败:', error)
+  if (!webSocketClientId.value) {
+    console.log('没有clientId，无需取消订阅')
+    return true
   }
+  
+  const clientId = webSocketClientId.value
+  const maxRetries = 2
+  const timeout = 3000 // 3秒超时
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // 创建超时控制器
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+      
+      // 调用取消订阅API
+      const response = await fetch('/api/websocket/unsubscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          symbols: [symbolToUse],
+          clientId: clientId
+        }),
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      const result = await response.json()
+      if (result.success) {
+        console.log(`✅ 客户端 ${clientId} 已取消订阅 ${symbolToUse} 的价格更新`)
+        // 清空clientId，避免重复取消订阅
+        webSocketClientId.value = ''
+        return true
+      } else {
+        console.warn(`⚠️ 取消订阅失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, result.message)
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn(`⏰ 取消订阅超时 (尝试 ${attempt + 1}/${maxRetries + 1})`)
+      } else {
+        console.warn(`⚠️ 取消订阅失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error.message)
+      }
+    }
+    
+    // 如果不是最后一次尝试，等待一下再重试
+    if (attempt < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+  }
+  
+  console.error(`❌ 取消订阅 ${symbolToUse} 失败，已达到最大重试次数`)
+  return false
 }
+
 
 // 轮询获取最新价格
 let pricePollingInterval: NodeJS.Timeout | null = null
@@ -1131,23 +1160,35 @@ onMounted(() => {
   loadTradeHistory()
 })
 
-// 组件卸载时清理
-onUnmounted(() => {
+// 组件卸载前同步清理（确保在HMR更新时执行）
+onBeforeUnmount(() => {
+  
+  // 同步停止轮询
   stopPricePolling()
   
-  // 取消订阅价格更新
-  unsubscribeFromPriceUpdates()
-  
-  // 清理图表
+  // 同步清理图表
   if (chart) {
     chart.remove()
+    chart = null
+    candlestickSeries = null
+    volumeSeries = null
+    ema14Series = null
+    ema120Series = null
   }
   
-  // 清理resizeObserver
+  // 同步清理resizeObserver 
   if (resizeObserver) {
     resizeObserver.disconnect()
+    resizeObserver = null
   }
 })
+
+// 组件卸载时异步清理
+onUnmounted(async () => {
+  // 异步取消订阅价格更新
+  await unsubscribeFromPriceUpdates()
+})
+
 </script>
 
 <style scoped>
