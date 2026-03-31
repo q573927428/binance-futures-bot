@@ -65,8 +65,6 @@ export default defineEventHandler(async (event) => {
         // 从客户端映射中移除
         symbolCallbacks.delete(symbol)
         unsubscribedSymbols.push(symbol)
-        
-        console.log(`✅ 客户端 ${clientId} 取消订阅: ${symbol}`)
       }
     }
 
