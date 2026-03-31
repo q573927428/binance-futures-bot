@@ -46,17 +46,20 @@ const testGetStoredSymbols = async () => {
 const testSyncData = async () => {
   syncing.value = true
   try {
-    // 这里可以调用同步API，但需要先实现同步API
-    // 暂时使用模拟数据
+    // 调用同步API获取状态
+    const response = await fetch('/api/kline-simple-sync/status')
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    }
+    const result = await response.json()
+    
     testResult.value = {
       success: true,
-      message: '同步功能需要实现同步API接口',
-      note: '请查看 server/modules/kline-simple-sync/ 中的同步服务'
+      message: '同步状态获取成功',
+      data: result
     }
     
-    // 获取同步状态
-    const syncService = new (await import('../../server/modules/kline-simple-sync')).KLineSimpleSyncService()
-    syncStatus.value = syncService.getSyncStatus()
+    syncStatus.value = result
   } catch (error: any) {
     testResult.value = { error: error.message }
   } finally {
