@@ -29,11 +29,12 @@
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
 import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries, createSeriesMarkers } from 'lightweight-charts'
 import type { SimpleKLineData } from '../../../types/kline-simple'
-import type { TradeHistory } from '../../../types'
+import type { TradeHistory, BotConfig } from '../../../types'
 import type { SeriesMarkerShape } from 'lightweight-charts'
 import { calculateEMASeries, getEMAColor, getEMAWidth } from '../../utils/ema-calculator'
 import { prepareCandlestickData, prepareVolumeData, getChartOptions } from './utils/kline-helpers'
 import { isDOGESymbol } from './utils/kline-helpers'
+import { useBotStore } from '../../stores/bot'
 
 // 定义props
 interface Props {
@@ -71,8 +72,19 @@ let emaSeries: any[] = []
 let resizeObserver: ResizeObserver | null = null
 const markersAdded = ref(false)
 
-// EMA周期配置
-const emaPeriods = [14, 120]
+// 使用Pinia store获取配置
+const botStore = useBotStore()
+
+// 计算EMA周期（根据当前策略模式）
+const emaPeriods = computed(() => {
+  if (!botStore.config) return [14, 120] // 默认值
+  
+  const strategyMode = botStore.config.strategyMode
+  const emaConfig = botStore.config.indicatorsConfig.emaPeriods[strategyMode]
+  
+  // 返回fast和slow两个周期
+  return [emaConfig.fast, emaConfig.slow]
+})
 
 // 判断是否为DOGE交易对
 const isDOGE = computed(() => isDOGESymbol(props.symbol))
@@ -141,7 +153,7 @@ const initChart = () => {
   emaSeries = []
   
   // 添加EMA线（根据emaPeriods配置）
-  for (const period of emaPeriods) {
+  for (const period of emaPeriods.value) {
     const emaSeriesItem = chart.addSeries(LineSeries, {
       color: getEMAColor(period),
       lineWidth: getEMAWidth(period),
@@ -272,8 +284,8 @@ const updateLastKline = (updatedKline: SimpleKLineData) => {
       updatedKlineData[lastIndex] = updatedKline
       
       // 为每个EMA周期更新最后一根K线的EMA值
-      for (let i = 0; i < emaPeriods.length; i++) {
-        const period = emaPeriods[i]
+      for (let i = 0; i < emaPeriods.value.length; i++) {
+        const period = emaPeriods.value[i]
         const emaSeriesItem = emaSeries[i]
         
         if (period && emaSeriesItem) {
@@ -320,8 +332,8 @@ const updateChart = () => {
   
   // 计算并设置EMA数据
   if (emaSeries.length > 0) {
-    for (let i = 0; i < emaPeriods.length; i++) {
-      const period = emaPeriods[i]
+    for (let i = 0; i < emaPeriods.value.length; i++) {
+      const period = emaPeriods.value[i]
       const emaSeriesItem = emaSeries[i]
       
       if (period && emaSeriesItem) {
