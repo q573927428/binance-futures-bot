@@ -297,14 +297,21 @@ const loadTradeHistory = async () => {
   }
 }
 
+const alignTimeToKline = (timestamp: number, timeframe: string): number => {
+  const seconds = Math.floor(timestamp / 1000)
+  const tf = getTimeframeSeconds(timeframe)
+  
+  return Math.floor(seconds / tf) * tf
+}
+
 // 添加订单标记到图表
 const addOrderMarkers = (orders: TradeHistory[]) => {
   if (!candlestickSeries || orders.length === 0 || markersAdded.value) return
   
   const markers = orders.flatMap(order => {
     // 转换时间格式：毫秒 -> 秒
-    const openTime = Math.floor(order.openTime / 1000)
-    const closeTime = Math.floor(order.closeTime / 1000)
+    const openTime = alignTimeToKline(order.openTime, selectedTimeframe.value)
+    const closeTime = alignTimeToKline(order.closeTime, selectedTimeframe.value)
     
     // 开仓标记
     const openMarker = {
