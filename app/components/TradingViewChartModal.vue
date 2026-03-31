@@ -127,7 +127,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
 
 // Props
 const props = defineProps<{

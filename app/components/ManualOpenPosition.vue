@@ -166,7 +166,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
-import { ElMessage } from 'element-plus'
 
 const botStore = useBotStore()
 
