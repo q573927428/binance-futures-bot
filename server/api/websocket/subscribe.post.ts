@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
       webSocketManager.subscribePrice(symbol, priceCallback)
       symbolCallbacks!.set(symbol, priceCallback)
       
-      console.log(`✅ 客户端 ${clientId} 订阅: ${symbol}`)
+      // console.log(`✅ 客户端 ${clientId} 订阅: ${symbol}`)
     })
     
     const state = webSocketManager.getWebSocketState()
