@@ -29,6 +29,7 @@ export class KLineSimpleSyncService {
   private syncIntervals: Map<KLineTimeframe, NodeJS.Timeout> = new Map()
   private lastSyncTimes: Map<KLineTimeframe, number> = new Map()
   private timeframeConfigs: Map<KLineTimeframe, TimeframeSyncConfig> = new Map()
+  private isSyncing: Map<KLineTimeframe, boolean> = new Map() // 并发锁：防止同一周期同时执行多个同步
 
   constructor(config?: Partial<KLineSyncConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -730,11 +731,12 @@ export class KLineSimpleSyncService {
         try {
           await this.syncTimeframe(timeframe)
         } catch (error) {
+          // 错误已经在syncTimeframe中处理，这里只确保继续调度
           console.error(`${timeframe} 周期同步失败:`, error)
+        } finally {
+          // 无论成功失败，都调度下一次（等待下一个周期）
+          scheduleNext()
         }
-        
-        // 递归调度下一次
-        scheduleNext()
       }, delay)
       
       this.syncIntervals.set(timeframe, timeout as unknown as NodeJS.Timeout)
@@ -753,15 +755,55 @@ export class KLineSimpleSyncService {
     }, 1000) // 延迟1秒开始，避免同时启动所有周期
   }
 
-  // 同步特定周期的所有交易对
+  // 同步特定周期的所有交易对（带并发锁和超时保护）
   private async syncTimeframe(timeframe: KLineTimeframe): Promise<void> {
     const config = this.timeframeConfigs.get(timeframe)
     if (!config || !config.enabled) {
       return
     }
     
-    const now = Math.floor(Date.now() / 1000)
-    this.lastSyncTimes.set(timeframe, now)
+    // 并发锁检查：防止同一周期同时执行多个同步
+    if (this.isSyncing.get(timeframe)) {
+      // 减少日志：只在调试时记录
+      // console.log(`⏭️  ${timeframe} 周期正在同步中，跳过本次`)
+      return
+    }
+    
+    try {
+      // 设置并发锁
+      this.isSyncing.set(timeframe, true)
+      
+      const now = Math.floor(Date.now() / 1000)
+      this.lastSyncTimes.set(timeframe, now)
+      
+      // 设置超时保护：统一5分钟（300000毫秒）
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`同步超时: ${timeframe} (超过5分钟)`)), 5 * 60 * 1000)
+      })
+      
+      // 执行同步任务，带超时保护
+      await Promise.race([
+        this.executeSyncTimeframe(timeframe),
+        timeoutPromise
+      ])
+      
+    } catch (error: any) {
+      // 减少日志：只记录错误，不记录跳过信息
+      if (!error.message.includes('正在同步中')) {
+        console.error(`${timeframe} 周期同步失败:`, error.message)
+      }
+    } finally {
+      // 清除并发锁（确保即使出错也能清除）
+      this.isSyncing.set(timeframe, false)
+    }
+  }
+
+  // 实际执行同步任务的私有方法（被syncTimeframe调用）
+  private async executeSyncTimeframe(timeframe: KLineTimeframe): Promise<void> {
+    const config = this.timeframeConfigs.get(timeframe)
+    if (!config || !config.enabled) {
+      return
+    }
     
     // console.log(`📊 开始同步 ${timeframe} 周期数据...`)
     
