@@ -1,5 +1,5 @@
 import { appendSimpleKLineData, getSimpleLastKLineTimestamp, updateLastKLine } from '../../utils/kline-simple-storage'
-import type { KLineData, KLineTimeframe, KLineSyncConfig } from '../../../types/kline-simple'
+import type { KLineData, KLineTimeframe, KLineSyncConfig, TimeframeSyncConfig } from '../../../types/kline-simple'
 import { DEFAULT_CONFIG } from '../../../types/kline-simple'
 
 // Binance K线数据接口
@@ -26,11 +26,15 @@ interface SyncStatus {
 export class KLineSimpleSyncService {
   private config: KLineSyncConfig
   private syncStatus: Map<string, SyncStatus> = new Map()
-  private syncInterval: NodeJS.Timeout | null = null
+  private syncIntervals: Map<KLineTimeframe, NodeJS.Timeout> = new Map()
+  private lastSyncTimes: Map<KLineTimeframe, number> = new Map()
+  private timeframeConfigs: Map<KLineTimeframe, TimeframeSyncConfig> = new Map()
 
   constructor(config?: Partial<KLineSyncConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config }
+    this.initializeTimeframeConfigs()
     this.initializeStatus()
+    this.initializeLastSyncTimes()
   }
 
   // 初始化状态
@@ -47,6 +51,34 @@ export class KLineSimpleSyncService {
           status: 'idle'
         })
       }
+    }
+  }
+
+  // 初始化周期配置
+  private initializeTimeframeConfigs(): void {
+    this.timeframeConfigs.clear()
+    
+    // 如果有自定义的周期配置，使用它们
+    if (this.config.timeframeConfigs && this.config.timeframeConfigs.length > 0) {
+      for (const config of this.config.timeframeConfigs) {
+        this.timeframeConfigs.set(config.timeframe, config)
+      }
+    } else {
+      // 否则使用默认配置
+      for (const timeframe of this.config.timeframes) {
+        this.timeframeConfigs.set(timeframe, {
+          timeframe,
+          syncInterval: this.config.syncInterval, // 使用全局同步间隔
+          enabled: true
+        })
+      }
+    }
+  }
+
+  // 初始化最后同步时间
+  private initializeLastSyncTimes(): void {
+    for (const timeframe of this.config.timeframes) {
+      this.lastSyncTimes.set(timeframe, 0)
     }
   }
 
@@ -635,37 +667,124 @@ export class KLineSimpleSyncService {
     }
   }
 
-  // 开始定时同步
+  // 开始定时同步（按周期调度）
   startAutoSync(): void {
-    if (this.syncInterval) {
+    // 检查是否已经在运行
+    if (this.syncIntervals.size > 0) {
       console.warn('定时同步已经在运行')
       return
     }
     
-    console.log(`开始定时同步，间隔: ${this.config.syncInterval}秒`)
+    console.log('🚀 开始按周期调度定时同步...')
     
-    this.syncInterval = setInterval(async () => {
+    // 为每个周期创建独立的定时器
+    for (const timeframe of this.config.timeframes) {
+      this.startTimeframeSync(timeframe)
+    }
+  }
+
+  // 开始特定周期的定时同步
+  private startTimeframeSync(timeframe: KLineTimeframe): void {
+    // 如果已经有定时器，先清除
+    if (this.syncIntervals.has(timeframe)) {
+      this.stopTimeframeSync(timeframe)
+    }
+    
+    // 获取周期配置
+    const config = this.timeframeConfigs.get(timeframe)
+    if (!config || !config.enabled) {
+      console.log(`⏭️  ${timeframe} 周期同步已禁用，跳过`)
+      return
+    }
+    
+    // 使用配置中的同步间隔
+    const intervalSeconds = config.syncInterval
+    const intervalMs = intervalSeconds * 1000
+    
+    // console.log(`⏰ 启动 ${timeframe} 周期同步，间隔: ${intervalSeconds}秒`)
+    
+    // 创建定时器
+    const interval = setInterval(async () => {
       try {
-        console.log('开始定时同步所有K线数据...')
-        const results = await this.syncAllKLine()
-        
-        const successCount = results.filter(r => r.success).length
-        const totalCount = results.reduce((sum, r) => sum + r.count, 0)
-        
-        console.log(`定时同步完成: ${successCount}/${results.length} 成功，共获取 ${totalCount} 条数据`)
+        await this.syncTimeframe(timeframe)
       } catch (error) {
-        console.error('定时同步失败:', error)
+        console.error(`${timeframe} 周期同步失败:`, error)
       }
-    }, this.config.syncInterval * 1000)
+    }, intervalMs)
+    
+    this.syncIntervals.set(timeframe, interval)
+    
+    // 立即执行一次同步
+    setTimeout(async () => {
+      try {
+        await this.syncTimeframe(timeframe)
+      } catch (error) {
+        console.error(`${timeframe} 周期初始同步失败:`, error)
+      }
+    }, 1000) // 延迟1秒开始，避免同时启动所有周期
+  }
+
+  // 同步特定周期的所有交易对
+  private async syncTimeframe(timeframe: KLineTimeframe): Promise<void> {
+    const config = this.timeframeConfigs.get(timeframe)
+    if (!config || !config.enabled) {
+      return
+    }
+    
+    const now = Math.floor(Date.now() / 1000)
+    this.lastSyncTimes.set(timeframe, now)
+    
+    // console.log(`📊 开始同步 ${timeframe} 周期数据...`)
+    
+    const results = []
+    for (const symbol of this.config.symbols) {
+      try {
+        const result = await this.syncSymbolKLine(symbol, timeframe, { force: false })
+        results.push(result)
+        
+        // 避免请求过于频繁
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } catch (error: any) {
+        results.push({
+          success: false,
+          message: `同步失败: ${error.message}`,
+          symbol,
+          timeframe,
+          count: 0
+        })
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length
+    const totalCount = results.reduce((sum, r) => sum + r.count, 0)
+    
+    console.log(`✅ ${timeframe} 周期同步完成: ${successCount}/${results.length} 成功，共获取 ${totalCount} 条数据`)
+  }
+
+  // 停止特定周期的定时同步
+  private stopTimeframeSync(timeframe: KLineTimeframe): void {
+    const interval = this.syncIntervals.get(timeframe)
+    if (interval) {
+      clearInterval(interval)
+      this.syncIntervals.delete(timeframe)
+      console.log(`🛑 已停止 ${timeframe} 周期同步`)
+    }
   }
 
   // 停止定时同步
   stopAutoSync(): void {
-    if (this.syncInterval) {
-      clearInterval(this.syncInterval)
-      this.syncInterval = null
-      console.log('已停止定时同步')
+    if (this.syncIntervals.size === 0) {
+      return
     }
+    
+    console.log('🛑 停止所有周期定时同步...')
+    
+    // 停止所有周期的定时器
+    for (const timeframe of Array.from(this.syncIntervals.keys())) {
+      this.stopTimeframeSync(timeframe)
+    }
+    
+    console.log('✅ 所有周期定时同步已停止')
   }
 
   // 获取同步状态
@@ -689,10 +808,12 @@ export class KLineSimpleSyncService {
     this.config = { ...this.config, ...newConfig }
     
     // 重新初始化状态
+    this.initializeTimeframeConfigs()
     this.initializeStatus()
+    this.initializeLastSyncTimes()
     
     // 如果定时同步在运行，重启它
-    if (this.syncInterval) {
+    if (this.syncIntervals.size > 0) {
       this.stopAutoSync()
       this.startAutoSync()
     }
