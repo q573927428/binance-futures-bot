@@ -112,6 +112,28 @@ export class KLineSimpleSyncService {
     }
   }
 
+  // 获取下一次同步的延迟时间（毫秒）
+  private getNextSyncDelay(timeframe: KLineTimeframe, delaySeconds = 20): number {
+    const now = Math.floor(Date.now() / 1000) // 当前时间戳（秒）
+    
+    const timeframeSecondsMap: Record<KLineTimeframe, number> = {
+      '15m': 15 * 60,
+      '1h': 60 * 60,
+      '4h': 4 * 60 * 60,
+      '1d': 24 * 60 * 60,
+      '1w': 7 * 24 * 60 * 60
+    }
+    
+    const tf = timeframeSecondsMap[timeframe]
+    if (!tf) throw new Error(`不支持的周期: ${timeframe}`)
+    
+    // 向上取整到下一个周期
+    const next = Math.ceil(now / tf) * tf
+    
+    // 延迟几秒，确保交易所K线已完成
+    return (next + delaySeconds - now) * 1000 // 转换为毫秒
+  }
+
   // 获取合约信息
   private async getSymbolInfo(symbol: string): Promise<{
     exists: boolean
@@ -683,7 +705,7 @@ export class KLineSimpleSyncService {
     }
   }
 
-  // 开始特定周期的定时同步
+  // 开始特定周期的定时同步（使用递归调度，对齐K线周期时间点）
   private startTimeframeSync(timeframe: KLineTimeframe): void {
     // 如果已经有定时器，先清除
     if (this.syncIntervals.has(timeframe)) {
@@ -697,24 +719,31 @@ export class KLineSimpleSyncService {
       return
     }
     
-    // 使用配置中的同步间隔
-    const intervalSeconds = config.syncInterval
-    const intervalMs = intervalSeconds * 1000
+    // 递归调度函数
+    const scheduleNext = () => {
+      // 计算下一次同步的延迟
+      const delay = this.getNextSyncDelay(timeframe)
+      
+      console.log(`⏰ ${timeframe} 下一次同步 ${delay / 1000}s 后`)
+      
+      const timeout = setTimeout(async () => {
+        try {
+          await this.syncTimeframe(timeframe)
+        } catch (error) {
+          console.error(`${timeframe} 周期同步失败:`, error)
+        }
+        
+        // 递归调度下一次
+        scheduleNext()
+      }, delay)
+      
+      this.syncIntervals.set(timeframe, timeout as unknown as NodeJS.Timeout)
+    }
     
-    // console.log(`⏰ 启动 ${timeframe} 周期同步，间隔: ${intervalSeconds}秒`)
+    // 开始调度
+    scheduleNext()
     
-    // 创建定时器
-    const interval = setInterval(async () => {
-      try {
-        await this.syncTimeframe(timeframe)
-      } catch (error) {
-        console.error(`${timeframe} 周期同步失败:`, error)
-      }
-    }, intervalMs)
-    
-    this.syncIntervals.set(timeframe, interval)
-    
-    // 立即执行一次同步
+    // 立即执行一次同步（可选）
     setTimeout(async () => {
       try {
         await this.syncTimeframe(timeframe)
@@ -763,9 +792,9 @@ export class KLineSimpleSyncService {
 
   // 停止特定周期的定时同步
   private stopTimeframeSync(timeframe: KLineTimeframe): void {
-    const interval = this.syncIntervals.get(timeframe)
-    if (interval) {
-      clearInterval(interval)
+    const timeout = this.syncIntervals.get(timeframe)
+    if (timeout) {
+      clearTimeout(timeout)
       this.syncIntervals.delete(timeframe)
       console.log(`🛑 已停止 ${timeframe} 周期同步`)
     }
