@@ -28,7 +28,7 @@
     </template>
 
      <!-- TradingView弹窗 -->
-    <KLineChartSimple :symbol="selectedSymbol || 'BTCUSDT'"  timeframe="1h" />
+    <!-- <KLineChartSimple :symbol="selectedSymbol || 'BTCUSDT'"  timeframe="1h" /> -->
     
     <!-- 水平线 -->
      <div class="horizontal-line"></div>
@@ -132,7 +132,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import TradingViewChartModal from './TradingViewChartModal.vue'
 import KLineChartSimple from '../components/kline-chart/KLineChartSimple.vue'
@@ -253,9 +252,11 @@ function triggerPriceAnimation(symbol: string, direction: 'up' | 'down') {
   priceChangeAnimations.value[symbol] = direction
   
   // 1.5秒后清除动画状态
-  setTimeout(() => {
-    priceChangeAnimations.value[symbol] = null
-  }, 1500)
+  if (import.meta.client) {
+    setTimeout(() => {
+      priceChangeAnimations.value[symbol] = null
+    }, 1500)
+  }
 }
 
 // 刷新价格

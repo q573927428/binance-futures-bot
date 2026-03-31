@@ -557,13 +557,9 @@ onMounted(async () => {
   await fetchChartHistory()
   
   // 延迟初始化图表，确保DOM已渲染
-  if (import.meta.client) {
-    setTimeout(() => {
-      if (hasData.value) {
-        initChart()
-      }
-    }, 100)
-  }
+  requestAnimationFrame(() => {
+      initChart()
+    })
 })
 
 // 组件卸载时清理

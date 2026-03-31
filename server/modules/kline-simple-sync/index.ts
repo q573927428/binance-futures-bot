@@ -1,6 +1,10 @@
 import { appendSimpleKLineData, getSimpleLastKLineTimestamp, updateLastKLine } from '../../utils/kline-simple-storage'
 import type { KLineData, KLineTimeframe, KLineSyncConfig, TimeframeSyncConfig } from '../../../types/kline-simple'
 import { DEFAULT_CONFIG } from '../../../types/kline-simple'
+import {
+  setTimeout as nodeSetTimeout,
+  clearTimeout as nodeClearTimeout
+} from 'node:timers'
 
 // Binance K线数据接口
 interface BinanceKLine {
@@ -727,7 +731,7 @@ export class KLineSimpleSyncService {
       
       console.log(`⏰ ${timeframe} 下一次同步 ${delay / 1000}s 后`)
       
-      const timeout = setTimeout(async () => {
+      const timeout = nodeSetTimeout(async () => {
         try {
           await this.syncTimeframe(timeframe)
         } catch (error) {
@@ -746,7 +750,7 @@ export class KLineSimpleSyncService {
     scheduleNext()
     
     // 立即执行一次同步（可选）
-    setTimeout(async () => {
+    nodeSetTimeout(async () => {
       try {
         await this.syncTimeframe(timeframe)
       } catch (error) {
@@ -778,7 +782,7 @@ export class KLineSimpleSyncService {
       
       // 设置超时保护：统一5分钟（300000毫秒）
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`同步超时: ${timeframe} (超过5分钟)`)), 5 * 60 * 1000)
+        nodeSetTimeout(() => reject(new Error(`同步超时: ${timeframe} (超过5分钟)`)), 5 * 60 * 1000)
       })
       
       // 执行同步任务，带超时保护
@@ -814,7 +818,7 @@ export class KLineSimpleSyncService {
         results.push(result)
         
         // 避免请求过于频繁
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise(resolve => nodeSetTimeout(resolve, 100))
       } catch (error: any) {
         results.push({
           success: false,
@@ -836,7 +840,7 @@ export class KLineSimpleSyncService {
   private stopTimeframeSync(timeframe: KLineTimeframe): void {
     const timeout = this.syncIntervals.get(timeframe)
     if (timeout) {
-      clearTimeout(timeout)
+      nodeClearTimeout(timeout)
       this.syncIntervals.delete(timeframe)
       console.log(`🛑 已停止 ${timeframe} 周期同步`)
     }

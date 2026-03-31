@@ -41,10 +41,7 @@ export default defineNitroPlugin(async (nitroApp: NitroApp) => {
     // 注册API端点
     registerApiEndpoints(nitroApp)
     
-    // 启动初始同步（延迟启动，避免影响服务器启动）
-    setTimeout(async () => {
-      await startInitialSync()
-    }, 5000) // 延迟5秒启动
+    await startInitialSync()
     
     // 处理服务器关闭
     nitroApp.hooks.hook('close', async () => {

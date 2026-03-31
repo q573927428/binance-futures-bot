@@ -69,18 +69,19 @@ const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout | null = null
+  let timeout: number | null = null
   
   return (...args: Parameters<T>) => {
-    if (timeout) {
+    if (timeout !== null) {
       clearTimeout(timeout)
     }
     
-    timeout = setTimeout(() => {
+    timeout = window.setTimeout(() => {
       func(...args)
     }, wait)
   }
 }
+
 
 // 定义props
 interface Props {
@@ -429,6 +430,7 @@ const unsubscribeFromPriceUpdates = async (): Promise<boolean> => {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController()
+      
       const timeoutId = setTimeout(() => controller.abort(), timeout)
       
       const response = await fetch('/api/websocket/unsubscribe', {

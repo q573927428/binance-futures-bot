@@ -354,14 +354,15 @@ const updateChart = () => {
           from: fromItem.time,
           to: toItem.time
         })
-        
-        setTimeout(() => {
-          if (chart) {
-            chart.timeScale().applyOptions({
-              rightOffset: 12
-            })
-          }
-        }, 0)
+        if (import.meta.client) {
+          setTimeout(() => {
+            if (chart) {
+              chart.timeScale().applyOptions({
+                rightOffset: 12
+              })
+            }
+          }, 0)
+        }
       } else {
         chart.timeScale().fitContent()
       }
