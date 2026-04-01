@@ -92,9 +92,9 @@ export function getEMAColor(period: number): string {
     14: '#298cf3', // 红色 - EMA14
     20: '#4ECDC4', // 青色 - EMA20
     30: '#FF6B6B', // 蓝色 - EMA30
-    60: '#DDA0DD', // 绿色 - EMA60
+    60: '#DDA0DD', // 紫色 - EMA60
     120: '#f3ab23', // 黄色 - EMA120
-    200: '#96CEB4'  // 紫色 - EMA200
+    200: '#96CEB4'  // 绿色 - EMA200
   }
 
   return colorMap[period] || '#FFFFFF'
@@ -107,7 +107,7 @@ export function getEMAColor(period: number): string {
  */
 export function getEMAWidth(period: number): number {
   const widthMap: Record<number, number> = {
-    14: 2,
+    14: 1.5,
     20: 2,
     30: 2,
     60: 2.5,
