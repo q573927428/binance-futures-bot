@@ -81,9 +81,9 @@
       }
     },
     "adxTrend": {
-      "adx1hThreshold": 18,
-      "adx4hThreshold": 15,
-      "adx15mThreshold": 50,
+      "adx1hThreshold": 38,
+      "adx4hThreshold": 35,
+      "adx15mThreshold": 60,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
