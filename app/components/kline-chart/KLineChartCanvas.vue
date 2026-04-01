@@ -482,19 +482,6 @@ watch(() => props.tradeHistory, () => {
   addOrderMarkers()
 }, { deep: true })
 
-// 监听配置变化，当配置加载后重新初始化图表
-watch(() => botStore.config, (newConfig) => {
-  if (newConfig && chart) {
-    console.log('🔄 配置已加载，重新初始化图表')
-    // 重新初始化图表以使用正确的EMA周期
-    cleanupChart()
-    nextTick(() => {
-      if (chartContainer.value) {
-        initChart()
-      }
-    })
-  }
-})
 
 // 组件挂载时初始化
 onMounted(() => {

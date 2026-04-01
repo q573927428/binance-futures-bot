@@ -110,7 +110,7 @@ export function getEMAWidth(period: number): number {
     14: 2,
     20: 2,
     30: 2,
-    60: 2,
+    60: 2.5,
     120: 2.5,
     200: 3
   }

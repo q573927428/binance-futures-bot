@@ -580,18 +580,6 @@ watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
   }
 })
 
-// 监听配置变化，当配置加载后更新timeframe
-watch(() => botStore.config, (newConfig) => {
-  if (newConfig) {
-    const newTimeframe = computedTimeframe.value
-    if (selectedTimeframe.value !== newTimeframe) {
-      console.log(`🔄 配置已加载，更新timeframe: ${selectedTimeframe.value} -> ${newTimeframe}`)
-      selectedTimeframe.value = newTimeframe
-      loadKLineData()
-    }
-  }
-})
-
 // 组件挂载时初始化
 onMounted(() => {
   // 直接加载K线数据
