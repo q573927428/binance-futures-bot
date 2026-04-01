@@ -49,10 +49,10 @@ export const useBotStore = defineStore('bot', {
     isLoading: false,
     error: null as string | null,
     
-    // 共享轮询管理
-    pollingSubscribers: new Set<string>(),
-    pollingTimer: null as NodeJS.Timeout | null,
-    isPollingActive: false,
+  // 共享轮询管理
+  pollingSubscribers: new Map<string, () => void>(), // 改为Map，存储订阅者ID和回调函数
+  pollingTimer: null as NodeJS.Timeout | null,
+  isPollingActive: false,
   }),
 
   getters: {
@@ -205,10 +205,10 @@ export const useBotStore = defineStore('bot', {
       return () => clearInterval(timer)
     },
 
-    // 订阅共享轮询
-    subscribeToPolling(subscriberId: string) {
+    // 订阅共享轮询（带回调函数）
+    subscribeToPolling(subscriberId: string, callback?: () => void) {
       // 添加订阅者
-      this.pollingSubscribers.add(subscriberId)
+      this.pollingSubscribers.set(subscriberId, callback || (() => {}))
       
       // 如果有订阅者且轮询未启动，则启动轮询
       if (this.pollingSubscribers.size > 0 && !this.pollingTimer) {
@@ -243,7 +243,17 @@ export const useBotStore = defineStore('bot', {
       console.log(`[Polling] 启动共享轮询，间隔: ${pollInterval}ms`)
       
       this.pollingTimer = setInterval(() => {
+        // 获取状态
         this.fetchStatus()
+        
+        // 调用所有订阅者的回调函数
+        for (const callback of this.pollingSubscribers.values()) {
+          try {
+            callback()
+          } catch (error) {
+            console.error('[Polling] 调用订阅者回调失败:', error)
+          }
+        }
       }, pollInterval)
       
       this.isPollingActive = true

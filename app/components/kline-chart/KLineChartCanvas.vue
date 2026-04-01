@@ -326,6 +326,66 @@ const updateLastKline = (updatedKline: SimpleKLineData) => {
   }
 }
 
+// 追加新K线数据
+const appendNewKline = (newKline: SimpleKLineData) => {
+  if (!candlestickSeries || !volumeSeries || emaSeries.length === 0) return
+  
+  try {
+    // 准备新K线数据
+    const candlestickData = {
+      time: newKline.t,
+      open: newKline.o,
+      high: newKline.h,
+      low: newKline.l,
+      close: newKline.c
+    }
+    
+    // 使用update方法追加新K线（如果时间戳不存在，update会自动追加）
+    candlestickSeries.update(candlestickData)
+    
+    // 更新成交量
+    const volumeData = {
+      time: newKline.t,
+      value: newKline.v || 0,
+      color: newKline.c >= newKline.o ? '#26a69a' : '#ef5350'
+    }
+    volumeSeries.update(volumeData)
+    
+    // 重新计算整个EMA序列并追加新K线的EMA值
+    // 获取当前props.klineData的副本并追加新K线
+    const updatedKlineData = [...props.klineData, newKline]
+    
+    // 为每个EMA周期更新EMA值
+    for (let i = 0; i < emaPeriods.value.length; i++) {
+      const period = emaPeriods.value[i]
+      const emaSeriesItem = emaSeries[i]
+      
+      if (period && emaSeriesItem) {
+        const emaData = calculateEMASeries(updatedKlineData, period)
+        if (emaData.length > 0) {
+          // 只更新最后一根K线的EMA值（新追加的K线）
+          const lastEma = emaData[emaData.length - 1]
+          if (lastEma) {
+            emaSeriesItem.update(lastEma)
+          }
+        }
+      }
+    }
+    
+    // 如果tooltip正在显示，更新tooltip
+    if (chart && typeof chart.getCrosshairPosition === 'function') {
+      const crosshairPosition = chart.getCrosshairPosition()
+      if (crosshairPosition && crosshairPosition.time === newKline.t) {
+        emitTooltipUpdate(newKline)
+      }
+    }
+    
+    console.log(`✅ 已追加新K线: ${new Date(newKline.t * 1000).toLocaleString()}`)
+  } catch (error) {
+    console.error('追加新K线失败:', error)
+  }
+}
+
 // 更新图表数据
 const updateChart = () => {
   if (!chart || !candlestickSeries || !volumeSeries) {
@@ -578,7 +638,8 @@ watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
 
 // 暴露方法给父组件
 defineExpose({
-  updateLastKline
+  updateLastKline,
+  appendNewKline
 })
 </script>
 

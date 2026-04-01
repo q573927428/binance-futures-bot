@@ -527,6 +527,52 @@ const stopPricePolling = () => {
   }
 }
 
+// 新K线检测相关 - 复用bot store的共享轮询
+const klineCheckSubscriberId = 'kline-chart-new-kline-check'
+
+// 检查是否需要加载新K线
+const checkForNewKline = () => {
+  if (klineData.value.length === 0 || !selectedTimeframe.value) return
+  
+  const lastKline = klineData.value[klineData.value.length - 1]
+  if (!lastKline) return
+  
+  const now = Math.floor(Date.now() / 1000)
+  const timeframeSeconds = getTimeframeSeconds(selectedTimeframe.value)
+  
+  // 计算当前K线周期的时间戳
+  const currentKlineTimestamp = Math.floor(now / timeframeSeconds) * timeframeSeconds
+  
+  // 后端会在周期结束后延迟20秒才去拉取数据
+  // 所以前端也需要等待20秒后再检查新K线
+  const backendDelaySeconds = 20
+  
+  // 如果当前时间已经超过了最后一根K线的时间周期 + 后端延迟时间，说明后端应该已经拉取到新K线了
+  if (currentKlineTimestamp > lastKline.t && (now - currentKlineTimestamp) >= backendDelaySeconds) {
+    console.log(`🔄 检测到新K线周期开始（已过${backendDelaySeconds}秒延迟），重新加载数据 (${selectedTimeframe.value})`)
+    loadKLineData()
+  } else if (currentKlineTimestamp > lastKline.t) {
+    // 新周期已经开始，但后端延迟时间还没到
+    const remainingSeconds = backendDelaySeconds - (now - currentKlineTimestamp)
+    console.log(`⏳ 新K线周期已开始，等待后端拉取数据（剩余${remainingSeconds}秒）`)
+  }
+}
+
+// 启动新K线检测（复用共享轮询）
+const startNewKlineCheck = () => {
+  // 订阅共享轮询，传递回调函数，每次轮询时检查新K线
+  botStore.subscribeToPolling(klineCheckSubscriberId, checkForNewKline)
+  
+  // 立即检查一次
+  checkForNewKline()
+}
+
+// 停止新K线检测
+const stopNewKlineCheck = () => {
+  // 取消订阅共享轮询
+  botStore.unsubscribeFromPolling(klineCheckSubscriberId)
+}
+
 // symbol变化处理函数
 const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
   if (newSymbol && newSymbol !== oldSymbol) {
@@ -587,11 +633,14 @@ onMounted(() => {
   fetchWebSocketStatus()
   subscribeToPriceUpdates()
   loadTradeHistory()
+  // 启动新K线检测
+  startNewKlineCheck()
 })
 
 // 组件卸载前同步清理
 onBeforeUnmount(() => {
   stopPricePolling()
+  stopNewKlineCheck()
 })
 
 // 组件卸载时异步清理
