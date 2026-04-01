@@ -278,30 +278,20 @@ const passwordInput = ref('')
 const isClosing = ref(false)
 const requiresPassword = ref(false)
 
-// 轮询控制
-let stopPolling: (() => void) | null = null
-
-// 监听持仓状态变化，有持仓时启动轮询，无持仓时停止轮询
+// 监听持仓状态变化，有持仓时订阅共享轮询，无持仓时取消订阅
 watch(() => botStore.hasPosition, (hasPosition) => {
   if (hasPosition) {
-    // 有持仓时启动轮询
-    if (!stopPolling) {
-      stopPolling = botStore.startPolling()
-    }
+    // 有持仓时订阅共享轮询
+    botStore.subscribeToPolling('current-positions')
   } else {
-    // 无持仓时停止轮询
-    if (stopPolling) {
-      stopPolling()
-      stopPolling = null
-    }
+    // 无持仓时取消订阅共享轮询
+    botStore.unsubscribeFromPolling('current-positions')
   }
 }, { immediate: true })
 
-// 组件卸载时停止轮询
+// 组件卸载时取消订阅共享轮询
 onUnmounted(() => {
-  if (stopPolling) {
-    stopPolling()
-  }
+  botStore.unsubscribeFromPolling('current-positions')
 })
 
 // 计算价格区间相关数据（考虑所有关键价格点，添加缓冲避免重叠）

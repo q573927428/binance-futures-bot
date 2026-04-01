@@ -48,6 +48,11 @@ export const useBotStore = defineStore('bot', {
     pagination: null as PaginationInfo | null,
     isLoading: false,
     error: null as string | null,
+    
+    // 共享轮询管理
+    pollingSubscribers: new Set<string>(),
+    pollingTimer: null as NodeJS.Timeout | null,
+    isPollingActive: false,
   }),
 
   getters: {
@@ -198,6 +203,73 @@ export const useBotStore = defineStore('bot', {
       }, pollInterval)
 
       return () => clearInterval(timer)
+    },
+
+    // 订阅共享轮询
+    subscribeToPolling(subscriberId: string) {
+      // 添加订阅者
+      this.pollingSubscribers.add(subscriberId)
+      
+      // 如果有订阅者且轮询未启动，则启动轮询
+      if (this.pollingSubscribers.size > 0 && !this.pollingTimer) {
+        this.startSharedPolling()
+      }
+      
+      console.log(`[Polling] 订阅者 ${subscriberId} 加入，当前订阅者: ${this.pollingSubscribers.size}`)
+    },
+
+    // 取消订阅共享轮询
+    unsubscribeFromPolling(subscriberId: string) {
+      // 移除订阅者
+      this.pollingSubscribers.delete(subscriberId)
+      
+      // 如果没有订阅者了，则停止轮询
+      if (this.pollingSubscribers.size === 0 && this.pollingTimer) {
+        this.stopSharedPolling()
+      }
+      
+      console.log(`[Polling] 订阅者 ${subscriberId} 离开，当前订阅者: ${this.pollingSubscribers.size}`)
+    },
+
+    // 启动共享轮询
+    startSharedPolling() {
+      if (this.pollingTimer) {
+        return // 已经启动了
+      }
+      
+      // 使用配置中的 positionScanInterval，转换为毫秒
+      const pollInterval = (this.config?.positionScanInterval || 60) * 1000
+      
+      console.log(`[Polling] 启动共享轮询，间隔: ${pollInterval}ms`)
+      
+      this.pollingTimer = setInterval(() => {
+        this.fetchStatus()
+      }, pollInterval)
+      
+      this.isPollingActive = true
+      
+      // 立即执行一次获取状态
+      this.fetchStatus()
+    },
+
+    // 停止共享轮询
+    stopSharedPolling() {
+      if (this.pollingTimer) {
+        clearInterval(this.pollingTimer)
+        this.pollingTimer = null
+        this.isPollingActive = false
+        console.log('[Polling] 停止共享轮询')
+      }
+    },
+
+    // 获取当前轮询状态
+    getPollingStatus() {
+      return {
+        isActive: this.isPollingActive,
+        subscribers: Array.from(this.pollingSubscribers),
+        interval: (this.config?.positionScanInterval || 60) * 1000,
+        hasTimer: !!this.pollingTimer
+      }
     },
 
     // 生成Pine脚本
