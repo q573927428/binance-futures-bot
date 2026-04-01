@@ -583,24 +583,29 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
     tradeHistory.value = []
     hideTooltip()
     
-    // 2. 停止旧的轮询
+    // 2. 清理图表上的订单标记
+    if (chartCanvasRef.value) {
+      chartCanvasRef.value.clearMarkers()
+    }
+    
+    // 3. 停止旧的轮询
     stopPricePolling()
     
-    // 3. 清理旧的WebSocket订阅
+    // 4. 清理旧的WebSocket订阅
     if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
       console.log(`🔄 清理旧的WebSocket订阅: ${oldSymbol}`)
       await cleanupOldSubscription()
     }
     
-    // 4. 重置WebSocket客户端ID，确保新订阅使用新的ID
+    // 5. 重置WebSocket客户端ID，确保新订阅使用新的ID
     webSocketClientId.value = ''
     currentSubscriptionSymbol.value = ''
     
-    // 5. 加载新数据
+    // 6. 加载新数据
     console.log(`📊 加载新交易对数据: ${newSymbol}`)
     await loadKLineData()
     
-    // 6. 重新订阅价格更新
+    // 7. 重新订阅价格更新
     console.log(`🔗 订阅新交易对价格更新: ${newSymbol}`)
     await subscribeToPriceUpdates()
     

@@ -455,9 +455,29 @@ const updateChart = () => {
   addOrderMarkers()
 }
 
+// 清理订单标记
+const clearMarkers = () => {
+  if (!candlestickSeries) return
+  
+  try {
+    // 使用空数组来清除所有标记
+    createSeriesMarkers(candlestickSeries, [])
+    markersAdded.value = false
+    console.log(`🧹 已清理订单标记 (symbol: ${props.symbol})`)
+  } catch (error) {
+    console.warn('清理订单标记失败:', error)
+  }
+}
+
 // 添加订单标记
 const addOrderMarkers = () => {
-  if (!candlestickSeries || props.tradeHistory?.length === 0 || markersAdded.value) return
+  if (!candlestickSeries || markersAdded.value) return
+  
+  // 如果交易历史为空，直接设置标记状态为未添加并返回
+  if (props.tradeHistory?.length === 0) {
+    markersAdded.value = false
+    return
+  }
   
   const markers = props.tradeHistory!.flatMap(order => {
     // 转换时间格式：毫秒 -> 秒
@@ -639,7 +659,8 @@ watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
 // 暴露方法给父组件
 defineExpose({
   updateLastKline,
-  appendNewKline
+  appendNewKline,
+  clearMarkers
 })
 </script>
 
