@@ -22,11 +22,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 
 const botStore = useBotStore()
+let stopPolling: (() => void) | null = null
 
 // 倒序显示日志，最新的在最上面
 const reversedLogs = computed(() => [...botStore.logs].reverse())
@@ -34,6 +35,22 @@ const reversedLogs = computed(() => [...botStore.logs].reverse())
 function formatTime(timestamp: number): string {
   return dayjs(timestamp).format('HH:mm:ss')
 }
+
+// 组件加载时获取日志并启动轮询
+onMounted(async () => {
+  // 初始获取日志
+  await botStore.fetchStatus()
+  
+  // 开启轮询，使用配置中的 scanInterval 值
+  stopPolling = botStore.startPolling()
+})
+
+// 组件卸载时停止轮询
+onUnmounted(() => {
+  if (stopPolling) {
+    stopPolling()
+  }
+})
 </script>
 
 <style scoped>

@@ -78,7 +78,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   visible: false,
   symbol: 'BTCUSDT',
-  timeframe: '1h',
+  timeframe: '15m',
   time: '',
   data: () => ({
     open: 0,

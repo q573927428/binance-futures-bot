@@ -161,7 +161,7 @@ const syncResult = ref<SyncResult | null>(null)
 const syncing = ref(false)
 
 const historySymbol = ref('BTCUSDT')
-const historyTimeframe = ref('1h')
+const historyTimeframe = ref('15m')
 const historyTotalBars = ref(22000)
 const historyResult = ref<SyncResult | null>(null)
 const syncingHistory = ref(false)

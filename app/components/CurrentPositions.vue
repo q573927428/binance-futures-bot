@@ -266,7 +266,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 
@@ -277,6 +277,32 @@ const passwordDialogVisible = ref(false)
 const passwordInput = ref('')
 const isClosing = ref(false)
 const requiresPassword = ref(false)
+
+// 轮询控制
+let stopPolling: (() => void) | null = null
+
+// 监听持仓状态变化，有持仓时启动轮询，无持仓时停止轮询
+watch(() => botStore.hasPosition, (hasPosition) => {
+  if (hasPosition) {
+    // 有持仓时启动轮询
+    if (!stopPolling) {
+      stopPolling = botStore.startPolling()
+    }
+  } else {
+    // 无持仓时停止轮询
+    if (stopPolling) {
+      stopPolling()
+      stopPolling = null
+    }
+  }
+}, { immediate: true })
+
+// 组件卸载时停止轮询
+onUnmounted(() => {
+  if (stopPolling) {
+    stopPolling()
+  }
+})
 
 // 计算价格区间相关数据（考虑所有关键价格点，添加缓冲避免重叠）
 const priceRange = computed(() => {

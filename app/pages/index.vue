@@ -135,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useBotStore } from '../stores/bot'
 import dayjs from 'dayjs'
 
@@ -149,7 +149,6 @@ import CryptoPriceCards from '../components/CryptoPriceCards.vue'
 import ManualOpenPosition from '../components/ManualOpenPosition.vue'
 
 const botStore = useBotStore()
-let stopPolling: (() => void) | null = null
 
 const statusText = computed(() => {
   const status = botStore.state?.status
@@ -241,16 +240,6 @@ async function handleEditConfig() {
 // 页面加载时获取状态
 onMounted(async () => {
   await botStore.fetchStatus()
-
-  // 开启轮询，使用配置中的 scanInterval 值
-  stopPolling = botStore.startPolling()
-})
-
-// 页面卸载时停止轮询
-onUnmounted(() => {
-  if (stopPolling) {
-    stopPolling()
-  }
 })
 </script>
 

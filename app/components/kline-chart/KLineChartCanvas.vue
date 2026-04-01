@@ -92,7 +92,7 @@ const computedTimeframe = computed(() => {
   if (props.timeframe) return props.timeframe
   
   // 否则根据策略模式自动选择
-  if (!botStore.config) return '1h' // 默认值
+  if (!botStore.config) return '15m' // 默认值
   
   const strategyMode = botStore.config.strategyMode
   // medium_term 使用 1h，其他（short_term）使用 15m
