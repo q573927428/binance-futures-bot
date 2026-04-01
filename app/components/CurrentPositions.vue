@@ -631,7 +631,7 @@ async function executeClosePositionWithPassword(password: string) {
 /* 价格区间进度条样式 */
 .price-range-section {
   margin-top: 24px;
-  padding: 20px;
+  padding: 20px 0;
   background: white;
   border-radius: 12px;
   border: 1px solid #e5e7eb;

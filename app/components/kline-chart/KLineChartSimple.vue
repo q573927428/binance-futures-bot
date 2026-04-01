@@ -652,15 +652,9 @@ onUnmounted(async () => {
 <style scoped>
 .kline-chart-simple-container {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e4e7ed;
+  margin: -20px;
   overflow: hidden;
   transition: all 0.3s ease;
-}
-
-.kline-chart-simple-container:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
 .chart-container {
@@ -673,7 +667,4 @@ onUnmounted(async () => {
   border-color: #333;
 }
 
-:global(.dark) .kline-chart-simple-container:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
-}
 </style>

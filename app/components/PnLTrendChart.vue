@@ -594,8 +594,7 @@ onUnmounted(() => {
 }
 
 .stats-summary {
-  margin-top: 15px;
-  padding-top: 15px;
+  margin-top: -6px;
   border-top: 1px solid #ebeef5;
 }
 
