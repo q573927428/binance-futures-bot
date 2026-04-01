@@ -1,5 +1,5 @@
 {
-  "strategyMode": "medium_term",
+  "strategyMode": "short_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -83,7 +83,7 @@
     "adxTrend": {
       "adx1hThreshold": 38,
       "adx4hThreshold": 35,
-      "adx15mThreshold": 60,
+      "adx15mThreshold": 50,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {

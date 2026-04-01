@@ -105,7 +105,7 @@ const displaySymbol = computed(() => {
   return props.symbol || 'BTCUSDT'
 })
 
-// 根据策略模式计算timeframe
+// 计算timeframe
 const computedTimeframe = computed(() => {
   // 如果props提供了timeframe，则使用提供的值
   if (props.timeframe) return props.timeframe
@@ -120,6 +120,26 @@ const computedTimeframe = computed(() => {
 
 // 响应式数据
 const selectedTimeframe = ref(computedTimeframe.value)
+
+// 监听computedTimeframe变化（当botStore.config加载完成后）
+watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
+  if (newTimeframe && newTimeframe !== oldTimeframe && newTimeframe !== selectedTimeframe.value) {
+
+    // 清空当前K线数据，避免显示旧周期的数据
+    klineData.value = []
+    tradeHistory.value = []
+    hideTooltip()
+    
+    // 清理图表上的订单标记
+    if (chartCanvasRef.value) {
+      chartCanvasRef.value.clearMarkers()
+    }
+    
+    selectedTimeframe.value = newTimeframe
+    loadKLineData()
+  }
+})
+
 const klineData = ref<SimpleKLineData[]>([])
 const meta = ref({
   first: 0,
@@ -161,6 +181,17 @@ const tooltipPosition = ref({
 // 选择周期
 const selectTimeframe = (timeframe: string) => {
   if (selectedTimeframe.value === timeframe) return
+  
+  // 清空当前K线数据，避免显示旧周期的数据
+  klineData.value = []
+  tradeHistory.value = []
+  hideTooltip()
+  
+  // 清理图表上的订单标记
+  if (chartCanvasRef.value) {
+    chartCanvasRef.value.clearMarkers()
+  }
+  
   selectedTimeframe.value = timeframe
   loadKLineData()
 }

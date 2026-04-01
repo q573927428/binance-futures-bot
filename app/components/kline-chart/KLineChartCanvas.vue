@@ -86,17 +86,13 @@ const emaPeriods = computed(() => {
   return [emaConfig.fast, emaConfig.slow]
 })
 
-// 根据策略模式计算timeframe
+// 使用props.timeframe，如果为空则使用默认值15m
 const computedTimeframe = computed(() => {
   // 如果props提供了timeframe，则使用提供的值
   if (props.timeframe) return props.timeframe
   
-  // 否则根据策略模式自动选择
-  if (!botStore.config) return '15m' // 默认值
-  
-  const strategyMode = botStore.config.strategyMode
-  // medium_term 使用 1h，其他（short_term）使用 15m
-  return strategyMode === 'medium_term' ? '1h' : '15m'
+  // 否则使用默认值15m
+  return '15m'
 })
 
 // 判断是否为DOGE交易对
@@ -135,7 +131,6 @@ const initChart = () => {
   
   // 获取当前价格格式
   const currentPriceFormat = priceFormat.value
-  console.log(`💰 价格格式配置: precision=${currentPriceFormat.precision}, minMove=${currentPriceFormat.minMove}`)
   
   // 添加K线系列
   candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -203,7 +198,6 @@ const initChart = () => {
   // 添加订单标记
   addOrderMarkers()
   
-  console.log(`✅ 图表初始化完成 (symbol: ${props.symbol})`)
 }
 
 // 根据时间查找K线数据
@@ -463,7 +457,6 @@ const clearMarkers = () => {
     // 使用空数组来清除所有标记
     createSeriesMarkers(candlestickSeries, [])
     markersAdded.value = false
-    console.log(`🧹 已清理订单标记 (symbol: ${props.symbol})`)
   } catch (error) {
     console.warn('清理订单标记失败:', error)
   }
@@ -583,7 +576,6 @@ onMounted(() => {
 
 // 清理图表资源
 const cleanupChart = () => {
-  console.log(`🧹 清理图表资源 (当前symbol: ${props.symbol})...`)
   
   // 停止所有可能的动画或更新
   if (chart) {
@@ -625,7 +617,6 @@ const cleanupChart = () => {
   // 重置标记状态
   markersAdded.value = false
   
-  console.log(`✅ 图表资源清理完成 (symbol: ${props.symbol})`)
 }
 
 // 组件卸载前清理
@@ -636,7 +627,6 @@ onUnmounted(() => {
 // 监听symbol变化，清理并重新初始化图表
 watch(() => props.symbol, (newSymbol, oldSymbol) => {
   if (newSymbol && newSymbol !== oldSymbol) {
-    console.log(`🔄 Symbol变化: ${oldSymbol} -> ${newSymbol}, 重新初始化图表`)
     
     // 清理旧图表
     cleanupChart()
@@ -653,7 +643,6 @@ watch(() => props.symbol, (newSymbol, oldSymbol) => {
 // 监听timeframe变化，清理并重新初始化图表
 watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
   if (newTimeframe && newTimeframe !== oldTimeframe) {
-    console.log(`🔄 Timeframe变化: ${oldTimeframe} -> ${newTimeframe}, 重新初始化图表`)
     
     // 清理旧图表
     cleanupChart()
