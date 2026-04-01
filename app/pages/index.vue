@@ -105,7 +105,9 @@
               </div>
             </el-card>
             <!-- 当前持仓组件 -->
-            <CurrentPositions />
+            <ClientOnly>
+              <CurrentPositions />
+            </ClientOnly>
             <!-- 盈亏与胜率走势图 -->
             <ClientOnly>
               <PnLTrendChart />
@@ -126,7 +128,9 @@
             <TradeHistory :has-position="botStore.hasPosition" />
 
             <!-- 系统日志组件 -->
-            <SystemLogs />
+            <ClientOnly>
+              <SystemLogs />
+            </ClientOnly>
           </el-col>
         </el-row>
       </el-main>
