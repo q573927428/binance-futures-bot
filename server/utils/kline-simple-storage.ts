@@ -85,7 +85,8 @@ export function readSimpleKLineFile(
 export function writeSimpleKLineFile(
   symbol: string, 
   timeframe: KLineTimeframe, 
-  data: KLineData[]
+  data: KLineData[],
+  maxBars: number = 11000
 ): boolean {
   try {
     const normalizedSymbol = symbol.replace('/', '')
@@ -104,8 +105,8 @@ export function writeSimpleKLineFile(
       }
     }
     
-    // 限制最多22000条数据
-    const limitedData = uniqueData.slice(-22000)
+    // 限制最多maxBars条数据
+    const limitedData = uniqueData.slice(-maxBars)
     
     // 转换为简化格式
     const simpleData: SimpleKLineData[] = limitedData.map(item => ({
@@ -122,7 +123,7 @@ export function writeSimpleKLineFile(
       first: limitedData[0]?.timestamp || 0,
       last: limitedData[limitedData.length - 1]?.timestamp || 0,
       count: limitedData.length,
-      max: 22000,
+      max: maxBars,
       updated: Math.floor(Date.now() / 1000)
     }
     

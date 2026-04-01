@@ -27,12 +27,12 @@ export interface KLineData {
 export interface KLineSingleFile {
   symbol: string
   timeframe: KLineTimeframe
-  data: SimpleKLineData[]  // 最多22000条
+  data: SimpleKLineData[]  // 最多11000条
   meta: {
     first: number      // 第一条数据时间戳
     last: number       // 最后一条数据时间戳
     count: number      // 当前数据条数
-    max: number        // 最大数据条数（22000）
+    max: number        // 最大数据条数（11000）
     updated: number    // 最后更新时间戳
   }
 }
@@ -75,7 +75,7 @@ export interface TimeframeSyncConfig {
 export interface KLineSyncConfig {
   symbols: string[]
   timeframes: KLineTimeframe[]
-  maxBars: number          // 最大K线数量（22000）
+  maxBars: number          // 最大K线数量（11000）
   syncInterval: number     // 全局同步间隔（秒）- 向后兼容
   timeframeConfigs?: TimeframeSyncConfig[] // 每个周期的独立配置
 }
@@ -84,7 +84,7 @@ export interface KLineSyncConfig {
 export const DEFAULT_CONFIG: KLineSyncConfig = {
   symbols: ['BTC/USDT', 'ETH/USDT'],
   timeframes: ['15m', '1h', '4h', '1d', '1w'],
-  maxBars: 22000,
+  maxBars: 11000,
   syncInterval: 600, // 按周期调度，此值不再使用，但保留用于API兼容性
   timeframeConfigs: [
     { timeframe: '15m', syncInterval: 600, enabled: true },   // ✅ 10分钟

@@ -15,7 +15,7 @@ let syncService: KLineSimpleSyncService | null = null
 const DEFAULT_SYNC_CONFIG: KLineSyncConfig = {
   symbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'HYPEUSDT', 'XAUUSDT', 'XAGUSDT', 'BNBUSDT' ],
   timeframes: ['15m', '1h', '4h', '1d', '1w'],
-  maxBars: 22000,
+  maxBars: 11000,
   syncInterval: 600, // 按周期调度，此值不再使用，但保留用于API兼容性
   timeframeConfigs: [
     { timeframe: '15m', syncInterval: 600, enabled: true },   // ✅ 10分钟
@@ -170,7 +170,7 @@ function registerApiEndpoints(nitroApp: NitroApp): void {
   nitroApp.router?.post('/api/kline-sync/history', eventHandler(async (event) => {
     try {
       const body = await readBody(event)
-      const { symbol, timeframe, totalBars = 22000, batchSize = 1000 } = body
+      const { symbol, timeframe, totalBars = DEFAULT_SYNC_CONFIG.maxBars, batchSize = 1000 } = body
       
       if (!syncService) {
         throw new Error('同步服务未初始化')

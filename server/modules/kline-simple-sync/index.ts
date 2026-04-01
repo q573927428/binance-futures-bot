@@ -274,10 +274,10 @@ export class KLineSimpleSyncService {
       let lastTimestamp = getSimpleLastKLineTimestamp(symbol, timeframe)
       
       if (!lastTimestamp || force) {
-        // 首次同步或强制同步，使用manualSyncHistory获取22000条数据
+        // 首次同步或强制同步，使用manualSyncHistory获取maxBars条数据
         console.log(`[首次同步] 开始获取历史数据: ${symbol}/${timeframe}`)
         const historyResult = await this.manualSyncHistory(symbol, timeframe, {
-          totalBars: 22000,
+          totalBars: this.config.maxBars,
           batchSize: 1000
         })
         
@@ -473,7 +473,7 @@ export class KLineSimpleSyncService {
       status: string
     }
   }> {
-    const { totalBars = 22000, batchSize = 1000, startTime, endTime } = options
+    const { totalBars = this.config.maxBars, batchSize = 1000, startTime, endTime } = options
     const startTimestamp = Date.now()
     
     try {

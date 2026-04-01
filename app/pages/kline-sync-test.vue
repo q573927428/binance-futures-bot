@@ -102,7 +102,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">数据条数</label>
             <input v-model.number="historyTotalBars" type="number" min="100" max="50000" 
-                   class="w-full px-3 py-2 border rounded" placeholder="例如: 22000">
+                   class="w-full px-3 py-2 border rounded" placeholder="例如: 11000">
           </div>
           
           <button @click="syncHistory" :disabled="syncingHistory" 
@@ -162,7 +162,7 @@ const syncing = ref(false)
 
 const historySymbol = ref('BTCUSDT')
 const historyTimeframe = ref('15m')
-const historyTotalBars = ref(22000)
+const historyTotalBars = ref(11000)
 const historyResult = ref<SyncResult | null>(null)
 const syncingHistory = ref(false)
 
