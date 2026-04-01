@@ -443,7 +443,7 @@ interface WebSocketStatusResponse {
 
 .cards-grid {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .horizontal-line{
@@ -462,6 +462,7 @@ interface WebSocketStatusResponse {
   min-height: 70px;
   min-width: 138px;
   flex-shrink: 0;
+  flex: 1 0 calc(12.5% - 8px); /* 默认一行显示8个 (100% / 8 = 12.5%) */
 }
 
 .price-card:hover {
@@ -668,38 +669,47 @@ interface WebSocketStatusResponse {
   text-align: center;
 }
 
-
+/* 手机端尺寸 (小于等于480px) */
 @media (max-width: 480px) {
   .cards-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    gap: 6px;
   }
   
   .price-card {
-    padding: 8px;
-    min-height: 80px;
+    padding: 6px;
+    min-height: 75px;
+    flex: 1 0 calc(50% - 6px); /* 手机端一行显示2个 */
+    min-width: 0; /* 移除最小宽度限制 */
   }
   
   .crypto-symbol {
-    font-size: 13px;
+    font-size: 12px;
   }
   
   .crypto-icon {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
   
   .current-price {
-    font-size: 15px;
+    font-size: 14px;
   }
   
   .price-change {
+    font-size: 8px;
+    padding: 1px 2px;
+  }
+  
+  .price-change-amount {
+    font-size: 10px;
+  }
+  
+  .volume-24h {
     font-size: 9px;
-    padding: 1px 3px;
   }
   
   .price-card-header {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 }
 </style>

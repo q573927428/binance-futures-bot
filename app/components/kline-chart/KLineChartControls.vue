@@ -9,6 +9,7 @@
             size="small"
             :type="selectedTimeframe === '15m' ? 'primary' : 'default'"
             @click="selectTimeframe('15m')"
+            class="timeframe-btn"
           >
             15分钟
           </el-button>
@@ -16,6 +17,7 @@
             size="small"
             :type="selectedTimeframe === '1h' ? 'primary' : 'default'"
             @click="selectTimeframe('1h')"
+            class="timeframe-btn"
           >
             1小时
           </el-button>
@@ -23,6 +25,7 @@
             size="small"
             :type="selectedTimeframe === '4h' ? 'primary' : 'default'"
             @click="selectTimeframe('4h')"
+            class="timeframe-btn"
           >
             4小时
           </el-button>
@@ -30,6 +33,7 @@
             size="small"
             :type="selectedTimeframe === '1d' ? 'primary' : 'default'"
             @click="selectTimeframe('1d')"
+            class="timeframe-btn"
           >
             日线
           </el-button>
@@ -37,6 +41,7 @@
             size="small"
             :type="selectedTimeframe === '1w' ? 'primary' : 'default'"
             @click="selectTimeframe('1w')"
+            class="timeframe-btn"
           >
             周线
           </el-button>
@@ -45,15 +50,17 @@
     </div>
 
     <div class="controls-right">
-      <el-button-group size="small">
+      <el-button-group size="small" class="action-buttons">
         <el-button
           type="primary"
           size="small"
           @click="$emit('refresh')"
           :loading="loading"
           title="刷新图表"
+          class="action-btn"
         >
           <el-icon><ElIconRefresh /></el-icon>
+          <span class="btn-label">刷新</span>
         </el-button>
         
         <el-button
@@ -61,11 +68,13 @@
           size="small"
           @click="$emit('toggle-theme')"
           title="切换主题"
+          class="action-btn"
         >
           <el-icon>
             <ElIconSunny v-if="theme === 'light'" />
             <ElIconMoon v-else />
           </el-icon>
+          <span class="btn-label">主题</span>
         </el-button>
       </el-button-group>
     </div>
@@ -128,12 +137,13 @@ watch(() => props.timeframe, (newTimeframe) => {
   padding: 12px 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #e4e7ed;
+  transition: all 0.3s ease;
 }
 
 .controls-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .controls-right {
@@ -144,10 +154,12 @@ watch(() => props.timeframe, (newTimeframe) => {
 .symbol-badge {
   background: #409eff;
   color: white;
-  padding: 4px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
 }
 
 /* 周期选择器 */
@@ -159,35 +171,69 @@ watch(() => props.timeframe, (newTimeframe) => {
 
 .timeframe-buttons {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
-.timeframe-buttons .el-button {
-  min-width: 60px;
-  padding: 6px 8px;
-  font-size: 12px;
+.timeframe-btn {
+  min-width: 70px;
+  padding: 8px 12px;
+  font-size: 13px;
+  transition: all 0.2s ease;
 }
 
-/* 响应式设计 - 手机端 (480px以下) */
-@media (max-width: 480px) {
-  .symbol-badge {
-    font-size: 12px;
-    padding: 3px 8px;
-    margin-bottom: 8px;
-    text-align: center;
-    width: 100%;
-  }
-  
+.timeframe-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 操作按钮 */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+
+/* 手机端响应式 (576px以下) */
+@media (max-width: 576px) {
   .chart-controls {
-    padding: 10px 12px;
-    gap: 10px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
   }
   
   .controls-left {
+    width: 100%;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 12px;
+  }
+  
+  .symbol-badge {
     width: 100%;
+    text-align: center;
+    padding: 8px;
+    font-size: 14px;
+    margin-bottom: 4px;
   }
   
   .timeframe-selector {
@@ -197,43 +243,41 @@ watch(() => props.timeframe, (newTimeframe) => {
   .timeframe-buttons {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    gap: 6px;
     width: 100%;
   }
   
-  .timeframe-buttons .el-button {
-    min-width: auto;
+  .timeframe-btn {
     width: 100%;
-    padding: 4px 2px;
-    font-size: 11px;
+    min-width: auto;
+    padding: 10px 4px;
+    font-size: 12px;
+    min-height: 40px;
   }
   
   .controls-right {
     width: 100%;
   }
   
-  .controls-right .el-button-group {
-    display: flex;
+  .action-buttons {
     width: 100%;
-    gap: 4px;
+    gap: 8px;
   }
   
-  .controls-right .el-button {
+  .action-btn {
     flex: 1;
-    padding: 8px 4px;
-    font-size: 12px;
-    min-height: 36px;
+    min-width: auto;
+    padding: 12px 8px;
+    min-height: 44px;
+    font-size: 13px;
   }
   
-  .controls-right .el-button .el-icon {
-    font-size: 14px;
+  .action-btn .el-icon {
+    font-size: 16px;
   }
   
-  /* 优化按钮图标显示 */
-  .controls-right .el-button span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .btn-label {
+    font-size: 13px;
   }
 }
 </style>
