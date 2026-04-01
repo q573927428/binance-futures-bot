@@ -148,7 +148,7 @@
       </div>
 
       <!-- 风险提示 -->
-      <div class="risk-warning">
+      <!-- <div class="risk-warning">
         <el-alert
           title="风险提示"
           type="warning"
@@ -159,6 +159,7 @@
           <p>请确保您了解交易风险，并设置合理的止损止盈。</p>
         </el-alert>
       </div>
+       -->
     </div>
   </el-card>
 </template>
@@ -170,7 +171,7 @@ import { useBotStore } from '../stores/bot'
 const botStore = useBotStore()
 
 // 表单状态
-const expanded = ref(false)
+const expanded = ref(true)
 const formRef = ref()
 const isSubmitting = ref(false)
 const isRefreshingPrice = ref(false)
