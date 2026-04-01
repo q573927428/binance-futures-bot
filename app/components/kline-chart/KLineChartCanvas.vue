@@ -473,6 +473,17 @@ const clearMarkers = () => {
 const addOrderMarkers = () => {
   if (!candlestickSeries || markersAdded.value) return
   
+  // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
+  const currentTimeframe = props.timeframe || computedTimeframe.value
+  
+  // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
+  const hideMarkersTimeframes = ['1d', '1w']
+  if (hideMarkersTimeframes.includes(currentTimeframe)) {
+    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示订单标记`)
+    markersAdded.value = false
+    return
+  }
+  
   // 如果交易历史为空，直接设置标记状态为未添加并返回
   if (props.tradeHistory?.length === 0) {
     markersAdded.value = false
@@ -481,8 +492,8 @@ const addOrderMarkers = () => {
   
   const markers = props.tradeHistory!.flatMap(order => {
     // 转换时间格式：毫秒 -> 秒
-    const openTime = alignToKlineTime(order.openTime, computedTimeframe.value)
-    const closeTime = alignToKlineTime(order.closeTime, computedTimeframe.value)
+    const openTime = alignToKlineTime(order.openTime, currentTimeframe)
+    const closeTime = alignToKlineTime(order.closeTime, currentTimeframe)
     
     // 开仓标记
     const openMarker = {
