@@ -1,398 +1,531 @@
-# 币安 USDT 永续合约自动交易系统
+# Binance Futures Bot（Nuxt 4 + Node.js）
 
-基于 Nuxt 4 + Vue 3 + Node.js 的币安永续合约自动交易机器人，采用**中长期趋势跟踪策略**，支持**移动止损**和**AI分析增强**。
+基于 **Nuxt 4 + Vue 3 + TypeScript + CCXT** 的币安 USDT 永续合约自动交易系统。  
+项目包含：策略扫描、自动开平仓、风控熔断、移动止损、手动开仓、策略分析（MFE/MAE）与可视化管理界面。
 
-## ✨ 功能特性
+> ⚠️ 重要声明：本项目仅用于学习与研究，不构成投资建议。实盘交易存在高风险，请先充分模拟测试。
 
-- ✅ **多交易对监控**：实时监控 BTC/USDT、ETH/USDT、BNB/USDT、SOL/USDT、XAU/USDT、HYPE/USDT、DOGE/USDT 等主流交易对
-- ✅ **智能交易策略**：基于 ADX（1h/4h/1d）多周期趋势确认 + EMA回踩的智能交易决策
-- ✅ **移动止损保护**：内置智能移动止损功能，自动保护利润
-- ✅ **多层保护机制**：完整的熔断、止损、止盈、超时保护、强制平仓等风险控制
-- ✅ **AI分析增强**：DeepSeek AI 技术分析支持，提供更精准的交易建议
-- ✅ **策略分析仪表板**：完整的MFE/MAE分析、退出原因统计、交易对表现分析
-- ✅ **WebSocket实时价格**：实时获取币安期货价格数据
-- ✅ **状态持久化**：交易状态、配置数据自动保存，支持跨天自动重置
-- ✅ **全自动运行**：自动分析行情、开仓、监控、平仓、撤单，无需人工干预
-- ✅ **响应式UI界面**：基于 Element Plus 的现代化界面，支持移动端和桌面端
-- ✅ **模拟交易支持**：支持币安模拟交易和真实交易一键切换
-<img width="1903" height="865" alt="image" src="https://github.com/user-attachments/assets/fd1454dd-0a2e-436f-9552-6df794b9bb78" />
+---
+<img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/7f9bfc1a-c025-4904-b812-1c900d5343b5" />
+## 1. 核心能力概览
 
-## 🚀 快速开始
+- 多交易对轮询扫描（如 BTC/ETH/SOL/BNB 等）
+- 规则化策略信号生成（ADX + EMA + RSI + ATR + 波动率过滤）
+- 支持 AI 分析辅助过滤（DeepSeek，可开关）
+- 自动下单、自动挂止损、持仓监控、自动平仓
+- 移动止损（Trailing Stop）
+- 风控机制：
+  - 每日交易次数限制
+  - 交易冷却时间
+  - 日亏损与连续亏损熔断
+  - 持仓超时处理
+- 手动开仓 / 手动平仓（带密码校验）
+- 本地持久化：配置、状态、交易历史、策略分析
+- WebSocket 价格通道（失败时可回退 REST 取价）
 
-### 1. 安装依赖
+---
+
+## 2. 技术栈
+
+- 前端：Nuxt 4、Vue 3、Element Plus、Pinia、ECharts、Lightweight Charts
+- 后端：Nuxt Server API（Nitro）
+- 交易接入：CCXT（Binance Futures）
+- 指标：technicalindicators
+- AI：DeepSeek API（可选）
+- 语言：TypeScript
+- 包管理：pnpm
+
+说明：
+- **ECharts** 主要用于统计分析类图表（如策略分析面板、聚合指标展示）。
+- **Lightweight Charts** 更适合金融时序/K线类图形的轻量渲染与交互。
+
+---
+
+## 3. 目录结构（详细）
+
+```text
+binance-futures-bot/
+├─ app/
+│  ├─ app.vue                                # Nuxt 根组件
+│  ├─ pages/                                 # 页面（首页、策略分析、WebSocket等）
+│  ├─ components/                            # 业务组件（持仓、配置、日志、手动开仓等）
+│  ├─ stores/
+│  │  └─ bot.ts                              # 前端状态管理（拉取状态、启动/停止、配置更新、历史分页）
+│  └─ utils/                                 # 前端工具函数
+│
+├─ server/
+│  ├─ api/
+│  │  ├─ bot/
+│  │  │  ├─ start.post.ts                    # 启动机器人
+│  │  │  ├─ stop.post.ts                     # 停止机器人
+│  │  │  ├─ status.get.ts                    # 获取状态/配置/日志/余额
+│  │  │  ├─ config.patch.ts                  # 更新配置
+│  │  │  ├─ history.get.ts                   # 分页交易历史
+│  │  │  ├─ manual-open-position.post.ts     # 手动开仓
+│  │  │  ├─ close-position.post.ts           # 手动平仓
+│  │  │  ├─ check-password.get.ts            # 是否启用密码
+│  │  │  └─ verify-password.post.ts          # 密码验证
+│  │  ├─ analysis/
+│  │  │  ├─ metrics.get.ts                   # 策略分析统计
+│  │  │  └─ export.get.ts                    # 导出分析数据
+│  │  ├─ websocket/
+│  │  │  ├─ status.get.ts                    # WS连接状态
+│  │  │  ├─ prices.get.ts                    # 已缓存价格
+│  │  │  ├─ connect.post.ts                  # 建连
+│  │  │  ├─ subscribe.post.ts                # 订阅symbol
+│  │  │  └─ unsubscribe.post.ts              # 取消订阅
+│  │  ├─ kline-simple/                       # 简化K线接口
+│  │  ├─ kline-simple-sync/                  # K线同步状态
+│  │  └─ scripts/
+│  │     ├─ generate-tv.post.ts              # 生成 TradingView 脚本
+│  │     └─ get-pine.get.ts                  # 获取 Pine 脚本
+│  │
+│  ├─ modules/
+│  │  ├─ futures-bot/
+│  │  │  ├─ FuturesBot.ts                    # 机器人总控（初始化、启动、停止、模块编排）
+│  │  │  ├─ index.ts                         # 单例导出
+│  │  │  ├─ core/
+│  │  │  │  ├─ analyzer.ts                   # 信号分析（趋势/入场/AI过滤）
+│  │  │  │  ├─ scanner.ts                    # 扫描循环与调度
+│  │  │  │  └─ state-manager.ts              # 配置与状态加载/同步
+│  │  │  ├─ trading/
+│  │  │  │  ├─ position-opener.ts            # 开仓、挂止损、仓位参数计算
+│  │  │  │  ├─ position-monitor.ts           # 持仓监控、TP/超时/移动止损
+│  │  │  │  ├─ position-closer.ts            # 平仓执行
+│  │  │  │  └─ position-validator.ts         # 仓位一致性校验与补偿平仓
+│  │  │  ├─ helpers/
+│  │  │  │  ├─ trade-recorder.ts             # 交易落库与统计更新
+│  │  │  │  ├─ strategy-analyzer.ts          # MFE/MAE 等策略指标
+│  │  │  │  ├─ trailing-stop.ts              # 移动止损计算
+│  │  │  │  └─ position-helpers.ts           # 开仓后确认辅助函数
+│  │  │  └─ services/
+│  │  │     ├─ indicators-cache.ts           # 指标缓存
+│  │  │     └─ price-service.ts              # WS优先价格服务（失败回退REST）
+│  │  ├─ kline-simple-sync/
+│  │  └─ kline-websocket/
+│  │
+│  ├─ utils/
+│  │  ├─ binance.ts                          # CCXT封装（下单、止损单、余额、持仓、订单查询）
+│  │  ├─ indicators.ts                       # 指标计算与策略条件判断
+│  │  ├─ risk.ts                             # 风控、TP条件、熔断、PnL计算
+│  │  ├─ ai-analysis.ts                      # AI分析请求与条件过滤
+│  │  ├─ websocket.ts                        # WS底层服务
+│  │  ├─ websocket-manager.ts                # WS连接管理
+│  │  ├─ logger.ts                           # 日志系统
+│  │  └─ storage.ts                          # 配置/状态/历史读写
+│  └─ plugins/
+│
+├─ data/
+│  ├─ bot-config.json                        # 运行配置（优先于默认配置）
+│  ├─ bot-state.json                         # 当前状态（持仓、PnL、熔断等）
+│  ├─ trade-history.json                     # 历史成交记录
+│  ├─ strategy-analysis.json                 # 策略分析结果
+│  └─ kline-simple/                          # K线缓存数据（体量较大）
+│
+├─ docs/                                     # 设计与使用文档
+├─ scripts/                                  # 辅助脚本（日志处理、K线清理等）
+├─ test/                                     # 测试/实验脚本（含 Pine 脚本）
+├─ types/
+│  ├─ index.ts                               # 核心类型（BotConfig/BotState/Position等）
+│  ├─ websocket.ts
+│  └─ kline-simple.ts
+├─ nuxt.config.ts
+├─ package.json
+└─ README.md
+```
+
+---
+
+## 4. 运行要求
+
+- Node.js 18+
+- pnpm 10+
+- 币安合约 API Key（实盘/模拟盘）
+
+---
+
+## 5. 快速开始
+
+### 5.1 安装依赖
 
 ```bash
 pnpm install
 ```
 
-### 2. 配置环境变量
+### 5.2 配置环境变量
 
-⚠️ **重要**：启动系统前必须先配置Binance API密钥！
-
-#### 第一次使用：
+在项目根目录创建 `.env`：
 
 ```bash
-# 1. 复制环境变量示例文件
-copy .env.example .env
+BINANCE_API_KEY=你的币安API_KEY
+BINANCE_SECRET=你的币安SECRET
 
-# 2. 编辑 .env 文件，填入你的API密钥
-```
-
-`.env` 文件配置：
-
-```bash
-# Binance API配置 (必填)
-BINANCE_API_KEY=你的币安API密钥
-BINANCE_SECRET=你的币安API密钥密文
-
-# DeepSeek AI 配置 (可选，不填则禁用AI分析)
-DEEPSEEK_API_KEY=你的DeepSeek_API密钥
+# 可选：AI 分析
+DEEPSEEK_API_KEY=你的DEEPSEEK_KEY
 DEEPSEEK_API_URL=https://api.deepseek.com
 
-# 配置编辑密码保护 (可选)
-CONFIG_EDIT_PASSWORD=你的配置编辑密码
+# 可选：配置/手动操作密码
+CONFIG_EDIT_PASSWORD=你的密码
 ```
 
-### 3. 启动开发服务器
+### 5.3 启动开发环境
 
 ```bash
 pnpm dev
 ```
 
-访问 http://localhost:3000 即可使用系统。
+默认访问：`http://localhost:3000`
 
-### 4. 构建生产版本
+### 5.4 构建与预览
 
 ```bash
 pnpm build
 pnpm preview
 ```
 
-### 5. 生产环境启动
+---
 
-```bash
-pnpm start
-```
+## 6. 配置来源与优先级
 
-## 📋 交易策略说明
+机器人配置通过 `BotConfig` 管理，运行时遵循：
 
-### 策略模式
-- **中长期策略 (medium_term)**：使用1h/4h/1d周期，适合趋势跟踪
-- **短期策略 (short_term)**：使用15m/1h/4h周期，适合日内交易
+1. 优先读取 `data/bot-config.json`
+2. 若不存在则使用 `server/utils/storage.ts` 内的默认配置
 
-### 核心过滤条件（必须全部满足）
+状态与交易历史保存在：
 
-- ADX(1h) ≥ 20
-- ADX(4h) ≥ 15
-- ADX(1d) ≥ 25
-- AI分析置信度 ≥ 70（如启用AI）
-- AI风险等级 ≤ MEDIUM（如启用AI）
-
-### 方向判定
-
-- **做多**：EMA50 > EMA200 且 价格 > EMA50
-- **做空**：EMA50 < EMA200 且 价格 < EMA50
-
-### 入场条件
-
-#### 做多（Long）
-- 多头趋势成立
-- 价格回踩 EMA50 / EMA100（偏离 ≤ 3%）
-- RSI(14,1h) ∈ [40,78]
-- K线确认：阳线或明显下影线（≥0.5%）
-- 成交量确认：成交量 ≥ 12周期EMA × 1.2
-
-#### 做空（Short）
-- 空头趋势成立
-- 价格反弹至 EMA50 / EMA100（偏离 ≤ 2%）
-- RSI(14,1h) ∈ [22,60]
-- K线确认：阴线或明显上影线（≥0.5%）
-- 成交量确认：成交量 ≥ 12周期EMA × 1.2
-
-### 止损策略
-
-#### 初始止损
-- **计算方式**：ATR × 2.5
-- **最大止损**：2%
-- 取两者较小值
-
-#### 移动止损（Trailing Stop）
-- ✅ **已启用**：自动保护利润
-- **激活条件**：盈亏比达到0.6R
-- **跟踪距离**：ATR × 1.2
-- **更新间隔**：120秒
-- **特点**：止损只会向有利方向移动，不会回退
-
-### 止盈策略
-
-#### TP1止盈（盈亏比止盈）
-- 盈亏比达到 **2:1** 时触发
-- 直接全部平仓
-
-#### TP2止盈（复合条件止盈）
-满足以下**任意条件**即触发（需先达到0.8R最小盈利）：
-- 盈亏比达到 **3:1**
-- 多头RSI ≥ 78 / 空头RSI ≤ 22
-- ADX下降幅度 ≥ 3
-
-### 风控规则
-
-- **杠杆倍数**：10x（可配置）
-- **最大风险比例**：20%
-- **每日交易限制**：5笔
-- **持仓超时**：12小时
-- **熔断机制**：
-  - 当日亏损 ≥ 10%
-  - 连续 3 笔止损
-  - 下单 / API 异常
-  - AI 风险等级 = HIGH
-
-## 🎯 使用指南
-
-### 1. 启动机器人
-
-1. 打开浏览器访问 http://localhost:3000
-2. 点击"启动机器人"按钮
-3. 系统自动开始监控市场并寻找交易机会
-
-### 2. 监控状态
-
-- **控制面板**：查看今日交易次数、盈亏、机器人状态
-- **系统配置**：查看和修改杠杆、交易对、扫描间隔等配置
-- **当前持仓**：查看持仓详情（如有）
-- **交易历史**：查看今日所有交易记录
-- **系统日志**：实时查看系统运行日志
-- **策略分析**：查看详细的MFE/MAE分析和统计图表
-
-### 3. 配置修改
-
-点击"系统配置"卡片的"编辑"按钮，可以修改：
-
-- **交易策略**：短期/中长期策略切换
-- **交易对**：监控的交易对列表
-- **杠杆倍数**：交易杠杆（2-20倍）
-- **最大风险比例**：单笔最大风险比例
-- **扫描间隔**：市场扫描频率（秒）
-- **AI分析配置**：AI分析开关、置信度阈值、风险等级
-- **移动止损配置**：启用/禁用、激活条件、跟踪距离
-- **止盈配置**：TP1/TP2的盈亏比阈值
-
-保存后配置立即生效。
-
-### 4. 停止机器人
-
-点击"停止机器人"按钮即可安全停止系统。
-
-## ⚙️ 系统架构
-
-```
-binance-futures-bot/
-├── app/                     # 前端（Nuxt 4）
-│   ├── pages/              # 页面（首页、策略分析、WebSocket测试）
-│   ├── stores/             # Pinia 状态管理
-│   └── components/         # 组件（持仓、图表、配置、日志、历史）
-├── server/                  # 后端
-│   ├── api/                # API 接口
-│   │   ├── bot/            # 机器人控制接口
-│   │   ├── analysis/       # 策略分析接口
-│   │   ├── websocket/      # WebSocket接口
-│   │   └── scripts/        # 脚本生成接口
-│   ├── modules/
-│   │   └── futures-bot/    # 交易机器人核心模块
-│   │       ├── core/       # 核心逻辑（分析器、扫描器、状态管理）
-│   │       ├── helpers/    # 辅助工具（策略分析、交易记录、移动止损）
-│   │       ├── services/   # 服务层（指标缓存、价格服务）
-│   │       └── trading/    # 交易执行（开仓、平仓、监控、验证）
-│   └── utils/              # 工具函数
-│       ├── binance.ts      # CCXT Binance 封装
-│       ├── indicators.ts   # 技术指标计算
-│       ├── ai-analysis.ts  # AI分析服务
-│       ├── risk.ts         # 风控工具
-│       ├── logger.ts       # 日志工具
-│       ├── storage.ts      # 数据持久化
-│       ├── websocket.ts    # WebSocket服务
-│       └── websocket-manager.ts # WebSocket管理器
-├── types/                   # TypeScript 类型定义
-├── data/                    # 状态配置 & 交易数据
-│   ├── bot-config.json     # 机器人配置
-│   ├── bot-state.json      # 机器人状态
-│   ├── trade-history.json  # 交易历史
-│   └── strategy-analysis.json # 策略分析数据
-├── docs/                    # 文档
-│   ├── websocket-api.md    # WebSocket API文档
-│   ├── trailing-stop-usage.md # 移动止损使用说明
-│   ├── strategy-analysis-fields.md # 策略分析字段说明
-│   └── xitongcelue.md      # 系统策略文档
-├── scripts/                 # 脚本工具
-│   ├── log_analyzer.py     # 日志分析脚本
-│   ├── process_logs.py     # 日志处理脚本
-│   └── README.md           # 脚本说明
-├── test/                    # 测试文件
-├── public/                  # 静态资源
-└── .env                     # 环境变量配置
-```
-
-## 📊 技术栈
-
-- **前端框架**：Nuxt 4 + Vue 3
-- **UI组件库**：Element Plus
-- **状态管理**：Pinia
-- **图表库**：ECharts
-- **交易所API**：CCXT
-- **技术指标**：technicalindicators
-- **AI分析**：DeepSeek API
-- **WebSocket**：ws
-- **时间处理**：dayjs
-- **开发语言**：TypeScript
-- **包管理器**：pnpm
-- **构建工具**：Nuxt 4
-
-## 🛡️ 安全提示
-
-1. **模拟交易测试**：建议先在模拟交易环境下测试系统，熟悉策略和功能
-2. **API密钥安全**：请妥善保管您的API密钥，不要泄露给他人，建议使用只读权限的API密钥
-3. **风险控制**：加密货币交易存在高风险，请合理配置风险参数，建议从最小风险开始
-4. **持续监控**：虽然系统可以自动运行，但建议定期查看运行状态和日志
-5. **网络稳定**：确保网络连接稳定，避免因网络问题导致交易失败
-6. **资金管理**：不要投入超过您承受能力的资金，建议使用小资金测试
-
-## 📝 注意事项
-
-1. **免责声明**：本系统仅供学习和研究使用，不构成任何投资建议
-2. **高风险警告**：加密货币交易存在极高风险，可能导致全部资金损失
-3. **充分测试**：使用真实资金前请充分测试，建议至少模拟交易1个月
-4. **策略理解**：请充分理解交易策略逻辑，不要盲目使用
-5. **市场风险**：加密货币市场波动剧烈，策略可能无法适应所有市场环境
-6. **技术风险**：系统可能存在未知bug，请做好风险控制
-7. **合规性**：请遵守当地法律法规，确保交易行为合法合规
-
-## 📄 许可证
-
-MIT License
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
-
-### 贡献指南
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开 Pull Request
-
-### 开发规范
-1. 使用 TypeScript 进行开发
-2. 遵循 ESLint 代码规范
-3. 编写清晰的注释和文档
-4. 添加必要的测试用例
-
-## 📚 相关文档
-
-- [WebSocket API 文档](./docs/websocket-api.md) - WebSocket接口使用说明
-- [移动止损使用说明](./docs/trailing-stop-usage.md) - 移动止损功能详细说明
-- [策略分析字段说明](./docs/strategy-analysis-fields.md) - MFE/MAE等分析字段说明
-- [系统策略文档](./docs/xitongcelue.md) - 完整的交易策略说明
-- [需求文档](./xuqiu.md) - 项目需求说明
-
-## 🔧 故障排除
-
-### 常见问题
-
-1. **API密钥无效**
-   - 检查API密钥是否正确
-   - 确认API权限设置（需要交易权限）
-   - 检查网络连接是否正常
-
-2. **WebSocket连接失败**
-   - 检查防火墙设置
-   - 确认网络可以访问币安API
-   - 查看系统日志获取详细错误信息
-
-3. **交易未执行**
-   - 检查机器人是否已启动
-   - 查看市场条件是否满足策略要求
-   - 检查熔断机制是否触发
-
-4. **配置修改不生效**
-   - 确认已保存配置
-   - 检查配置编辑密码是否正确
-   - 重启机器人使配置生效
-
-### 获取帮助
-
-1. **查看日志**：系统日志包含详细的运行信息
-2. **检查状态**：通过状态面板查看机器人当前状态
-3. **策略分析**：使用策略分析仪表板分析交易表现
-4. **模拟测试**：在模拟交易环境下测试问题
-
-## 🚀 高级功能
-
-### 1. WebSocket实时价格
-- 实时获取币安期货价格数据
-- 支持多交易对同时订阅
-- 自动重连机制
-- 详细API文档见 [websocket-api.md](./docs/websocket-api.md)
-
-### 2. 策略分析仪表板
-- MFE/MAE分析：最大浮盈/最大浮亏分析
-- 退出原因统计：按退出原因分类分析表现
-- 交易对表现：不同交易对的盈亏统计
-- 时间特征分析：按小时、星期、月份分析表现
-
-### 3. 移动止损
-- 智能利润保护
-- 基于ATR的动态跟踪距离
-- 可配置的激活条件和更新频率
-- 详细使用说明见 [trailing-stop-usage.md](./docs/trailing-stop-usage.md)
-
-### 4. AI分析增强
-- DeepSeek AI技术分析
-- 多维度评分系统
-- 风险等级评估
-- 缓存机制减少API调用
-
-### 5. 动态杠杆（实验性）
-- 根据风险等级动态调整杠杆
-- 可配置的杠杆范围
-- 风险等级乘数配置
-
-## 📈 性能指标
-
-### 扫描性能
-- 市场扫描间隔：180秒（可配置）
-- 持仓监控间隔：60秒（可配置）
-- 交易冷却时间：7200秒（2小时）
-
-### 数据处理
-- 价格数据缓存：实时更新
-- 指标计算缓存：减少重复计算
-- 日志轮转：自动管理日志文件大小
-
-### 内存使用
-- 轻量级设计，内存占用低
-- 数据分页加载，支持大数据集
-- 自动清理过期数据
-
-## 🔄 更新日志
-
-### v1.0.0 (最新)
-- 完整的中长期趋势跟踪策略
-- 移动止损功能集成
-- 策略分析仪表板
-- WebSocket实时价格支持
-- AI分析增强
-- 完整的风险控制系统
-
-### 未来计划
-- 机器学习策略优化
-- 多账户管理
-- 电报/微信通知
-- 更多技术指标支持
-- 回测系统集成
+- `data/bot-state.json`
+- `data/trade-history.json`
+- `data/strategy-analysis.json`
 
 ---
 
-**重要声明**：本软件仅供学习和研究使用，不构成任何投资建议。加密货币交易存在极高风险，可能导致全部资金损失。使用本软件进行交易造成的任何损失，作者概不负责。请谨慎使用，理性投资。
+## 7. 交易执行与策略闭环（代码真实流程）
 
-**风险提示**：过去表现不代表未来结果。交易有风险，投资需谨慎。
+### 7.1 执行链路
+
+1. `MarketScanner` 定时扫描交易对（空仓用 `scanInterval`，持仓用 `positionScanInterval`）
+2. `MarketAnalyzer` 对每个标的做指标计算与信号判定
+3. 信号通过后进入 `PositionOpener`：
+   - 计算止损、仓位、杠杆
+   - 下市价单
+   - 挂止损单（`STOP_MARKET`）
+4. 进入 `PositionMonitor`：
+   - 实时计算浮盈亏
+   - 检查 TP2 / TP1 / 持仓超时
+   - 检查并更新移动止损
+5. 触发平仓后由 `PositionCloser` 执行；`PositionValidator` 负责本地与交易所仓位一致性校验
+6. `trade-recorder` 写入交易历史，更新统计与熔断状态
+
+### 7.2 时间周期映射（非常重要）
+
+- `strategyMode = short_term`：主周期 `15m`，次周期 `1h`，第三周期 `4h`
+- `strategyMode = medium_term`：主周期 `1h`，次周期 `4h`，第三周期 `1d`
+
+> 说明：代码内部字段名仍是 `adx15m/adx1h/adx4h`，但在 `medium_term` 下它们实际映射到 `1h/4h/1d`。
+
+### 7.3 趋势方向判定
+
+- 先看是否触发 EMA 金叉/死叉直接入场（`crossEntryEnabled=true` 时）
+- 否则使用趋势条件：
+  - 做多：`EMA_fast > EMA_slow` 且 `price > EMA_fast`
+  - 做空：`EMA_fast < EMA_slow` 且 `price < EMA_fast`
+
+### 7.4 ADX 多周期过滤
+
+需满足：
+
+- 主周期 ADX ≥ `adx15mThreshold`
+- 次周期 ADX ≥ `adx1hThreshold`
+- 第三周期 ADX ≥ `adx4hThreshold`
+- 且当 `enableAdx15mVs1hCheck=true` 时，还要求主周期 ADX > 次周期 ADX
+
+### 7.5 入场过滤（Long/Short）
+
+共同要素：
+
+- EMA 偏离检查（快/中 EMA）
+- 慢 EMA 偏离检查（防止追涨杀跌）
+- RSI 区间过滤
+- K线确认（多头看阳线/下影线，空头看阴线/上影线）
+- 成交量 EMA 过滤（可开关）
+- 价格突破过滤（可开关）
+- 波动率过滤：`ATR% >= minATRPercent`（可按 symbol 跳过）
+
+### 7.6 平仓逻辑（监控顺序）
+
+持仓监控中优先级：
+
+1. TP2 条件（复合触发）
+2. TP1 条件
+3. 持仓超时（且 ADX 走弱）
+4. 移动止损更新（更新止损单，不是直接平仓）
+
+TP1 触发（`checkTP1Condition`）：
+
+- 盈亏比达到 `tp1RiskRewardRatio`
+
+TP2 触发（`checkTP2Condition`）：
+
+- 先满足最小盈利门槛：`profit >= risk * tp2MinProfitRatio`
+- 再满足任一：
+  - 盈亏比达到 `tp2RiskRewardRatio`
+  - RSI 到极值（多头 ≥ `rsiExtreme.long` / 空头 ≤ `rsiExtreme.short`）
+  - ADX 斜率走弱（`adxSlope <= -adxDecreaseThreshold`）
+
+### 7.7 风控与熔断
+
+- 每日交易上限：`dailyTradeLimit`
+- 冷却时间：`tradeCooldownInterval`
+- 熔断条件：
+  - 日亏损比例达到 `dailyLossThreshold`
+  - 连续亏损达到 `consecutiveLossesThreshold`
+- 可选强制平仓时间：`forceLiquidateTime.enabled=true` 时生效
+
+---
+
+## 8. 策略配置详解（按当前 `data/bot-config.json`）
+
+> 下列为你当前配置文件中的运行值，不是默认兜底值。
+
+### 8.1 顶层参数
+
+- `strategyMode: short_term`
+- `symbols: [BTC/USDT, ETH/USDT, SOL/USDT, DOGE/USDT, HYPE/USDT, XAU/USDT, XAG/USDT, BNB/USDT]`
+- `leverage: 8`
+- `maxRiskPercentage: 20`
+- `stopLossATRMultiplier: 3`
+- `maxStopLossPercentage: 2`
+- `positionTimeoutHours: 120`
+- `scanInterval: 180`
+- `positionScanInterval: 30`
+- `tradeCooldownInterval: 7200`
+
+### 8.2 `aiConfig`（AI过滤）
+
+- `enabled: true`
+- `analysisInterval: 1500`（秒）
+- `minConfidence: 60`
+- `conditionMode: SCORE_ONLY`
+- `maxRiskLevel: MEDIUM`
+- `technicalPostAdjustmentMode: PENALTY_ONLY`
+- `useForEntry: true`
+- `useForExit: true`
+- `cacheDuration: 10`（分钟）
+
+解释：当前是“启用AI且偏宽松置信度门槛（60）”的入场过滤模式。
+
+### 8.3 `riskConfig`（风控）
+
+`circuitBreaker`：
+
+- `dailyLossThreshold: 10`（当日亏损%）
+- `consecutiveLossesThreshold: 3`
+
+`forceLiquidateTime`：
+
+- `enabled: false`（当前不启用）
+- `hour: 23` / `minute: 55`
+
+`takeProfit`：
+
+- `tp1RiskRewardRatio: 3.8`
+- `tp2RiskRewardRatio: 5`
+- `tp2MinProfitRatio: 1`
+- `rsiExtreme.long: 80`
+- `rsiExtreme.short: 20`
+- `adxDecreaseThreshold: 1.8`
+- `adxSlopePeriod: 3`
+
+`dailyTradeLimit`：
+
+- `3`
+
+### 8.4 `dynamicLeverageConfig`（动态杠杆）
+
+- `enabled: false`（当前关闭）
+- `minLeverage: 2`
+- `maxLeverage: 20`
+- `baseLeverage: 8`
+- `riskLevelMultipliers: LOW=1.5, MEDIUM=1, HIGH=0.5`
+
+### 8.5 `trailingStopConfig`（移动止损）
+
+- `enabled: true`
+- `activationRatio: 1.5`
+- `trailingDistance: 1.2`
+- `updateIntervalSeconds: 120`
+
+解释：当前需要达到 **1.5R** 才激活追踪，属于“偏保守激活”。
+
+### 8.6 `indicatorsConfig`（指标与入场）
+
+`emaPeriods`：
+
+- `short_term`: `fast=14, medium=30, slow=120`
+- `medium_term`: `fast=14, medium=60, slow=120`
+
+`crossEntryEnabled: true`
+
+`adxTrend`：
+
+- `adx1hThreshold: 38`
+- `adx4hThreshold: 35`
+- `adx15mThreshold: 50`
+- `enableAdx15mVs1hCheck: false`
+
+`longEntry`：
+
+- `emaDeviationThreshold: 0.012`
+- `emaDeviationEnabled: true`
+- `emaSlowDeviationThreshold: 0.03`
+- `emaSlowDeviationEnabled: true`
+- `rsiMin: 38`, `rsiMax: 65`
+- `candleShadowThreshold: 0.005`
+- `volumeConfirmation: false`
+- `volumeEMAPeriod: 12`
+- `volumeEMAMultiplier: 1.2`
+
+`shortEntry`：
+
+- `emaDeviationThreshold: 0.012`
+- `emaDeviationEnabled: true`
+- `emaSlowDeviationThreshold: 0.03`
+- `emaSlowDeviationEnabled: true`
+- `rsiMin: 35`, `rsiMax: 62`
+- `candleShadowThreshold: 0.005`
+- `volumeConfirmation: false`
+- `volumeEMAPeriod: 12`
+- `volumeEMAMultiplier: 1.3`
+
+`priceBreakout`：
+
+- `enabled: false`
+- `period: 3`
+- `requireConfirmation: false`
+- `confirmationCandles: 1`
+
+`volatility`：
+
+- `enabled: true`
+- `minATRPercent: 0.3`
+- `skipSymbols: [HYPE/USDT]`
+
+---
+
+## 9. 调参建议（结合你当前参数）
+
+### 9.1 目前配置特征
+
+- ADX 阈值设置较高（50/38/35），信号会明显变少，但趋势纯度可能更高
+- TP1=3.8R、TP2=5R 偏激进，导致止盈触发少、持仓时间长
+- 持仓超时 120 小时偏长，容易增加隔夜/周末风险暴露
+- 成交量确认关闭（`volumeConfirmation=false`），会增加进场数量但降低过滤强度
+
+### 9.2 可分阶段优化
+
+1. 先把 `positionTimeoutHours` 下调到 24~48 观察回撤，再将 ADX 阈值分步下调（例如 50/38/35 → 30/20/15）
+2. 将 `tp1RiskRewardRatio` 降到 2~3 做对照实验
+3. 按标的区分阈值（波动大的币与主流币分开）
+4. 若假突破较多，可打开 `priceBreakout.enabled` 并启用收盘确认
+5. 若噪声信号多，可恢复 `volumeConfirmation=true`
+
+---
+
+## 10. API 速览
+
+### Bot
+
+- `GET /api/bot/status`：获取状态/配置/日志/余额
+- `POST /api/bot/start`：初始化并启动机器人
+- `POST /api/bot/stop`：停止机器人
+- `PATCH /api/bot/config`：更新配置
+- `GET /api/bot/history?page=1&pageSize=10`：分页交易历史
+- `POST /api/bot/close-position`：手动平仓
+- `POST /api/bot/manual-open-position`：手动开仓
+- `GET /api/bot/check-password` / `POST /api/bot/verify-password`：密码检查/验证
+
+### Analysis
+
+- `GET /api/analysis/metrics`
+- `GET /api/analysis/export`
+
+### WebSocket 管理
+
+- `GET /api/websocket/status`
+- `GET /api/websocket/prices`
+- `POST /api/websocket/connect`
+- `POST /api/websocket/subscribe`
+- `POST /api/websocket/unsubscribe`
+
+---
+
+## 11. 手动开仓参数说明
+
+`POST /api/bot/manual-open-position` 关键字段：
+
+- `symbol`: 交易对（如 `BTC/USDT`）
+- `direction`: `LONG | SHORT`
+- `orderType`: `MARKET | LIMIT`（当前实现中 LIMIT 会回退为市价逻辑）
+- `amountType`: `USDT | PERCENTAGE`
+- `amount`: 数量或百分比
+- `leverage`: 杠杆倍数
+- `password`: 若启用了 `CONFIG_EDIT_PASSWORD` 则必填
+
+---
+
+## 12. 系统状态说明
+
+`PositionStatus`：
+
+- `IDLE`：空闲
+- `MONITORING`：监控中（无仓位，扫描机会）
+- `OPENING`：开仓中
+- `POSITION`：持仓中
+- `CLOSING`：平仓中
+- `HALTED`：熔断停机
+
+---
+
+## 13. 常见问题排查
+
+### 1）启动后不交易
+
+- 检查是否达到每日交易上限
+- 检查是否处于冷却期
+- 检查熔断状态是否触发
+- 检查策略条件是否长期不满足
+
+### 2）下单失败
+
+- 检查 API Key 权限与是否为合约权限
+- 检查账户可用余额（系统内含最小名义价值校验）
+- 检查交易对是否可交易
+
+### 3）状态与交易所不一致
+
+项目内置持仓一致性检查与补偿逻辑（`PositionValidator`），若检测到交易所已平仓会自动补记录并回收本地状态。
+
+---
+
+## 14. 开发建议
+
+- 先在模拟盘运行，验证日志与交易行为
+- 每次改参数后观察至少一段完整周期
+- 重点关注：
+  - 胜率与盈亏比
+  - 熔断触发频率
+  - 交易理由与退出原因分布
+
+---
+
+## 15. 风险提示
+
+加密资产波动大、杠杆风险高。请严格控制仓位，避免将项目直接用于大资金实盘。  
+建议：模拟环境长周期验证 → 小资金灰度 → 再考虑扩大。
+
+---
+
+## License
+
+MIT
