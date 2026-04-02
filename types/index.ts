@@ -135,6 +135,9 @@ export interface EMAPeriodsConfig {
 export interface IndicatorsConfig {
   // EMA周期配置
   emaPeriods: EMAPeriodsConfig
+
+  // EMA交叉直接入场开关（统一控制金叉做多/死叉做空）
+  crossEntryEnabled: boolean
   
   // ADX趋势检查配置
   adxTrend: {

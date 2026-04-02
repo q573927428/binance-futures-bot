@@ -80,6 +80,7 @@
         "slow": 120
       }
     },
+    "crossEntryEnabled": true,
     "adxTrend": {
       "adx1hThreshold": 38,
       "adx4hThreshold": 35,

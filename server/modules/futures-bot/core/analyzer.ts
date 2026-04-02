@@ -13,6 +13,7 @@ export class MarketAnalyzer {
   private config: BotConfig
   private indicatorsCache: IndicatorsCache
   private previousADXMap: Record<string, number> = {}
+  private crossSignalTracker: Record<string, { timestamp: number; direction: 'LONG' | 'SHORT' }> = {}
 
   constructor(binance: BinanceService, config: BotConfig) {
     this.binance = binance
@@ -51,44 +52,64 @@ export class MarketAnalyzer {
       // 获取当前价格
       const price = await this.binance.fetchPrice(symbol)
 
+      // 根据策略模式选择K线周期
+      const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
+      
+      // 获取主K线数据（用于趋势方向、AI分析、价格变化计算和入场条件检查）
+      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, 20)
+
+      // 检查mainCandles是否为空
+      if (mainCandles.length === 0) {
+        this.logAnalysisResult(symbol, false, 'K线数据为空', price)
+        return null
+      }
+
       // 使用指标缓存服务获取技术指标
       const indicators = await this.indicatorsCache.getIndicators(symbol)
 
-      // 保存ADX15m用于后续比较（按symbol记录）
-      // 更新当前symbol的ADX值
-      this.previousADXMap[symbol] = indicators.adx15m
-
-      // 检查ADX趋势条件（多周期）
-      const adxResult = checkADXTrend(indicators, this.config)
-      if (!adxResult.passed) {
-        this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
-        return null
-      }
-
-      // 检查波动率条件
-      const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
-      if (!volatilityResult.passed) {
-        this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
-        return null
-      }
-
-      // 判断趋势方向
-      const trendResult = getTrendDirection(price, indicators, this.config)
+      // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号）
+      const trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
       if (trendResult.direction === 'IDLE') {
         this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`, price)
         return null
       }
 
-      // 根据策略模式选择K线周期
-      const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
-      
-      // 获取主K线数据（用于AI分析、价格变化计算和入场条件检查）
-      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, 20)
-      
-      // 检查mainCandles是否为空
-      if (mainCandles.length === 0) {
-        this.logAnalysisResult(symbol, false, 'K线数据为空', price)
-        return null
+      const isCrossSignal = trendResult.data?.isCrossSignal === true
+      const crossCandleTimestamp = trendResult.data?.crossCandleTimestamp as number | undefined
+
+      // 防抖：同一根K线同方向交叉仅触发一次
+      if (isCrossSignal && crossCandleTimestamp && (trendResult.direction === 'LONG' || trendResult.direction === 'SHORT')) {
+        const key = symbol
+        const previousCross = this.crossSignalTracker[key]
+        if (
+          previousCross &&
+          previousCross.timestamp === crossCandleTimestamp &&
+          previousCross.direction === trendResult.direction
+        ) {
+          this.logAnalysisResult(symbol, false, `交叉信号防抖：同一根K线已触发${trendResult.direction}，本次忽略`, price)
+          return null
+        }
+      }
+
+      // 保存ADX15m用于后续比较（按symbol记录）
+      // 更新当前symbol的ADX值
+      this.previousADXMap[symbol] = indicators.adx15m
+
+      // 非金叉/死叉场景，继续执行常规过滤条件
+      if (!isCrossSignal) {
+        // 检查ADX趋势条件（多周期）
+        const adxResult = checkADXTrend(indicators, this.config)
+        if (!adxResult.passed) {
+          this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
+          return null
+        }
+
+        // 检查波动率条件
+        const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
+        if (!volatilityResult.passed) {
+          this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
+          return null
+        }
       }
       
       const firstCandle = mainCandles[0]!
@@ -101,7 +122,12 @@ export class MarketAnalyzer {
       // 检查入场条件
       let entryResult: any = null
 
-      if (trendResult.direction === 'LONG') {
+      if (isCrossSignal) {
+        entryResult = {
+          passed: true,
+          reason: `${trendResult.reason}（跳过ADX/波动率/常规入场指标）`
+        }
+      } else if (trendResult.direction === 'LONG') {
         entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
       } else if (trendResult.direction === 'SHORT') {
         entryResult = checkShortEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
@@ -112,6 +138,14 @@ export class MarketAnalyzer {
       if (!entryOk) {
         this.logAnalysisResult(symbol, false, `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`, price)
         return null
+      }
+
+      // 成功通过入场后，记录交叉触发，避免同一根K线重复入场
+      if (isCrossSignal && crossCandleTimestamp && (trendResult.direction === 'LONG' || trendResult.direction === 'SHORT')) {
+        this.crossSignalTracker[symbol] = {
+          timestamp: crossCandleTimestamp,
+          direction: trendResult.direction,
+        }
       }
 
       // AI分析（如果启用）

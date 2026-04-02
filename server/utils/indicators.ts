@@ -238,7 +238,8 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
 export function getTrendDirection(
   price: number,
   indicators: TechnicalIndicators,
-  config?: BotConfig
+  config?: BotConfig,
+  candles?: OHLCV[]
 ) {
   const { ema20, ema60 } = indicators
 
@@ -247,10 +248,42 @@ export function getTrendDirection(
   
   // 根据策略模式选择指标名称（使用配置的EMA周期）
   const emaPeriods = config?.indicatorsConfig?.emaPeriods
+  const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
   const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
   const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
   const emaFastName = `EMA${emaFastPeriod}`
   const emaSlowName = `EMA${emaSlowPeriod}`
+
+  // 优先判断EMA金叉/死叉（直接入场信号）
+  let isCrossSignal = false
+  let crossDirection: 'LONG' | 'SHORT' | null = null
+  let crossReason = ''
+
+  if (crossEntryEnabled && candles && candles.length >= Math.max(emaFastPeriod, emaSlowPeriod) + 1) {
+    const closes = candles.map(c => c.close)
+    const emaFastValues = EMA.calculate({ period: emaFastPeriod, values: closes })
+    const emaSlowValues = EMA.calculate({ period: emaSlowPeriod, values: closes })
+
+    if (emaFastValues.length >= 2 && emaSlowValues.length >= 2) {
+      const fastCurrent = emaFastValues[emaFastValues.length - 1] || 0
+      const fastPrev = emaFastValues[emaFastValues.length - 2] || 0
+      const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
+      const slowPrev = emaSlowValues[emaSlowValues.length - 2] || 0
+
+      const goldenCross = fastPrev <= slowPrev && fastCurrent > slowCurrent
+      const deadCross = fastPrev >= slowPrev && fastCurrent < slowCurrent
+
+      if (goldenCross) {
+        isCrossSignal = true
+        crossDirection = 'LONG'
+        crossReason = `${emaFastName}金叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≤ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} > ${slowCurrent.toFixed(3)}），直接做多`
+      } else if (deadCross) {
+        isCrossSignal = true
+        crossDirection = 'SHORT'
+        crossReason = `${emaFastName}死叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≥ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} < ${slowCurrent.toFixed(3)}），直接做空`
+      }
+    }
+  }
 
   const ema20AboveEma60 = ema20 > ema60
   const priceAboveEma20 = price > ema20
@@ -265,7 +298,10 @@ export function getTrendDirection(
   let direction: 'LONG' | 'SHORT' | 'IDLE' = 'IDLE'
   let reason = ''
 
-  if (isLong) {
+  if (isCrossSignal && crossDirection) {
+    direction = crossDirection
+    reason = crossReason
+  } else if (isLong) {
     direction = 'LONG'
     reason = `${emaFastName}(${ema20.toFixed(3)}) > ${emaSlowName}(${ema60.toFixed(3)}) 且 价格(${price.toFixed(3)}) > ${emaFastName}`
   } else if (isShort) {
@@ -290,6 +326,9 @@ export function getTrendDirection(
       price,
       ema20,
       ema60,
+      isCrossSignal,
+      crossDirection,
+      crossCandleTimestamp: candles?.[candles.length - 1]?.timestamp,
       conditions: {
         ema20AboveEma60,
         priceAboveEma20,

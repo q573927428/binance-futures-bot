@@ -333,6 +333,10 @@
 
       <el-divider>技术指标配置</el-divider>
 
+      <el-form-item label="金叉死叉直接入场">
+        <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
+      </el-form-item>
+
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1小时' : '15分钟'}ADX阈值`">
         <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
       </el-form-item>

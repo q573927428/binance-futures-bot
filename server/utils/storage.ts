@@ -281,6 +281,7 @@ export function getDefaultConfig(): BotConfig {
           slow: 200,   // 慢速EMA周期 (默认 200)
         },
       },
+      crossEntryEnabled: true,      // 启用EMA交叉直接入场（金叉做多/死叉做空）
       adxTrend: {
         adx1hThreshold: 20,           // 1小时ADX阈值
         adx4hThreshold: 15,           // 4小时ADX阈值
