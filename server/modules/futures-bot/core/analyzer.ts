@@ -54,9 +54,15 @@ export class MarketAnalyzer {
 
       // 根据策略模式选择K线周期
       const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
+      const strategyMode = this.config.strategyMode || 'short_term'
+      const emaPeriods = this.config.indicatorsConfig?.emaPeriods
+      const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+      const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
+      const minCandlesForCross = Math.max(emaFastPeriod, emaSlowPeriod) + 1
+      const mainCandlesCount = Math.max(20, minCandlesForCross + 10)
       
       // 获取主K线数据（用于趋势方向、AI分析、价格变化计算和入场条件检查）
-      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, 20)
+      const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, mainCandlesCount)
 
       // 检查mainCandles是否为空
       if (mainCandles.length === 0) {
@@ -125,7 +131,7 @@ export class MarketAnalyzer {
       if (isCrossSignal) {
         entryResult = {
           passed: true,
-          reason: `${trendResult.reason}（跳过ADX/波动率/常规入场指标）`
+          reason: `${trendResult.reason}（跳过ADX/波动率/常规入场指标与AI入场门槛）`
         }
       } else if (trendResult.direction === 'LONG') {
         entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
@@ -150,7 +156,7 @@ export class MarketAnalyzer {
 
       // AI分析（如果启用）
       let aiAnalysis = undefined
-      if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry) {
+      if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry && !isCrossSignal) {
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
           price,

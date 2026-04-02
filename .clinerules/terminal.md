@@ -6,4 +6,4 @@
 - **Vue**：禁止 `import { ElMessage } from 'element-plus'`
 - **图标**：`<el-icon><ElIconRefresh /></el-icon>`（禁止直接导入）
 - **类型**：修复所有 TypeScript 类型错误
-- **禁止**：查看直接 `data/kline-simple/` 目录下面所有文件内容 ，里面的内容很大很大
+- **禁止**：查看直接 `data/kline-simple/` 和 `logs/` 目录下面所有文件内容 ，里面的内容很大很大
