@@ -84,9 +84,9 @@
     },
     "crossEntryEnabled": true,
     "adxTrend": {
-      "adx1hThreshold": 20,
-      "adx4hThreshold": 15,
-      "adx15mThreshold": 26,
+      "adx15mThreshold": 56,
+      "adx1hThreshold": 50,
+      "adx4hThreshold": 35,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
