@@ -389,7 +389,8 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
     c: price,
     h: Math.max(lastKline.h, price),
     l: Math.min(lastKline.l, price),
-    v: lastKline.v + 0.01
+    // /api/websocket/prices 仅提供价格快照，不提供当前周期实时成交量
+    v: lastKline.v
   }
   
   // 更新数据数组

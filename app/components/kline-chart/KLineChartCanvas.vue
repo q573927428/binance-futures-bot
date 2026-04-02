@@ -567,7 +567,21 @@ watch(() => props.klineData, (newData, oldData) => {
     updateChart()
     return
   }
-  
+
+  // 数据长度不变时，仍需处理“窗口滑动/新周期替换”场景
+  // 例如：数据达到上限后，头部移除一根、尾部新增一根，长度不变但内容已变化
+  const newFirst = newData[0]
+  const oldFirst = oldData[0]
+  const newLast = newData[newData.length - 1]
+  const oldLast = oldData[oldData.length - 1]
+
+  // 任一关键时间戳变化都需要整图刷新
+  if ((newFirst && oldFirst && newFirst.t !== oldFirst.t) ||
+      (newLast && oldLast && newLast.t !== oldLast.t)) {
+    updateChart()
+    return
+  }
+
   // 如果只是最后一根K线更新，不刷新整个图表
   // 这个情况由 updateLastKline 方法处理
 }, { deep: true })
