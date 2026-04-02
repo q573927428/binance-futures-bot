@@ -136,16 +136,21 @@ const generateMarkers = () => {
       text: `${order.direction} @ ${order.entryPrice.toFixed(2)}`
     }
     
-    // 平仓标记
-    const closeMarker = {
+    // 平仓标记（根据方向显示平多/平空）
+    const closeAction = order.direction === 'LONG' ? '平多' : '平空'
+    const pnlSign = order.pnl >= 0 ? '+' : ''
+    
+    // 第一行：平多/平空和价格
+    const closeMarker1 = {
       time: closeTime,
       position: 'belowBar' as const,
       color: order.pnl >= 0 ? '#26a69a' : '#ef5350',
       shape: 'circle' as SeriesMarkerShape,
-      text: `平仓 @ ${order.exitPrice.toFixed(2)} (${order.pnl >= 0 ? '+' : ''}${order.pnlPercentage.toFixed(2)}%)`
+      text: `${closeAction} @ ${order.exitPrice.toFixed(2)}  ${pnlSign}${order.pnl.toFixed(2)} (${pnlSign}${order.pnlPercentage.toFixed(2)}%)`
     }
     
-    return [openMarker, closeMarker]
+    
+    return [openMarker, closeMarker1]
   })
   
   // 按时间升序排序（lightweight-charts 5.x 要求）
