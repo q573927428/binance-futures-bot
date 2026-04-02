@@ -185,6 +185,20 @@
         <el-input-number v-model="editConfig.aiConfig.minConfidence" :min="0" :max="100" />
       </el-form-item>
 
+      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI条件模式">
+        <el-select v-model="editConfig.aiConfig.conditionMode" placeholder="选择条件模式">
+          <el-option label="仅评分" value="SCORE_ONLY" />
+          <el-option label="评分+置信度" value="SCORE_AND_CONFIDENCE" />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析后处理模式">
+        <el-select v-model="editConfig.aiConfig.technicalPostAdjustmentMode" placeholder="选择后处理模式">
+          <el-option label="惩罚优先" value="PENALTY_ONLY" />
+          <el-option label="平衡模式" value="BALANCED" />
+        </el-select>
+      </el-form-item>
+
       <el-form-item v-if="editConfig.aiConfig.enabled" label="最大风险等级">
         <el-select v-model="editConfig.aiConfig.maxRiskLevel" placeholder="选择风险等级">
           <el-option label="低" value="LOW" />

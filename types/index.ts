@@ -263,6 +263,9 @@ export interface RiskConfig {
 }
 
 // AI配置
+export type AIConditionMode = 'SCORE_ONLY' | 'SCORE_AND_CONFIDENCE'
+export type AITechnicalPostAdjustmentMode = 'PENALTY_ONLY' | 'BALANCED'
+
 export interface AIConfig {
   enabled: boolean          // 启用AI分析
   analysisInterval?: number // AI分析间隔（秒）
@@ -271,6 +274,8 @@ export interface AIConfig {
   useForEntry: boolean      // 用于开仓决策
   useForExit: boolean       // 用于平仓决策
   cacheDuration: number     // 缓存时长（分钟）
+  conditionMode?: AIConditionMode // 入场判定模式：仅score或score+confidence
+  technicalPostAdjustmentMode?: AITechnicalPostAdjustmentMode // AI后处理模式：惩罚优先/平衡
 }
 
 // 市场数据

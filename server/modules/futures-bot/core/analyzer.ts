@@ -164,7 +164,12 @@ export class MarketAnalyzer {
         )
 
         // 检查AI分析条件
-        const aiConditionsPassed = checkAIAnalysisConditions(aiAnalysis, this.config.aiConfig.minConfidence, this.config.aiConfig.maxRiskLevel)
+        const aiConditionsPassed = checkAIAnalysisConditions(
+          aiAnalysis,
+          this.config.aiConfig.minConfidence,
+          this.config.aiConfig.maxRiskLevel,
+          this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
+        )
         if (!aiConditionsPassed) {
           this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
           return null

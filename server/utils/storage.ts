@@ -223,7 +223,9 @@ export function getDefaultConfig(): BotConfig {
       enabled: true,                  // 启用AI分析
       analysisInterval: 1500,         // AI分析间隔（秒）
       minConfidence: 70,              // 最小置信度（0-100）
+      conditionMode: 'SCORE_ONLY',    // AI条件模式：仅评分/评分+置信度
       maxRiskLevel: 'MEDIUM',         // 最大风险等级：LOW/MEDIUM/HIGH
+      technicalPostAdjustmentMode: 'PENALTY_ONLY', // 技术后处理模式：惩罚优先/平衡
       useForEntry: true,              // 用于开仓决策
       useForExit: true,               // 用于平仓决策
       cacheDuration: 10,              // 缓存时长（分钟）

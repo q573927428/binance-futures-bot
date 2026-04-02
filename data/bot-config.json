@@ -22,7 +22,9 @@
     "enabled": true,
     "analysisInterval": 1500,
     "minConfidence": 60,
+    "conditionMode": "SCORE_ONLY",
     "maxRiskLevel": "MEDIUM",
+    "technicalPostAdjustmentMode": "PENALTY_ONLY",
     "useForEntry": true,
     "useForExit": true,
     "cacheDuration": 10

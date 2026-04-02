@@ -1,4 +1,4 @@
-import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig } from '../../types'
+import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig, AIConditionMode } from '../../types'
 
 interface AIAnalysisCache {
   data: AIAnalysis
@@ -15,22 +15,28 @@ export function calculateTechnicalWeightAdjustment(
   price: number,
   config?: BotConfig
 ): { confidenceAdjustment: number; scoreAdjustment: number } {
+  const postAdjustmentMode = config?.aiConfig?.technicalPostAdjustmentMode ?? 'PENALTY_ONLY'
+  const isPenaltyOnly = postAdjustmentMode === 'PENALTY_ONLY'
+
   // 初始化调整因子
   let confidenceAdjustment = 0
   let scoreAdjustment = 0
+
+  const addPositiveAdjustment = (confidence: number, score: number) => {
+    if (isPenaltyOnly) return
+    confidenceAdjustment += confidence
+    scoreAdjustment += score
+  }
   
   // 1. ADX趋势强度调整（多周期确认）
   // ADX > 25表示强趋势，ADX > 40表示非常强趋势
   const avgAdxScore = (indicators.adx15m + indicators.adx1h + indicators.adx4h) / 3
   if (avgAdxScore >= 40) {
-    confidenceAdjustment += 15
-    scoreAdjustment += 10
+    addPositiveAdjustment(6, 4)
   } else if (avgAdxScore >= 25) {
-    confidenceAdjustment += 8
-    scoreAdjustment += 5
+    addPositiveAdjustment(3, 2)
   } else if (avgAdxScore >= 20) {
-    confidenceAdjustment += 3
-    scoreAdjustment += 2
+    addPositiveAdjustment(1, 1)
   }
   
   // 2. 多周期ADX一致性调整
@@ -40,11 +46,9 @@ export function calculateTechnicalWeightAdjustment(
     (indicators.adx4h >= 25 ? 1 : 0)
   
   if (adxConsistency === 3) {
-    confidenceAdjustment += 10
-    scoreAdjustment += 8
+    addPositiveAdjustment(4, 3)
   } else if (adxConsistency === 2) {
-    confidenceAdjustment += 5
-    scoreAdjustment += 3
+    addPositiveAdjustment(2, 1)
   }
   
   // 3. RSI位置调整（结合交易方向）
@@ -54,12 +58,10 @@ export function calculateTechnicalWeightAdjustment(
   if (isLong) {
     if (rsi >= 60) {
       // 强趋势（主升段）
-      confidenceAdjustment += 10
-      scoreAdjustment += 8
+      addPositiveAdjustment(3, 2)
     } else if (rsi >= 50) {
       // 健康趋势（回调区）
-      confidenceAdjustment += 5
-      scoreAdjustment += 3
+      addPositiveAdjustment(1, 1)
     } else {
       // 弱趋势 / 可能反转
       confidenceAdjustment -= 6
@@ -70,12 +72,10 @@ export function calculateTechnicalWeightAdjustment(
   if (isShort) {
     if (rsi <= 40) {
       // 强趋势（主跌段）
-      confidenceAdjustment += 10
-      scoreAdjustment += 8
+      addPositiveAdjustment(3, 2)
     } else if (rsi <= 50) {
       // 健康趋势
-      confidenceAdjustment += 5
-      scoreAdjustment += 3
+      addPositiveAdjustment(1, 1)
     } else {
       // 弱趋势 / 可能反转
       confidenceAdjustment -= 6
@@ -89,8 +89,7 @@ export function calculateTechnicalWeightAdjustment(
     if ((indicators.ema20 > indicators.ema60 && price > indicators.ema20) ||
         (indicators.ema20 < indicators.ema60 && price < indicators.ema20)) {
       // 趋势一致
-      confidenceAdjustment += 8
-      scoreAdjustment += 6
+      addPositiveAdjustment(3, 2)
     }
   }
   
@@ -102,14 +101,12 @@ export function calculateTechnicalWeightAdjustment(
   
   if (isLong && price > indicators.ema30 && priceToEMA30 <= longEmaDeviationThreshold) {
     // 多头回踩EMA（健康趋势）
-    confidenceAdjustment += 3
-    scoreAdjustment += 2
+    addPositiveAdjustment(1, 1)
   }
   
   if (isShort && price < indicators.ema30 && priceToEMA30 <= shortEmaDeviationThreshold) {
     // 空头反弹到EMA
-    confidenceAdjustment += 3
-    scoreAdjustment += 2
+    addPositiveAdjustment(1, 1)
   }
   
   // 6. ATR波动性调整（基于实际交易数据优化）
@@ -132,8 +129,7 @@ export function calculateTechnicalWeightAdjustment(
       scoreAdjustment -= 3
     } else {
       // 理想趋势波动区间
-      confidenceAdjustment += 5
-      scoreAdjustment += 3
+      addPositiveAdjustment(2, 1)
     }
   } else {
     // 非趋势市场 → 直接打压（重点）
@@ -142,8 +138,10 @@ export function calculateTechnicalWeightAdjustment(
   }
   
   // 确保调整在合理范围内
-  confidenceAdjustment = Math.max(-30, Math.min(30, confidenceAdjustment))
-  scoreAdjustment = Math.max(-25, Math.min(25, scoreAdjustment))
+  const confidenceUpperBound = isPenaltyOnly ? 5 : 12
+  const scoreUpperBound = isPenaltyOnly ? 4 : 10
+  confidenceAdjustment = Math.max(-30, Math.min(confidenceUpperBound, confidenceAdjustment))
+  scoreAdjustment = Math.max(-25, Math.min(scoreUpperBound, scoreAdjustment))
   
   return { confidenceAdjustment, scoreAdjustment }
 }
@@ -449,15 +447,20 @@ export async function analyzeMarketWithAI(
 /**
  * 检查AI分析条件
  */
-export function checkAIAnalysisConditions(aiAnalysis: AIAnalysis, minConfidence: number, maxRiskLevel: RiskLevel): boolean {
-  // 评分必须>=60
-  if (aiAnalysis.score < minConfidence) return false
-
+export function checkAIAnalysisConditions(
+  aiAnalysis: AIAnalysis,
+  minConfidence: number,
+  maxRiskLevel: RiskLevel,
+  conditionMode: AIConditionMode = 'SCORE_ONLY'
+): boolean {
   // 方向不能是IDLE ✅ 修改为检查方向
   if (aiAnalysis.direction === 'IDLE') return false
+
+  // 评分必须>=阈值
+  if (aiAnalysis.score < minConfidence) return false
   
-  // 置信度检查
-  if (aiAnalysis.confidence < minConfidence) return false
+  // 置信度检查（可选，默认关闭，避免score/confidence双门槛导致分数失真）
+  if (conditionMode === 'SCORE_AND_CONFIDENCE' && aiAnalysis.confidence < minConfidence) return false
   
   // 风险等级检查
   const riskLevels: Record<RiskLevel, number> = {
