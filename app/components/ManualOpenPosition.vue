@@ -3,23 +3,37 @@
     <template #header>
       <div class="card-header">
         <span>🎮 手动开仓</span>
-        <el-button
-          text
-          type="primary"
-          @click="toggleExpanded"
-        >
-          <el-icon>
-            <ElIconArrowDown v-if="!expanded" />
-            <ElIconArrowUp v-else />
-          </el-icon>
-          {{ expanded ? '收起' : '展开' }}
-        </el-button>
       </div>
     </template>
 
-    <div v-if="expanded" class="manual-open-form">
-      <!-- 交易对选择 -->
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+    <div class="manual-open-form">
+      <div v-if="isCheckingPasswordRequirement" class="password-checking">
+        <el-skeleton :rows="4" animated />
+      </div>
+
+      <div v-else-if="requiresPassword && !isPasswordVerified" class="password-gate">
+
+        <el-input
+          v-model="passwordInput"
+          type="password"
+          placeholder="请输入密码"
+          show-password
+          @keyup.enter="handlePasswordVerify"
+        />
+
+        <el-button
+          type="primary"
+          :loading="isVerifyingPassword"
+          @click="handlePasswordVerify"
+          style="width: 100%"
+        >
+          验证并显示表单
+        </el-button>
+      </div>
+
+      <template v-else>
+        <!-- 交易对选择 -->
+        <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
         <el-form-item label="交易对" prop="symbol">
           <el-select
             v-model="form.symbol"
@@ -42,16 +56,16 @@
         <!-- 方向选择 -->
         <el-form-item label="方向" prop="direction">
           <el-radio-group v-model="form.direction">
-            <el-radio-button label="LONG">做多</el-radio-button>
-            <el-radio-button label="SHORT">做空</el-radio-button>
+            <el-radio-button label="做多" value="LONG" />
+            <el-radio-button label="做空" value="SHORT" />
           </el-radio-group>
         </el-form-item>
 
         <!-- 订单类型 -->
         <!-- <el-form-item label="订单类型" prop="orderType">
           <el-radio-group v-model="form.orderType" @change="handleOrderTypeChange">
-            <el-radio-button label="MARKET">市价</el-radio-button>
-            <el-radio-button label="LIMIT">限价</el-radio-button>
+            <el-radio-button label="市价" value="MARKET" />
+            <el-radio-button label="限价" value="LIMIT" />
           </el-radio-group>
         </el-form-item> -->
 
@@ -71,8 +85,8 @@
         <!-- 金额类型 -->
         <el-form-item label="金额类型" prop="amountType">
           <el-radio-group v-model="form.amountType" @change="handleAmountTypeChange">
-            <el-radio-button label="PERCENTAGE">仓位百分比</el-radio-button>
-            <el-radio-button label="USDT">USDT金额</el-radio-button>
+            <el-radio-button label="仓位百分比" value="PERCENTAGE" />
+            <el-radio-button label="USDT金额" value="USDT" />
           </el-radio-group>
         </el-form-item>
 
@@ -106,12 +120,11 @@
           </el-input>
         </el-form-item>
 
-        <!-- 密码输入 -->
-        <el-form-item v-if="requiresPassword" label="密码" prop="password">
+        <el-form-item v-if="requiresPassword" label="密码验证">
           <el-input
-            v-model="form.password"
+            v-model="submitPasswordInput"
             type="password"
-            placeholder="请输入密码"
+            placeholder="开仓前请再次输入密码"
             show-password
             @keyup.enter="handleSubmit"
           />
@@ -130,35 +143,23 @@
             手动开仓
           </el-button>
         </el-form-item>
-      </el-form>
+        </el-form>
 
-      <!-- 当前价格显示 -->
-      <div v-if="currentPrice" class="current-price-info">
-        <div class="price-label">当前价格：</div>
-        <div class="price-value">{{ currentPrice.toFixed(5) }} USDT</div>
-        <el-button
-          text
-          type="primary"
-          size="small"
-          @click="refreshPrice"
-          :loading="isRefreshingPrice"
-        >
-          <el-icon><ElIconRefresh /></el-icon>
-        </el-button>
-      </div>
-
-      <!-- 风险提示 -->
-      <div class="risk-warning">
-        <el-alert
-          title="风险提示"
-          type="warning"
-          :closable="false"
-          show-icon
-        >
-          <p>手动开仓将跳过所有技术指标验证，直接执行开仓操作。</p>
-          <p>请确保您了解交易风险，并设置合理的止损止盈。</p>
-        </el-alert>
-      </div>
+        <!-- 当前价格显示 -->
+        <div v-if="currentPrice" class="current-price-info">
+          <div class="price-label">当前价格：</div>
+          <div class="price-value">{{ currentPrice.toFixed(5) }} USDT</div>
+          <el-button
+            text
+            type="primary"
+            size="small"
+            @click="refreshPrice"
+            :loading="isRefreshingPrice"
+          >
+            <el-icon><ElIconRefresh /></el-icon>
+          </el-button>
+        </div>
+      </template>
     </div>
   </el-card>
 </template>
@@ -170,12 +171,17 @@ import { useBotStore } from '../stores/bot'
 const botStore = useBotStore()
 
 // 表单状态
-const expanded = ref(false)
 const formRef = ref()
 const isSubmitting = ref(false)
 const isRefreshingPrice = ref(false)
 const currentPrice = ref<number | null>(null)
 const requiresPassword = ref(false)
+const isCheckingPasswordRequirement = ref(true)
+const isPasswordVerified = ref(false)
+const isVerifyingPassword = ref(false)
+const passwordInput = ref('')
+const verifiedPassword = ref('')
+const submitPasswordInput = ref('')
 
 // 表单数据
 interface ManualOpenForm {
@@ -186,7 +192,6 @@ interface ManualOpenForm {
   amountType:  'PERCENTAGE' | 'USDT'
   amount: string
   leverage: string
-  password: string
 }
 
 const form = ref<ManualOpenForm>({
@@ -196,8 +201,7 @@ const form = ref<ManualOpenForm>({
   price: '',
   amountType: 'PERCENTAGE',
   amount: '20',
-  leverage: '10',
-  password: ''
+  leverage: '10'
 })
 
   // 表单验证规则
@@ -273,18 +277,6 @@ const form = ref<ManualOpenForm>({
         },
         trigger: 'blur'
       }
-    ],
-    password: [
-      { 
-        validator: (rule: any, value: string, callback: any) => {
-          if (requiresPassword.value && !value) {
-            callback(new Error('请输入密码'))
-          } else {
-            callback()
-          }
-        },
-        trigger: 'blur'
-      }
     ]
   }
 
@@ -310,6 +302,18 @@ const calculatedAmount = computed(() => {
 })
 
 const canSubmit = computed(() => {
+  if (isCheckingPasswordRequirement.value) {
+    return false
+  }
+
+  if (requiresPassword.value && !isPasswordVerified.value) {
+    return false
+  }
+
+  if (requiresPassword.value && !submitPasswordInput.value) {
+    return false
+  }
+
   if (!form.value.symbol || !form.value.amount || !form.value.leverage) {
     return false
   }
@@ -317,19 +321,44 @@ const canSubmit = computed(() => {
   if (form.value.orderType === 'LIMIT' && !form.value.price) {
     return false
   }
-  
-  if (requiresPassword.value && !form.value.password) {
-    return false
-  }
-  
+
   return true
 })
 
 // 方法
-function toggleExpanded() {
-  expanded.value = !expanded.value
-  if (expanded.value && form.value.symbol) {
-    refreshPrice()
+async function handlePasswordVerify() {
+  if (!passwordInput.value) {
+    ElMessage.warning('请输入密码')
+    return
+  }
+
+  try {
+    isVerifyingPassword.value = true
+    const response = await $fetch<{ success: boolean; message?: string; requiresPassword?: boolean }>(
+      '/api/bot/verify-password',
+      {
+        method: 'POST',
+        body: { password: passwordInput.value }
+      }
+    )
+
+    if (response.success) {
+      isPasswordVerified.value = true
+      verifiedPassword.value = passwordInput.value
+      ElMessage.success(response.message || '密码验证成功')
+
+      if (form.value.symbol) {
+        await refreshPrice()
+      }
+    } else {
+      isPasswordVerified.value = false
+      verifiedPassword.value = ''
+      ElMessage.error(response.message || '密码验证失败')
+    }
+  } catch (error: any) {
+    ElMessage.error('密码验证失败: ' + (error.message || String(error)))
+  } finally {
+    isVerifyingPassword.value = false
   }
 }
 
@@ -388,15 +417,50 @@ async function handleSubmit() {
   try {
     // 验证表单
     await formRef.value.validate()
+
+    // 二次密码确认（内嵌输入）
+    if (requiresPassword.value) {
+      const passed = await verifyPasswordForSubmit()
+      if (!passed) {
+        return
+      }
+    }
     
-    // 直接执行开仓，使用表单中的密码
-    await executeManualOpenPositionWithPassword(form.value.password || '')
+    await executeManualOpenPositionWithPassword()
   } catch (error) {
     console.error('表单验证失败:', error)
   }
 }
 
-async function executeManualOpenPositionWithPassword(password: string) {
+async function verifyPasswordForSubmit(): Promise<boolean> {
+  try {
+    if (!submitPasswordInput.value) {
+      ElMessage.warning('请输入二次密码验证')
+      return false
+    }
+
+    const response = await $fetch<{ success: boolean; message?: string }>(
+      '/api/bot/verify-password',
+      {
+        method: 'POST',
+        body: { password: submitPasswordInput.value }
+      }
+    )
+
+    if (!response.success) {
+      ElMessage.error(response.message || '密码验证失败')
+      return false
+    }
+
+    verifiedPassword.value = submitPasswordInput.value
+    return true
+  } catch (error: any) {
+    ElMessage.error('二次密码验证失败: ' + (error.message || String(error)))
+    return false
+  }
+}
+
+async function executeManualOpenPositionWithPassword() {
   isSubmitting.value = true
   
   try {
@@ -414,7 +478,7 @@ async function executeManualOpenPositionWithPassword(password: string) {
       amountType: form.value.amountType,
       amount: Number(form.value.amount),
       leverage: Number(form.value.leverage),
-      password: password
+      password: requiresPassword.value ? verifiedPassword.value : undefined
     }
     
     const response = await $fetch<{
@@ -439,7 +503,11 @@ async function executeManualOpenPositionWithPassword(password: string) {
       if (response.requiresPassword) {
         // 需要密码验证，更新状态
         requiresPassword.value = true
-        ElMessage.warning('需要密码验证')
+        isPasswordVerified.value = false
+        verifiedPassword.value = ''
+        passwordInput.value = ''
+        submitPasswordInput.value = ''
+        ElMessage.warning('需要先完成密码验证')
       } else {
         ElMessage.error(response.message || '手动开仓失败')
       }
@@ -459,7 +527,7 @@ function resetForm() {
   form.value.amountType = 'USDT'
   form.value.amount = ''
   form.value.leverage = '10'
-  form.value.password = ''
+  submitPasswordInput.value = ''
   
   if (formRef.value) {
     formRef.value.resetFields()
@@ -469,7 +537,12 @@ function resetForm() {
 // 初始化
 onMounted(async () => {
   // 检查是否需要密码
-  await checkPasswordRequirement()
+  try {
+    const needPassword = await checkPasswordRequirement()
+    isPasswordVerified.value = !needPassword
+  } finally {
+    isCheckingPasswordRequirement.value = false
+  }
   
   // 如果有配置，设置默认交易对
   const symbols = botStore.config?.symbols
@@ -491,8 +564,14 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.manual-open-form {
-  padding: 10px 0;
+.password-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.password-checking {
+  padding: 8px 0;
 }
 
 .form-hint {
