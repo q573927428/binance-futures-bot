@@ -70,7 +70,7 @@ let candlestickSeries: any = null
 let volumeSeries: any = null
 let emaSeries: any[] = []
 let resizeObserver: ResizeObserver | null = null
-const markersAdded = ref(false)
+let markersApi: any = null
 
 // 使用Pinia store获取配置
 const botStore = useBotStore()
@@ -104,6 +104,109 @@ const priceFormat = computed(() => ({
   precision: isDOGE.value ? 5 : 2,
   minMove: isDOGE.value ? 0.00001 : 0.01
 }))
+
+// 生成订单标记数据
+const generateMarkers = () => {
+  // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
+  const currentTimeframe = props.timeframe || computedTimeframe.value
+  
+  // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
+  const hideMarkersTimeframes = ['1d', '1w']
+  if (hideMarkersTimeframes.includes(currentTimeframe)) {
+    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示订单标记`)
+    return []
+  }
+  
+  // 如果交易历史为空，返回空数组
+  if (!props.tradeHistory || props.tradeHistory.length === 0) {
+    return []
+  }
+  
+  const markers = props.tradeHistory.flatMap(order => {
+    // 转换时间格式：毫秒 -> 秒
+    const openTime = alignToKlineTime(order.openTime, currentTimeframe)
+    const closeTime = alignToKlineTime(order.closeTime, currentTimeframe)
+    
+    // 开仓标记
+    const openMarker = {
+      time: openTime,
+      position: 'aboveBar' as const,
+      color: order.direction === 'LONG' ? '#26a69a' : '#ef5350',
+      shape: (order.direction === 'LONG' ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
+      text: `${order.direction} @ ${order.entryPrice.toFixed(2)}`
+    }
+    
+    // 平仓标记
+    const closeMarker = {
+      time: closeTime,
+      position: 'belowBar' as const,
+      color: order.pnl >= 0 ? '#26a69a' : '#ef5350',
+      shape: 'circle' as SeriesMarkerShape,
+      text: `平仓 @ ${order.exitPrice.toFixed(2)} (${order.pnl >= 0 ? '+' : ''}${order.pnlPercentage.toFixed(2)}%)`
+    }
+    
+    return [openMarker, closeMarker]
+  })
+  
+  // 按时间升序排序（lightweight-charts 5.x 要求）
+  return markers.sort((a, b) => a.time - b.time)
+}
+
+// 更新图表标记
+const updateMarkers = () => {
+  if (!candlestickSeries) return
+  
+  try {
+    const markers = generateMarkers()
+    
+    // 如果已经有markersApi，使用setMarkers更新
+    if (markersApi) {
+      markersApi.setMarkers(markers)
+    } else {
+      // 第一次创建markersApi
+      markersApi = createSeriesMarkers(candlestickSeries, markers)
+    }
+    
+    console.log(`✅ 已更新订单标记: ${markers.length} 个`)
+  } catch (error) {
+    console.warn('更新订单标记失败:', error)
+  }
+}
+
+// 清理订单标记
+const clearMarkers = () => {
+  if (!candlestickSeries) return
+  
+  try {
+    // 使用空数组来清除所有标记
+    if (markersApi) {
+      markersApi.setMarkers([])
+    } else {
+      createSeriesMarkers(candlestickSeries, [])
+    }
+    console.log('✅ 已清理订单标记')
+  } catch (error) {
+    console.warn('清理订单标记失败:', error)
+  }
+}
+
+// 将时间戳对齐到K线时间
+const alignToKlineTime = (timestamp: number, timeframe: string): number => {
+  const timeframeSeconds = getTimeframeSeconds(timeframe)
+  return Math.floor(timestamp / 1000 / timeframeSeconds) * timeframeSeconds
+}
+
+// 获取时间段的秒数
+const getTimeframeSeconds = (timeframe: string): number => {
+  switch (timeframe) {
+    case '15m': return 15 * 60
+    case '1h': return 60 * 60
+    case '4h': return 4 * 60 * 60
+    case '1d': return 24 * 60 * 60
+    case '1w': return 7 * 24 * 60 * 60
+    default: return 60 * 60
+  }
+}
 
 // 初始化图表
 const initChart = () => {
@@ -194,10 +297,6 @@ const initChart = () => {
   
   // 更新图表数据
   updateChart()
-  
-  // 添加订单标记
-  addOrderMarkers()
-  
 }
 
 // 根据时间查找K线数据
@@ -444,92 +543,8 @@ const updateChart = () => {
     }
   }
   
-  // 重置标记状态
-  markersAdded.value = false
-  addOrderMarkers()
-}
-
-// 清理订单标记
-const clearMarkers = () => {
-  if (!candlestickSeries) return
-  
-  try {
-    // 使用空数组来清除所有标记
-    createSeriesMarkers(candlestickSeries, [])
-    markersAdded.value = false
-  } catch (error) {
-    console.warn('清理订单标记失败:', error)
-  }
-}
-
-// 添加订单标记
-const addOrderMarkers = () => {
-  if (!candlestickSeries || markersAdded.value) return
-  
-  // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
-  const currentTimeframe = props.timeframe || computedTimeframe.value
-  
-  // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
-  const hideMarkersTimeframes = ['1d', '1w']
-  if (hideMarkersTimeframes.includes(currentTimeframe)) {
-    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示订单标记`)
-    markersAdded.value = false
-    return
-  }
-  
-  // 如果交易历史为空，直接设置标记状态为未添加并返回
-  if (props.tradeHistory?.length === 0) {
-    markersAdded.value = false
-    return
-  }
-  
-  const markers = props.tradeHistory!.flatMap(order => {
-    // 转换时间格式：毫秒 -> 秒
-    const openTime = alignToKlineTime(order.openTime, currentTimeframe)
-    const closeTime = alignToKlineTime(order.closeTime, currentTimeframe)
-    
-    // 开仓标记
-    const openMarker = {
-      time: openTime,
-      position: 'aboveBar' as const,
-      color: order.direction === 'LONG' ? '#26a69a' : '#ef5350',
-      shape: (order.direction === 'LONG' ? 'arrowUp' : 'arrowDown') as SeriesMarkerShape,
-      text: `${order.direction} @ ${order.entryPrice.toFixed(2)}`
-    }
-    
-    // 平仓标记
-    const closeMarker = {
-      time: closeTime,
-      position: 'belowBar' as const,
-      color: order.pnl >= 0 ? '#26a69a' : '#ef5350',
-      shape: 'circle' as SeriesMarkerShape,
-      text: `平仓 @ ${order.exitPrice.toFixed(2)} (${order.pnl >= 0 ? '+' : ''}${order.pnlPercentage.toFixed(2)}%)`
-    }
-    
-    return [openMarker, closeMarker]
-  })
-  
-  // 使用createSeriesMarkers创建标记
-  createSeriesMarkers(candlestickSeries, markers)
-  markersAdded.value = true
-}
-
-// 将时间戳对齐到K线时间
-const alignToKlineTime = (timestamp: number, timeframe: string): number => {
-  const timeframeSeconds = getTimeframeSeconds(timeframe)
-  return Math.floor(timestamp / 1000 / timeframeSeconds) * timeframeSeconds
-}
-
-// 获取时间段的秒数
-const getTimeframeSeconds = (timeframe: string): number => {
-  switch (timeframe) {
-    case '15m': return 15 * 60
-    case '1h': return 60 * 60
-    case '4h': return 4 * 60 * 60
-    case '1d': return 24 * 60 * 60
-    case '1w': return 7 * 24 * 60 * 60
-    default: return 60 * 60
-  }
+  // 更新订单标记
+  updateMarkers()
 }
 
 // 监听数据变化 - 只在数据长度变化或初始加载时刷新图表
@@ -562,8 +577,7 @@ watch(() => props.theme, () => {
 
 // 监听交易历史变化
 watch(() => props.tradeHistory, () => {
-  markersAdded.value = false
-  addOrderMarkers()
+  updateMarkers()
 }, { deep: true })
 
 
@@ -614,8 +628,8 @@ const cleanupChart = () => {
     resizeObserver = null
   }
   
-  // 重置标记状态
-  markersAdded.value = false
+  // 重置标记API
+  markersApi = null
   
 }
 

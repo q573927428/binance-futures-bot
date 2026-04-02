@@ -248,8 +248,8 @@ const loadKLineData = async () => {
       klineData.value = result.data.data
       meta.value = result.data.meta
       
-      // 加载历史订单数据
-      loadTradeHistory()
+      // 加载历史订单数据（等待完成）
+      await loadTradeHistory()
       
       // 显示最新K线数据
       showLatestKline()
@@ -664,11 +664,10 @@ watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
 
 // 组件挂载时初始化
 onMounted(() => {
-  // 直接加载K线数据
+  // 直接加载K线数据（会异步加载交易历史）
   loadKLineData()
   fetchWebSocketStatus()
   subscribeToPriceUpdates()
-  loadTradeHistory()
   // 启动新K线检测
   startNewKlineCheck()
 })
