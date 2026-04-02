@@ -121,6 +121,9 @@ const computedTimeframe = computed(() => {
 // 响应式数据
 const selectedTimeframe = ref(computedTimeframe.value)
 
+// 请求代次（用于防止过期响应覆盖）
+let requestGeneration = 0
+
 // 监听computedTimeframe变化（当botStore.config加载完成后）
 watch(() => computedTimeframe.value, (newTimeframe, oldTimeframe) => {
   if (newTimeframe && newTimeframe !== oldTimeframe && newTimeframe !== selectedTimeframe.value) {
@@ -226,10 +229,15 @@ const loadTradeHistory = async () => {
 // 加载K线数据
 const loadKLineData = async () => {
   const symbolToUse = props.symbol || 'BTCUSDT'
-  if (!symbolToUse || !selectedTimeframe.value) {
+  const timeframeToUse = selectedTimeframe.value
+
+  if (!symbolToUse || !timeframeToUse) {
     error.value = '请提供交易对和周期'
     return
   }
+  
+  // 递增请求代次（不中止旧请求，只让旧请求的响应被丢弃）
+  const generation = ++requestGeneration
   
   loading.value = true
   error.value = ''
@@ -237,12 +245,22 @@ const loadKLineData = async () => {
   try {
     const params = new URLSearchParams({
       symbol: symbolToUse,
-      timeframe: selectedTimeframe.value,
+      timeframe: timeframeToUse,
       limit: '11000'
     })
     
     const response = await fetch(`/api/kline-simple?${params}`)
     const result: KLineApiResponse = await response.json()
+    
+    // 检查当前请求代次是否已过期（例如symbol/timeframe已切换）
+    if (generation !== requestGeneration) {
+      return
+    }
+    
+    // 检查symbol/timeframe是否匹配当前状态
+    if (symbolToUse !== (props.symbol || 'BTCUSDT') || selectedTimeframe.value !== timeframeToUse) {
+      return
+    }
     
     if (result.success && result.data) {
       klineData.value = result.data.data
@@ -264,7 +282,10 @@ const loadKLineData = async () => {
     klineData.value = []
     hideTooltip()
   } finally {
-    loading.value = false
+    // 仅当当前请求代次匹配时才清除loading状态
+    if (generation === requestGeneration) {
+      loading.value = false
+    }
   }
 }
 
@@ -320,6 +341,12 @@ const fetchWebSocketStatus = async () => {
 
 // 处理实时价格更新
 const handlePriceUpdate = (priceData: PriceData) => {
+  // 检查价格数据是否属于当前交易对
+  const currentSymbol = props.symbol || 'BTCUSDT'
+  if (priceData.symbol !== currentSymbol) {
+    return
+  }
+  
   lastPriceUpdate.value = priceData
   
   if (klineData.value.length === 0) return
@@ -524,14 +551,24 @@ const unsubscribeFromPriceUpdates = async (): Promise<boolean> => {
 
 // 轮询获取最新价格
 let pricePollingInterval: NodeJS.Timeout | null = null
+let pricePollingGeneration = 0
 
 const startPricePolling = () => {
   if (pricePollingInterval) {
     clearInterval(pricePollingInterval)
   }
   
+  // 递增轮询代次
+  pricePollingGeneration++
+  const currentGeneration = pricePollingGeneration
+  
   pricePollingInterval = setInterval(async () => {
     const symbolToUse = props.symbol || 'BTCUSDT'
+    
+    // 检查轮询代次是否已过期（例如symbol已切换）
+    if (currentGeneration !== pricePollingGeneration) {
+      return
+    }
     
     try {
       const response = await fetch(`/api/websocket/prices?symbols=${symbolToUse}`)
@@ -609,34 +646,37 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
   if (newSymbol && newSymbol !== oldSymbol) {
     console.log(`🔄 Symbol变化: ${oldSymbol} -> ${newSymbol}`)
     
-    // 1. 立即清空当前显示的K线数据，避免显示旧数据
+    // 1. 递增请求代次，使所有旧异步回调失效
+    requestGeneration++
+    
+    // 2. 立即清空当前显示的K线数据，避免显示旧数据
     klineData.value = []
     tradeHistory.value = []
     hideTooltip()
     
-    // 2. 清理图表上的订单标记
+    // 3. 清理图表上的订单标记
     if (chartCanvasRef.value) {
       chartCanvasRef.value.clearMarkers()
     }
     
-    // 3. 停止旧的轮询
+    // 4. 停止旧的轮询
     stopPricePolling()
     
-    // 4. 清理旧的WebSocket订阅
+    // 5. 清理旧的WebSocket订阅
     if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
       console.log(`🔄 清理旧的WebSocket订阅: ${oldSymbol}`)
       await cleanupOldSubscription()
     }
     
-    // 5. 重置WebSocket客户端ID，确保新订阅使用新的ID
+    // 6. 重置WebSocket客户端ID，确保新订阅使用新的ID
     webSocketClientId.value = ''
     currentSubscriptionSymbol.value = ''
     
-    // 6. 加载新数据
+    // 7. 加载新数据
     console.log(`📊 加载新交易对数据: ${newSymbol}`)
     await loadKLineData()
     
-    // 7. 重新订阅价格更新
+    // 8. 重新订阅价格更新
     console.log(`🔗 订阅新交易对价格更新: ${newSymbol}`)
     await subscribeToPriceUpdates()
     

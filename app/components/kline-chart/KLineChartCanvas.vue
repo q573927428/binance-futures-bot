@@ -172,7 +172,6 @@ const updateMarkers = () => {
       markersApi = createSeriesMarkers(candlestickSeries, markers)
     }
     
-    console.log(`✅ 已更新订单标记: ${markers.length} 个`)
   } catch (error) {
     console.warn('更新订单标记失败:', error)
   }
