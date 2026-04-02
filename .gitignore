@@ -13,7 +13,7 @@ node_modules
 logs
 *.log
 
-# json 交易对K线数据
+# json 交易对K线数据 
 data/kline-simple/*.json
 
 # Misc
