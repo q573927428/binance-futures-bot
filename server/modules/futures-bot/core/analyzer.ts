@@ -101,19 +101,19 @@ export class MarketAnalyzer {
       // 更新当前symbol的ADX值
       this.previousADXMap[symbol] = indicators.adx15m
 
-      // 非金叉/死叉场景，继续执行常规过滤条件
+      // 检查波动率条件（金叉死叉直开也需要检查波动率）
+      const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
+      if (!volatilityResult.passed) {
+        this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
+        return null
+      }
+
+      // 非金叉/死叉场景，继续执行其他常规过滤条件
       if (!isCrossSignal) {
         // 检查ADX趋势条件（多周期）
         const adxResult = checkADXTrend(indicators, this.config)
         if (!adxResult.passed) {
           this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
-          return null
-        }
-
-        // 检查波动率条件
-        const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
-        if (!volatilityResult.passed) {
-          this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
           return null
         }
       }
