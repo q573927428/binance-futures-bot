@@ -14,7 +14,8 @@ logs
 *.log
 
 # json 交易对K线数据 
-data/kline-simple/*.json
+data/*
+!data/bot-config.json
 
 # Misc
 .DS_Store
