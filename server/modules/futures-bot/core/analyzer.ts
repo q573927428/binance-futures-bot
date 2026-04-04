@@ -156,7 +156,7 @@ export class MarketAnalyzer {
 
       // AI分析（如果启用）
       let aiAnalysis = undefined
-      if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry && !isCrossSignal) {
+      if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry) {
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
           price,
@@ -169,16 +169,28 @@ export class MarketAnalyzer {
           this.config
         )
 
-        // 检查AI分析条件
-        const aiConditionsPassed = checkAIAnalysisConditions(
-          aiAnalysis,
-          this.config.aiConfig.minConfidence,
-          this.config.aiConfig.maxRiskLevel,
-          this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
-        )
-        if (!aiConditionsPassed) {
-          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
-          return null
+        // 对于金叉/死叉信号，跳过AI入场条件检查（AI分析结果仍用于动态杠杆计算）
+        if (!isCrossSignal) {
+          // 检查AI分析条件（仅对非交叉信号进行入场条件检查）
+          const aiConditionsPassed = checkAIAnalysisConditions(
+            aiAnalysis,
+            this.config.aiConfig.minConfidence,
+            this.config.aiConfig.maxRiskLevel,
+            this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
+          )
+          if (!aiConditionsPassed) {
+            this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
+            return null
+          }
+        } else {
+          // 金叉/死叉信号：记录AI分析结果但不进行入场条件检查
+          logger.info('AI分析', `金叉/死叉信号跳过AI入场条件检查，AI分析结果将用于动态杠杆计算`, {
+            symbol,
+            direction: aiAnalysis.direction,
+            confidence: aiAnalysis.confidence,
+            score: aiAnalysis.score,
+            riskLevel: aiAnalysis.riskLevel
+          })
         }
       }
 
@@ -194,8 +206,9 @@ export class MarketAnalyzer {
         reason: entryResult?.reason || '入场条件满足', 
       }
 
-      // 记录最终分析结果
-      this.logAnalysisResult(symbol, true, '所有条件满足，生成交易信号', price)
+      // 记录最终分析结果，添加金叉/死叉信号提示
+      const signalType = isCrossSignal ? `（金叉/死叉信号）` : ''
+      this.logAnalysisResult(symbol, true, `所有条件满足，生成交易信号${signalType}`, price)
       
       return signal
     } catch (error: any) {
