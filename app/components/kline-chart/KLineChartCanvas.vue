@@ -31,7 +31,15 @@ import { createChart, ColorType, CandlestickSeries, HistogramSeries, LineSeries,
 import type { SimpleKLineData } from '../../../types/kline-simple'
 import type { TradeHistory, BotConfig } from '../../../types'
 import type { SeriesMarkerShape } from 'lightweight-charts'
-import { calculateEMASeries, getEMAColor, getEMAWidth } from '../../utils/ema-calculator'
+import { 
+  calculateEMASeries, 
+  getEMAColor, 
+  getEMAWidth,
+  detectEMACrossovers,
+  getEMACrossoverColor,
+  getEMACrossoverShape,
+  getEMACrossoverText
+} from '../../utils/ema-calculator'
 import { prepareCandlestickData, prepareVolumeData, getChartOptions } from './utils/kline-helpers'
 import { isDOGESymbol } from './utils/kline-helpers'
 import { useBotStore } from '../../stores/bot'
@@ -157,23 +165,100 @@ const generateMarkers = () => {
   return markers.sort((a, b) => a.time - b.time)
 }
 
+// 生成EMA交叉标记数据
+const generateEMACrossoverMarkers = () => {
+  // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
+  const currentTimeframe = props.timeframe || computedTimeframe.value
+  
+  // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
+  const hideMarkersTimeframes = ['1d', '1w']
+  if (hideMarkersTimeframes.includes(currentTimeframe)) {
+    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示EMA交叉标记`)
+    return []
+  }
+  
+  // 检查是否有足够的EMA周期数据
+  if (emaPeriods.value.length < 2) {
+    console.log('⚠️ EMA周期配置不足，无法检测交叉点')
+    return []
+  }
+  
+  // 获取快线和慢线周期
+  const fastPeriod = emaPeriods.value[0]
+  const slowPeriod = emaPeriods.value[1]
+  
+  if (!fastPeriod || !slowPeriod) {
+    console.log('⚠️ EMA周期配置不完整')
+    return []
+  }
+  
+  // 检测EMA交叉点
+  const crossovers = detectEMACrossovers(props.klineData, fastPeriod, slowPeriod)
+  
+  if (crossovers.length === 0) {
+    console.log(`📊 未检测到EMA${fastPeriod}和EMA${slowPeriod}的交叉点`)
+    return []
+  }
+  
+  console.log(`📊 检测到${crossovers.length}个EMA交叉点`)
+  
+  // 转换为图表标记
+  const markers = crossovers.map(crossover => {
+    const color = getEMACrossoverColor(crossover.type)
+    const shape = getEMACrossoverShape(crossover.type)
+    const text = getEMACrossoverText(crossover.type, crossover.atrPercent)
+    
+    if (crossover.type === 'golden') {
+      return {
+        time: crossover.time,
+        position: 'aboveBar' as const,
+        color,
+        shape,
+        text,
+        price: crossover.price
+      }
+    } else {
+      return {
+        time: crossover.time,
+        position: 'belowBar' as const,
+        color,
+        shape,
+        text,
+        price: crossover.price
+      }
+    }
+  })
+  
+  return markers
+}
+
 // 更新图表标记
 const updateMarkers = () => {
   if (!candlestickSeries) return
   
   try {
-    const markers = generateMarkers()
+    // 获取订单标记和EMA交叉标记
+    const orderMarkers = generateMarkers()
+    const emaCrossoverMarkers = generateEMACrossoverMarkers()
+    
+    // 合并所有标记
+    const allMarkers = [...orderMarkers, ...emaCrossoverMarkers]
+    
+    // 按时间升序排序（lightweight-charts 5.x 要求）
+    const sortedMarkers = allMarkers.sort((a, b) => a.time - b.time)
     
     // 如果已经有markersApi，使用setMarkers更新
     if (markersApi) {
-      markersApi.setMarkers(markers)
+      markersApi.setMarkers(sortedMarkers)
     } else {
       // 第一次创建markersApi
-      markersApi = createSeriesMarkers(candlestickSeries, markers)
+      markersApi = createSeriesMarkers(candlestickSeries, sortedMarkers)
     }
     
+    console.log(`📊 更新图表标记：订单标记${orderMarkers.length}个，EMA交叉标记${emaCrossoverMarkers.length}个`)
+    
   } catch (error) {
-    console.warn('更新订单标记失败:', error)
+    console.warn('更新图表标记失败:', error)
   }
 }
 
