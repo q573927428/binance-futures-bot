@@ -273,7 +273,7 @@ export function getTrendDirection(
       // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场）
       const predictiveCrossConfig = config?.indicatorsConfig?.predictiveCross
       const predictiveEnabled = predictiveCrossConfig?.enabled ?? true
-      const distancePercent = predictiveCrossConfig?.distancePercent ?? 0.001 // 0.1%
+      const distancePercent = predictiveCrossConfig?.distancePercent ?? 0.0008 // 0.08%
       const onlyTrend = predictiveCrossConfig?.onlyTrend ?? true
       
       // 计算EMA差值百分比（distancePercent已经是百分比，不需要乘以100）

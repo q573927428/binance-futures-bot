@@ -359,7 +359,7 @@
 
       <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="EMA距离阈值">
         <el-input-number v-model="editConfig.indicatorsConfig.predictiveCross.distancePercent" :min="0.0001" :max="0.01" :step="0.0001" :precision="4" />
-        <small>百分比(0.001=0.1%)</small>
+        <small>百分比(0.0008=0.08%)</small>
       </el-form-item>
 
       <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="只在顺势时预判">

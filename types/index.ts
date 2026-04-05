@@ -118,7 +118,7 @@ export interface VolatilityFilterConfig {
 // 预判交叉配置
 export interface PredictiveCrossConfig {
   enabled: boolean               // 预判交叉总开关
-  distancePercent: number        // EMA快慢线距离小于此百分比时触发预判（默认0.1%）
+  distancePercent: number        // EMA快慢线距离小于此百分比时触发预判（默认0.08%）
   onlyTrend: boolean             // 只在顺势时预判（默认true）
 }
 
