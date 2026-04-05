@@ -186,7 +186,6 @@ const generateEMACrossoverMarkers = () => {
   // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
   const hideMarkersTimeframes = ['1d', '1w']
   if (hideMarkersTimeframes.includes(currentTimeframe)) {
-    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示EMA交叉标记`)
     return []
   }
   
@@ -243,33 +242,87 @@ const generateEMACrossoverMarkers = () => {
   return markers
 }
 
-// 更新图表标记
-const updateMarkers = () => {
+// 缓存上一次的标记数据，用于避免重复更新
+let lastMarkersHash = ''
+let updateMarkersTimeout: NodeJS.Timeout | null = null
+
+// 计算标记数据的哈希值，用于比较是否发生变化
+const calculateMarkersHash = (orderMarkers: any[], emaCrossoverMarkers: any[]): string => {
+  const orderCount = orderMarkers.length
+  const emaCount = emaCrossoverMarkers.length
+  
+  // 如果标记数量为0，使用特殊哈希
+  if (orderCount === 0 && emaCount === 0) return 'empty'
+  
+  // 简单哈希：使用标记数量和第一个标记的时间（如果有）
+  let hash = `${orderCount}-${emaCount}`
+  
+  if (orderCount > 0 && orderMarkers[0]) {
+    hash += `-o${orderMarkers[0].time}`
+  }
+  
+  if (emaCount > 0 && emaCrossoverMarkers[0]) {
+    hash += `-e${emaCrossoverMarkers[0].time}`
+  }
+  
+  return hash
+}
+
+// 更新图表标记（带防抖和缓存）
+const updateMarkers = (immediate = false) => {
   if (!candlestickSeries) return
   
-  try {
-    // 获取订单标记和EMA交叉标记
-    const orderMarkers = generateMarkers()
-    const emaCrossoverMarkers = generateEMACrossoverMarkers()
-    
-    // 合并所有标记
-    const allMarkers = [...orderMarkers, ...emaCrossoverMarkers]
-    
-    // 按时间升序排序（lightweight-charts 5.x 要求）
-    const sortedMarkers = allMarkers.sort((a, b) => a.time - b.time)
-    
-    // 如果已经有markersApi，使用setMarkers更新
-    if (markersApi) {
-      markersApi.setMarkers(sortedMarkers)
-    } else {
-      // 第一次创建markersApi
-      markersApi = createSeriesMarkers(candlestickSeries, sortedMarkers)
+  // 清除已有的防抖定时器
+  if (updateMarkersTimeout) {
+    clearTimeout(updateMarkersTimeout)
+    updateMarkersTimeout = null
+  }
+  
+  // 立即执行或设置防抖延迟
+  const executeUpdate = () => {
+    try {
+      // 获取订单标记和EMA交叉标记
+      const orderMarkers = generateMarkers()
+      const emaCrossoverMarkers = generateEMACrossoverMarkers()
+      
+      // 计算当前标记的哈希值
+      const currentHash = calculateMarkersHash(orderMarkers, emaCrossoverMarkers)
+      
+      // 如果标记没有变化，跳过更新
+      if (currentHash === lastMarkersHash) {
+        // console.log('📊 标记未变化，跳过更新')
+        return
+      }
+      
+      // 更新缓存
+      lastMarkersHash = currentHash
+      
+      // 合并所有标记
+      const allMarkers = [...orderMarkers, ...emaCrossoverMarkers]
+      
+      // 按时间升序排序（lightweight-charts 5.x 要求）
+      const sortedMarkers = allMarkers.sort((a, b) => a.time - b.time)
+      
+      // 如果已经有markersApi，使用setMarkers更新
+      if (markersApi) {
+        markersApi.setMarkers(sortedMarkers)
+      } else {
+        // 第一次创建markersApi
+        markersApi = createSeriesMarkers(candlestickSeries, sortedMarkers)
+      }
+      
+      console.log(`📊 更新图表标记：订单标记${orderMarkers.length}个，EMA交叉标记${emaCrossoverMarkers.length}个`)
+      
+    } catch (error) {
+      console.warn('更新图表标记失败:', error)
     }
-    
-    console.log(`📊 更新图表标记：订单标记${orderMarkers.length}个，EMA交叉标记${emaCrossoverMarkers.length}个`)
-    
-  } catch (error) {
-    console.warn('更新图表标记失败:', error)
+  }
+  
+  if (immediate) {
+    executeUpdate()
+  } else {
+    // 防抖延迟：100ms，避免短时间内多次更新
+    updateMarkersTimeout = setTimeout(executeUpdate, 100)
   }
 }
 
@@ -688,20 +741,15 @@ watch(() => props.theme, () => {
   }
 })
 
-// 监听交易历史变化
-watch(() => props.tradeHistory, () => {
-  updateMarkers()
+// 监听标记相关数据变化（合并监听器，减少触发次数）
+watch(() => ({
+  tradeHistory: props.tradeHistory,
+  showEmaMarkers: props.showEmaMarkers,
+  showOrderMarkers: props.showOrderMarkers
+}), () => {
+  // 立即更新标记，因为这是用户交互触发的
+  updateMarkers(true)
 }, { deep: true })
-
-// 监听EMA标记开关变化
-watch(() => props.showEmaMarkers, () => {
-  updateMarkers()
-})
-
-// 监听订单标记开关变化
-watch(() => props.showOrderMarkers, () => {
-  updateMarkers()
-})
 
 
 // 组件挂载时初始化
