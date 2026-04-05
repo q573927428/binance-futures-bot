@@ -6,9 +6,13 @@
       :timeframe="selectedTimeframe"
       :theme="theme"
       :loading="loading"
+        :show-ema-markers="showEMAMarkers"
+        :show-order-markers="showOrderMarkers"
       @timeframe-change="selectTimeframe"
       @refresh="loadKLineData"
       @toggle-theme="toggleTheme"
+      @ema-markers-change="handleEMAMarkersChange"
+      @order-markers-change="handleOrderMarkersChange"
     />
 
     <!-- 图表容器 -->
@@ -22,6 +26,8 @@
         :timeframe="selectedTimeframe"
         :loading="loading"
         :error="error"
+        :show-ema-markers="showEMAMarkers"
+        :show-order-markers="showOrderMarkers"
         @tooltip-update="handleTooltipUpdate"
         @retry="loadKLineData"
       />
@@ -120,6 +126,10 @@ const computedTimeframe = computed(() => {
 
 // 响应式数据
 const selectedTimeframe = ref(computedTimeframe.value)
+
+// 标记控制状态
+const showEMAMarkers = ref(true)
+const showOrderMarkers = ref(true)
 
 // 请求代次（用于防止过期响应覆盖）
 let requestGeneration = 0
@@ -294,6 +304,16 @@ const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
 }
 
+// 处理EMA标记开关变化
+const handleEMAMarkersChange = (show: boolean) => {
+  showEMAMarkers.value = show
+}
+
+// 处理订单标记开关变化
+const handleOrderMarkersChange = (show: boolean) => {
+  showOrderMarkers.value = show
+}
+
 // 处理tooltip更新
 const handleTooltipUpdate = (data: any, time: string) => {
   tooltipData.value = data
@@ -426,8 +446,6 @@ const cleanupOldSubscription = async (): Promise<boolean> => {
   const oldSymbol = currentSubscriptionSymbol.value
   const clientId = webSocketClientId.value
   
-  console.log(`🔄 清理旧的订阅: ${oldSymbol} (客户端: ${clientId})`)
-  
   try {
     const response = await fetch('/api/websocket/unsubscribe', {
       method: 'POST',
@@ -442,7 +460,6 @@ const cleanupOldSubscription = async (): Promise<boolean> => {
     
     const result = await response.json()
     if (result.success) {
-      console.log(`✅ 已清理旧的订阅: ${oldSymbol}`)
       return true
     } else {
       console.warn(`⚠️ 清理旧订阅失败: ${result.message}`)
@@ -645,8 +662,6 @@ const stopNewKlineCheck = () => {
 // symbol变化处理函数
 const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
   if (newSymbol && newSymbol !== oldSymbol) {
-    console.log(`🔄 Symbol变化: ${oldSymbol} -> ${newSymbol}`)
-    
     // 1. 递增请求代次，使所有旧异步回调失效
     requestGeneration++
     
@@ -665,7 +680,6 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
     
     // 5. 清理旧的WebSocket订阅
     if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
-      console.log(`🔄 清理旧的WebSocket订阅: ${oldSymbol}`)
       await cleanupOldSubscription()
     }
     
@@ -674,11 +688,9 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
     currentSubscriptionSymbol.value = ''
     
     // 7. 加载新数据
-    console.log(`📊 加载新交易对数据: ${newSymbol}`)
     await loadKLineData()
     
     // 8. 重新订阅价格更新
-    console.log(`🔗 订阅新交易对价格更新: ${newSymbol}`)
     await subscribeToPriceUpdates()
     
     console.log(`✅ Symbol切换完成: ${oldSymbol} -> ${newSymbol}`)

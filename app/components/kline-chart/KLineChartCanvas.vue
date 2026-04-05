@@ -53,6 +53,8 @@ interface Props {
   timeframe?: string  // 如果提供，则使用提供的timeframe；否则根据策略模式自动选择
   loading?: boolean
   error?: string
+  showEmaMarkers?: boolean
+  showOrderMarkers?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -62,7 +64,9 @@ const props = withDefaults(defineProps<Props>(), {
   symbol: 'BTCUSDT',
   timeframe: '',  // 默认为空，根据策略模式自动选择
   loading: false,
-  error: ''
+  error: '',
+  showEmaMarkers: true,
+  showOrderMarkers: true
 })
 
 // 定义emits
@@ -115,13 +119,17 @@ const priceFormat = computed(() => ({
 
 // 生成订单标记数据
 const generateMarkers = () => {
+  // 如果订单标记开关关闭，返回空数组
+  if (!props.showOrderMarkers) {
+    return []
+  }
+  
   // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
   const currentTimeframe = props.timeframe || computedTimeframe.value
   
   // 在1d和1w时间周期下不显示标记（提高长周期图表可读性）
   const hideMarkersTimeframes = ['1d', '1w']
   if (hideMarkersTimeframes.includes(currentTimeframe)) {
-    console.log(`⏭️  ${currentTimeframe} 时间周期下不显示订单标记`)
     return []
   }
   
@@ -167,6 +175,11 @@ const generateMarkers = () => {
 
 // 生成EMA交叉标记数据
 const generateEMACrossoverMarkers = () => {
+  // 如果EMA标记开关关闭，返回空数组
+  if (!props.showEmaMarkers) {
+    return []
+  }
+  
   // 获取当前时间周期（优先使用props.timeframe，否则使用computedTimeframe）
   const currentTimeframe = props.timeframe || computedTimeframe.value
   
@@ -196,11 +209,9 @@ const generateEMACrossoverMarkers = () => {
   const crossovers = detectEMACrossovers(props.klineData, fastPeriod, slowPeriod)
   
   if (crossovers.length === 0) {
-    console.log(`📊 未检测到EMA${fastPeriod}和EMA${slowPeriod}的交叉点`)
+    // console.log(`📊 未检测到EMA${fastPeriod}和EMA${slowPeriod}的交叉点`)
     return []
   }
-  
-  console.log(`📊 检测到${crossovers.length}个EMA交叉点`)
   
   // 转换为图表标记
   const markers = crossovers.map(crossover => {
@@ -273,7 +284,6 @@ const clearMarkers = () => {
     } else {
       createSeriesMarkers(candlestickSeries, [])
     }
-    console.log('✅ 已清理订单标记')
   } catch (error) {
     console.warn('清理订单标记失败:', error)
   }
@@ -682,6 +692,16 @@ watch(() => props.theme, () => {
 watch(() => props.tradeHistory, () => {
   updateMarkers()
 }, { deep: true })
+
+// 监听EMA标记开关变化
+watch(() => props.showEmaMarkers, () => {
+  updateMarkers()
+})
+
+// 监听订单标记开关变化
+watch(() => props.showOrderMarkers, () => {
+  updateMarkers()
+})
 
 
 // 组件挂载时初始化
