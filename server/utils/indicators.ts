@@ -270,14 +270,52 @@ export function getTrendDirection(
       const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
       const slowPrev = emaSlowValues[emaSlowValues.length - 2] || 0
 
+      // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场）
+      const predictiveCrossConfig = config?.indicatorsConfig?.predictiveCross
+      const predictiveEnabled = predictiveCrossConfig?.enabled ?? true
+      const distancePercent = predictiveCrossConfig?.distancePercent ?? 0.001 // 0.1%
+      const onlyTrend = predictiveCrossConfig?.onlyTrend ?? true
+      
+      // 计算EMA差值百分比（distancePercent已经是百分比，不需要乘以100）
+      const emaDiffPercent = Math.abs(fastCurrent - slowCurrent) / slowCurrent
+      const isNearCross = emaDiffPercent <= distancePercent
+      
+      // 检查顺势条件
+      let isTrendAligned = true
+      if (onlyTrend) {
+        // 价格在慢EMA上方时，只预判金叉（做多信号）
+        // 价格在慢EMA下方时，只预判死叉（做空信号）
+        const priceAboveSlowEMA = price > slowCurrent
+        const priceBelowSlowEMA = price < slowCurrent
+        
+        // 如果价格在慢EMA上方，只允许预判金叉（fastCurrent > slowCurrent）
+        // 如果价格在慢EMA下方，只允许预判死叉（fastCurrent < slowCurrent）
+        if (priceAboveSlowEMA && fastCurrent <= slowCurrent) {
+          isTrendAligned = false
+        } else if (priceBelowSlowEMA && fastCurrent >= slowCurrent) {
+          isTrendAligned = false
+        }
+      }
+      
+      // 预判交叉条件（去掉K线进度检查）
+      const canPredict = predictiveEnabled && isNearCross && isTrendAligned
+      
+      // 2. 检查实际交叉
       const goldenCross = fastPrev <= slowPrev && fastCurrent > slowCurrent
       const deadCross = fastPrev >= slowPrev && fastCurrent < slowCurrent
 
-      if (goldenCross) {
+      if (canPredict && !goldenCross && !deadCross) {
+        // 预判交叉信号
+        isCrossSignal = true
+        crossDirection = fastCurrent > slowCurrent ? 'LONG' : 'SHORT'
+        crossReason = `预判${emaFastName}即将${crossDirection === 'LONG' ? '金叉' : '死叉'}${emaSlowName}，差值${emaDiffPercent.toFixed(3)}%，提前入场`
+      } else if (goldenCross) {
+        // 实际金叉信号
         isCrossSignal = true
         crossDirection = 'LONG'
         crossReason = `${emaFastName}金叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≤ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} > ${slowCurrent.toFixed(3)}），直接做多`
       } else if (deadCross) {
+        // 实际死叉信号
         isCrossSignal = true
         crossDirection = 'SHORT'
         crossReason = `${emaFastName}死叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≥ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} < ${slowCurrent.toFixed(3)}），直接做空`

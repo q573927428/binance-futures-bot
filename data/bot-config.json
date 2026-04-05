@@ -83,6 +83,11 @@
       }
     },
     "crossEntryEnabled": true,
+    "predictiveCross": {
+      "enabled": true,
+      "distancePercent": 0.001,
+      "onlyTrend": true
+    },
     "adxTrend": {
       "adx15mThreshold": 56,
       "adx1hThreshold": 50,

@@ -14,8 +14,10 @@ logs
 *.log
 
 # json 交易对K线数据 
-data/*
-!data/bot-config.json
+data/kline-simple/
+data/bot-state.json
+data/strategy-analysis.json
+data/trade-history.json
 
 # Misc
 .DS_Store

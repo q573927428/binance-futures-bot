@@ -115,6 +115,13 @@ export interface VolatilityFilterConfig {
   skipSymbols: string[]      // 跳过波动率检查的交易对列表
 }
 
+// 预判交叉配置
+export interface PredictiveCrossConfig {
+  enabled: boolean               // 预判交叉总开关
+  distancePercent: number        // EMA快慢线距离小于此百分比时触发预判（默认0.1%）
+  onlyTrend: boolean             // 只在顺势时预判（默认true）
+}
+
 // EMA周期配置
 export interface EMAPeriodsConfig {
   // 短期策略EMA周期
@@ -138,6 +145,9 @@ export interface IndicatorsConfig {
 
   // EMA交叉直接入场开关（统一控制金叉做多/死叉做空）
   crossEntryEnabled: boolean
+  
+  // 预判交叉配置
+  predictiveCross: PredictiveCrossConfig
   
   // ADX趋势检查配置
   adxTrend: {

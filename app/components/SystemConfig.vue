@@ -351,6 +351,23 @@
         <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
       </el-form-item>
 
+      <el-divider>预判交叉配置</el-divider>
+
+      <el-form-item label="启用预判交叉">
+        <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.enabled" />
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="EMA距离阈值">
+        <el-input-number v-model="editConfig.indicatorsConfig.predictiveCross.distancePercent" :min="0.0001" :max="0.01" :step="0.0001" :precision="4" />
+        <small>百分比(0.001=0.1%)</small>
+      </el-form-item>
+
+      <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="只在顺势时预判">
+        <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.onlyTrend" />
+      </el-form-item>
+
+      <el-divider>ADX趋势配置</el-divider>
+
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1小时' : '15分钟'}ADX阈值`">
         <el-input-number v-model="editConfig.indicatorsConfig.adxTrend.adx15mThreshold" :min="10" :max="50" />
       </el-form-item>
