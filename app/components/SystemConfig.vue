@@ -352,6 +352,11 @@
         <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
       </el-form-item>
 
+      <el-form-item label="显示交叉失败原因">
+        <el-switch v-model="editConfig.indicatorsConfig.showCrossFailureReason" />
+        <small>调试时开启，生产环境建议关闭（日志更简洁）</small>
+      </el-form-item>
+
       <el-divider>预判交叉配置</el-divider>
 
       <el-form-item label="启用预判交叉">

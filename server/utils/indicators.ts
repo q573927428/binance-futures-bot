@@ -249,6 +249,8 @@ export function getTrendDirection(
   // 根据策略模式选择指标名称（使用配置的EMA周期）
   const emaPeriods = config?.indicatorsConfig?.emaPeriods
   const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
+  // 新增：是否显示交叉失败原因，默认false（生产模式不显示）
+  const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
   const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
   const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
   const emaFastName = `EMA${emaFastPeriod}`
@@ -258,6 +260,7 @@ export function getTrendDirection(
   let isCrossSignal = false
   let crossDirection: 'LONG' | 'SHORT' | null = null
   let crossReason = ''
+  let crossFailureReason: string | null = null
 
   if (crossEntryEnabled && candles && candles.length >= Math.max(emaFastPeriod, emaSlowPeriod) + 1) {
     const closes = candles.map(c => c.close)
@@ -341,7 +344,8 @@ export function getTrendDirection(
         const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
         details.push(`未交叉 | 前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
         
-        crossReason = `${failureReason} ${details.join('；')}`
+        crossFailureReason = `${failureReason} ${details.join('；')}`
+        crossReason = ''
       }
     }
   }
@@ -365,38 +369,38 @@ export function getTrendDirection(
   } else if (isLong) {
     direction = 'LONG'
     const trendReason = `[趋势做多] LONG | ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) > ${emaFastName}`
-    // 有交叉失败原因时合并显示
-    reason = crossReason && crossReason.includes('[交叉失败]') ? `${crossReason} | ${trendReason}` : trendReason
+    // 开启显示时才合并交叉失败原因
+    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} | ${crossFailureReason}` : trendReason
   } else if (isShort) {
     direction = 'SHORT'
     const trendReason = `[趋势做空] SHORT | ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) < ${emaFastName}`
-    // 有交叉失败原因时合并显示
-    reason = crossReason && crossReason.includes('[交叉失败]') ? `${crossReason} | ${trendReason}` : trendReason
+    // 开启显示时才合并交叉失败原因
+    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} | ${crossFailureReason}` : trendReason
   } else {
     // 交叉失败+趋势结果合并显示
     const reasons: string[] = []
     
-    // 先加交叉失败原因
-    if (crossReason && crossReason.includes('[交叉失败]')) {
-      reasons.push(crossReason)
-    }
-    
-    // 再加趋势失败原因
-    let trendReason = '[趋势失败]'
+    // 先加趋势失败原因
+    let trendReason = ''
     const trendDetails: string[] = []
     
     if (ema20AboveEma60 && !priceAboveEma20) {
-      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) ， 价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
     } else if (!ema20AboveEma60 && !priceBelowEma20) {
-      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) ， 价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
     } else {
-      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) ≈ ${emaSlowName}(${ema60.toFixed(2)}) | 价格震荡`)
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) ≈ ${emaSlowName}(${ema60.toFixed(2)}) ， 价格震荡`)
     }
     
     reasons.push(`${trendReason} ${trendDetails.join('；')}`)
     
+    // 再加交叉失败原因（IDLE场景一直显示，方便排查为什么没趋势）
+    if (crossFailureReason) {
+      reasons.push(crossFailureReason)
+    }
+    
     // 合并所有原因
-    reason = reasons.join(' | ')
+    reason = reasons.join(' ； ')
   }
 
   return {
@@ -409,6 +413,7 @@ export function getTrendDirection(
       isCrossSignal,
       crossDirection,
       crossCandleTimestamp: candles?.[candles.length - 1]?.timestamp,
+      crossFailureReason, // 单独返回交叉失败原因，供外部使用
       conditions: {
         ema20AboveEma60,
         priceAboveEma20,

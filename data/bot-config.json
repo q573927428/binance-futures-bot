@@ -83,6 +83,7 @@
       }
     },
     "crossEntryEnabled": true,
+    "showCrossFailureReason": false,
     "predictiveCross": {
       "enabled": true,
       "distancePercent": 0.0008,

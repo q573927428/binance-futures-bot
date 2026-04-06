@@ -104,7 +104,12 @@ export class MarketAnalyzer {
       // 检查波动率条件（金叉死叉直开也需要检查波动率）
       const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
       if (!volatilityResult.passed) {
-        this.logAnalysisResult(symbol, false, `波动率条件不满足：${volatilityResult.reason}`, price)
+        // 有交叉失败原因且开启显示时合并显示
+        let logReason = `波动率条件不满足：${volatilityResult.reason}`
+        if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
+          logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
+        }
+        this.logAnalysisResult(symbol, false, logReason, price)
         return null
       }
 
@@ -113,7 +118,12 @@ export class MarketAnalyzer {
         // 检查ADX趋势条件（多周期）
         const adxResult = checkADXTrend(indicators, this.config)
         if (!adxResult.passed) {
-          this.logAnalysisResult(symbol, false, `ADX趋势条件不满足：${adxResult.reason}`, price)
+          // 有交叉失败原因且开启显示时合并显示
+          let logReason = `ADX趋势条件不满足：${adxResult.reason}`
+          if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
+            logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
+          }
+          this.logAnalysisResult(symbol, false, logReason, price)
           return null
         }
       }
@@ -142,7 +152,12 @@ export class MarketAnalyzer {
       const entryOk = entryResult?.passed || false
 
       if (!entryOk) {
-        this.logAnalysisResult(symbol, false, `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`, price)
+        // 有交叉失败原因且开启显示时合并显示
+        let logReason = `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`
+        if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
+          logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
+        }
+        this.logAnalysisResult(symbol, false, logReason, price)
         return null
       }
 

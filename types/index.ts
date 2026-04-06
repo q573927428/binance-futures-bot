@@ -146,6 +146,9 @@ export interface IndicatorsConfig {
   // EMA交叉直接入场开关（统一控制金叉做多/死叉做空）
   crossEntryEnabled: boolean
   
+  // 是否显示交叉失败原因，默认false（生产模式不显示，日志更简洁）
+  showCrossFailureReason?: boolean
+  
   // 预判交叉配置
   predictiveCross: PredictiveCrossConfig
   

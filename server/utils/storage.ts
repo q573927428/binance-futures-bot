@@ -284,6 +284,7 @@ export function getDefaultConfig(): BotConfig {
         },
       },
       crossEntryEnabled: true,      // 启用EMA交叉直接入场（金叉做多/死叉做空）
+      showCrossFailureReason: false, // 是否显示交叉失败原因，默认false（生产模式日志更简洁）
       predictiveCross: {
         enabled: true,               // 预判交叉总开关
         distancePercent: 0.0008,      // EMA快慢线距离小于此百分比时触发预判（默认0.08%）
