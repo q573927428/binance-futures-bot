@@ -3,7 +3,7 @@ import type { OHLCV, TechnicalIndicators, BotConfig } from '../../types'
 import { BinanceService } from './binance'
 
 /**
- * 计算技术指标
+ * 计算技术指标 
  */
 export async function calculateIndicators(
   binance: BinanceService,
