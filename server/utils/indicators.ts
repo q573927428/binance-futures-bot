@@ -304,21 +304,44 @@ export function getTrendDirection(
       const goldenCross = fastPrev <= slowPrev && fastCurrent > slowCurrent
       const deadCross = fastPrev >= slowPrev && fastCurrent < slowCurrent
 
+      // 统一交叉信号输出格式：[信号类型] 方向 | 关键数据
       if (canPredict && !goldenCross && !deadCross) {
         // 预判交叉信号
         isCrossSignal = true
         crossDirection = fastCurrent > slowCurrent ? 'LONG' : 'SHORT'
-        crossReason = `预判${emaFastName}即将${crossDirection === 'LONG' ? '金叉' : '死叉'}${emaSlowName}，差值${emaDiffPercent.toFixed(3)}%，提前入场`
+        const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
+        crossReason = `[预判交叉] ${crossDirection} | ${emaFastName}即将${crossType}${emaSlowName} | 差值: ${(emaDiffPercent * 100).toFixed(3)}% | 提前入场`
       } else if (goldenCross) {
         // 实际金叉信号
         isCrossSignal = true
         crossDirection = 'LONG'
-        crossReason = `${emaFastName}金叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≤ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} > ${slowCurrent.toFixed(3)}），直接做多`
+        crossReason = `[实际金叉] LONG | ${emaFastName}上穿${emaSlowName} | 前值: ${fastPrev.toFixed(2)} ≤ ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} > ${slowCurrent.toFixed(2)} | 直接做多`
       } else if (deadCross) {
         // 实际死叉信号
         isCrossSignal = true
         crossDirection = 'SHORT'
-        crossReason = `${emaFastName}死叉${emaSlowName}（前值: ${fastPrev.toFixed(3)} ≥ ${slowPrev.toFixed(3)}，当前: ${fastCurrent.toFixed(3)} < ${slowCurrent.toFixed(3)}），直接做空`
+        crossReason = `[实际死叉] SHORT | ${emaFastName}下穿${emaSlowName} | 前值: ${fastPrev.toFixed(2)} ≥ ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} < ${slowCurrent.toFixed(2)} | 直接做空`
+      } else {
+        // 交叉检测失败，统一格式输出原因
+        let failureReason = '[交叉失败]'
+        const details: string[] = []
+        
+        if (!predictiveEnabled) {
+          details.push('预判交叉未启用')
+        }
+        if (!isNearCross) {
+          details.push(`差值过大: ${(emaDiffPercent * 100).toFixed(3)}% > ${(distancePercent * 100).toFixed(3)}%`)
+        }
+        if (!isTrendAligned) {
+          details.push('趋势不对齐')
+        }
+        if (predictiveEnabled && isNearCross && isTrendAligned) {
+          const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
+          const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
+          details.push(`未交叉 | 前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
+        }
+        
+        crossReason = `${failureReason} ${details.join('；')}`
       }
     }
   }
@@ -341,20 +364,35 @@ export function getTrendDirection(
     reason = crossReason
   } else if (isLong) {
     direction = 'LONG'
-    reason = `${emaFastName}(${ema20.toFixed(3)}) > ${emaSlowName}(${ema60.toFixed(3)}) 且 价格(${price.toFixed(3)}) > ${emaFastName}`
+    reason = `[趋势做多] LONG | ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) > ${emaFastName}`
   } else if (isShort) {
     direction = 'SHORT'
-    reason = `${emaFastName}(${ema20.toFixed(3)}) < ${emaSlowName}(${ema60.toFixed(3)}) 且 价格(${price.toFixed(3)}) < ${emaFastName}`
+    reason = `[趋势做空] SHORT | ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) < ${emaFastName}`
   } else {
-    reason = '趋势条件不满足'
+    // 交叉失败+趋势结果合并显示
+    const reasons: string[] = []
+    
+    // 先加交叉失败原因
+    if (crossReason && crossReason.includes('[交叉失败]')) {
+      reasons.push(crossReason)
+    }
+    
+    // 再加趋势失败原因
+    let trendReason = '[趋势失败]'
+    const trendDetails: string[] = []
     
     if (ema20AboveEma60 && !priceAboveEma20) {
-      reason = `${emaFastName}(${ema20.toFixed(3)}) > ${emaSlowName}(${ema60.toFixed(3)}) 但 价格(${price.toFixed(3)}) ≤ ${emaFastName}`
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
     } else if (!ema20AboveEma60 && !priceBelowEma20) {
-      reason = `${emaFastName}(${ema20.toFixed(3)}) < ${emaSlowName}(${ema60.toFixed(3)}) 但 价格(${price.toFixed(3)}) ≥ ${emaFastName}`
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
     } else {
-      reason = `${emaFastName}(${ema20.toFixed(3)}) ≈ ${emaSlowName}(${ema60.toFixed(3)}) 或 价格(${price.toFixed(3)}) ≈ ${emaFastName}`
+      trendDetails.push(`${emaFastName}(${ema20.toFixed(2)}) ≈ ${emaSlowName}(${ema60.toFixed(2)}) | 价格震荡`)
     }
+    
+    reasons.push(`${trendReason} ${trendDetails.join('；')}`)
+    
+    // 合并所有原因
+    reason = reasons.join(' | ')
   }
 
   return {
