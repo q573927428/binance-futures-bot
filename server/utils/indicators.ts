@@ -310,36 +310,36 @@ export function getTrendDirection(
         isCrossSignal = true
         crossDirection = fastCurrent > slowCurrent ? 'LONG' : 'SHORT'
         const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
-        crossReason = `[预判交叉] ${crossDirection} | ${emaFastName}即将${crossType}${emaSlowName} | 差值: ${(emaDiffPercent * 100).toFixed(3)}% | 提前入场`
+        crossReason = `[预判交叉] ${crossDirection}  ${emaFastName}即将${crossType}${emaSlowName} ， 差值: ${(emaDiffPercent * 100).toFixed(3)}% ， 提前入场`
       } else if (goldenCross) {
         // 实际金叉信号
         isCrossSignal = true
         crossDirection = 'LONG'
-        crossReason = `[实际金叉] LONG | ${emaFastName}上穿${emaSlowName} | 前值: ${fastPrev.toFixed(2)} ≤ ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} > ${slowCurrent.toFixed(2)} | 直接做多`
+        crossReason = `[实际金叉] LONG ${emaFastName}上穿${emaSlowName} ， 前值: ${fastPrev.toFixed(2)} ≤ ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} > ${slowCurrent.toFixed(2)} ， 直接做多`
       } else if (deadCross) {
         // 实际死叉信号
         isCrossSignal = true
         crossDirection = 'SHORT'
-        crossReason = `[实际死叉] SHORT | ${emaFastName}下穿${emaSlowName} | 前值: ${fastPrev.toFixed(2)} ≥ ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} < ${slowCurrent.toFixed(2)} | 直接做空`
+        crossReason = `[实际死叉] SHORT ${emaFastName}下穿${emaSlowName} ， 前值: ${fastPrev.toFixed(2)} ≥ ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} < ${slowCurrent.toFixed(2)} ， 直接做空`
       } else {
         // 交叉检测失败，统一格式输出原因
         let failureReason = '[交叉失败]'
         const details: string[] = []
         
-        if (!predictiveEnabled) {
-          details.push('预判交叉未启用')
+        if (predictiveEnabled) {
+          // 预判交叉启用时先显示预判失败原因
+          if (!isNearCross) {
+            details.push(`差值过大: ${(emaDiffPercent * 100).toFixed(3)}% > ${(distancePercent * 100).toFixed(3)}%`)
+          }
+          if (!isTrendAligned) {
+            details.push('趋势不对齐')
+          }
         }
-        if (!isNearCross) {
-          details.push(`差值过大: ${(emaDiffPercent * 100).toFixed(3)}% > ${(distancePercent * 100).toFixed(3)}%`)
-        }
-        if (!isTrendAligned) {
-          details.push('趋势不对齐')
-        }
-        if (predictiveEnabled && isNearCross && isTrendAligned) {
-          const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
-          const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
-          details.push(`未交叉 | 前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} | 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
-        }
+        
+        // 不管预判是否启用，都显示未交叉的基础信息
+        const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
+        const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
+        details.push(`未交叉 | 前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
         
         crossReason = `${failureReason} ${details.join('；')}`
       }
