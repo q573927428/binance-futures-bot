@@ -364,10 +364,14 @@ export function getTrendDirection(
     reason = crossReason
   } else if (isLong) {
     direction = 'LONG'
-    reason = `[趋势做多] LONG | ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) > ${emaFastName}`
+    const trendReason = `[趋势做多] LONG | ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) > ${emaFastName}`
+    // 有交叉失败原因时合并显示
+    reason = crossReason && crossReason.includes('[交叉失败]') ? `${crossReason} | ${trendReason}` : trendReason
   } else if (isShort) {
     direction = 'SHORT'
-    reason = `[趋势做空] SHORT | ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) < ${emaFastName}`
+    const trendReason = `[趋势做空] SHORT | ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) < ${emaFastName}`
+    // 有交叉失败原因时合并显示
+    reason = crossReason && crossReason.includes('[交叉失败]') ? `${crossReason} | ${trendReason}` : trendReason
   } else {
     // 交叉失败+趋势结果合并显示
     const reasons: string[] = []
