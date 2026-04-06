@@ -55,6 +55,7 @@ interface Props {
   error?: string
   showEmaMarkers?: boolean
   showOrderMarkers?: boolean
+  showEmaLines?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,8 +66,9 @@ const props = withDefaults(defineProps<Props>(), {
   timeframe: '',  // 默认为空，根据策略模式自动选择
   loading: false,
   error: '',
-  showEmaMarkers: true,
-  showOrderMarkers: true
+  showEmaMarkers: false,
+  showOrderMarkers: false,
+  showEmaLines: true
 })
 
 // 定义emits
@@ -415,15 +417,17 @@ const initChart = () => {
   // 清空EMA系列数组
   emaSeries = []
   
-  // 添加EMA线（根据emaPeriods配置）
-  for (const period of emaPeriods.value) {
-    const emaSeriesItem = chart.addSeries(LineSeries, {
-      color: getEMAColor(period),
-      lineWidth: getEMAWidth(period),
-      title: `EMA${period}`,
-      priceFormat: currentPriceFormat
-    })
-    emaSeries.push(emaSeriesItem)
+  // 添加EMA线（根据emaPeriods配置和开关状态）
+  if (props.showEmaLines) {
+    for (const period of emaPeriods.value) {
+      const emaSeriesItem = chart.addSeries(LineSeries, {
+        color: getEMAColor(period),
+        lineWidth: getEMAWidth(period),
+        title: `EMA${period}`,
+        priceFormat: currentPriceFormat
+      })
+      emaSeries.push(emaSeriesItem)
+    }
   }
   
   // 响应窗口大小变化
@@ -745,10 +749,28 @@ watch(() => props.theme, () => {
 watch(() => ({
   tradeHistory: props.tradeHistory,
   showEmaMarkers: props.showEmaMarkers,
-  showOrderMarkers: props.showOrderMarkers
-}), () => {
-  // 立即更新标记，因为这是用户交互触发的
-  updateMarkers(true)
+  showOrderMarkers: props.showOrderMarkers,
+  showEmaLines: props.showEmaLines
+}), (newVal, oldVal) => {
+  // 只有EMA线开关变化时才重新初始化图表
+  if (newVal.showEmaLines !== oldVal.showEmaLines) {
+    // 重新初始化图表以显示/隐藏EMA线
+    if (chart) {
+      cleanupChart()
+      nextTick(() => {
+        if (chartContainer.value) {
+          initChart()
+          // 图表重新初始化后，恢复所有标记
+          nextTick(() => {
+            updateMarkers(true)
+          })
+        }
+      })
+    }
+  } else {
+    // 其他标记变化时只更新标记
+    updateMarkers(true)
+  }
 }, { deep: true })
 
 

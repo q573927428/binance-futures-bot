@@ -8,11 +8,13 @@
       :loading="loading"
       :show-ema-markers="showEMAMarkers"
       :show-order-markers="showOrderMarkers"
+      :show-ema-lines="showEMALines"
       @timeframe-change="selectTimeframe"
       @refresh="loadKLineData"
       @toggle-theme="toggleTheme"
       @ema-markers-change="handleEMAMarkersChange"
       @order-markers-change="handleOrderMarkersChange"
+      @ema-lines-change="handleEMALinesChange"
     />
 
     <!-- 图表容器 -->
@@ -28,6 +30,7 @@
         :error="error"
         :show-ema-markers="showEMAMarkers"
         :show-order-markers="showOrderMarkers"
+        :show-ema-lines="showEMALines"
         @tooltip-update="handleTooltipUpdate"
         @retry="loadKLineData"
       />
@@ -130,6 +133,7 @@ const selectedTimeframe = ref(computedTimeframe.value)
 // 标记控制状态
 const showEMAMarkers = ref(false)
 const showOrderMarkers = ref(false)
+const showEMALines = ref(true)
 
 // 请求代次（用于防止过期响应覆盖）
 let requestGeneration = 0
@@ -312,6 +316,11 @@ const handleEMAMarkersChange = (show: boolean) => {
 // 处理订单标记开关变化
 const handleOrderMarkersChange = (show: boolean) => {
   showOrderMarkers.value = show
+}
+
+// 处理EMA线开关变化
+const handleEMALinesChange = (show: boolean) => {
+  showEMALines.value = show
 }
 
 // 处理tooltip更新

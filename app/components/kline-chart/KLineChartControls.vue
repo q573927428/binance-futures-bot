@@ -56,7 +56,7 @@
           <el-switch
             v-model="showEMAMarkers"
             size="small"
-            inactive-text="EMA标记"
+            inactive-text="交叉信号"
             @change="handleEMAMarkersChange"
             class="marker-switch"
           />
@@ -66,8 +66,18 @@
           <el-switch
             v-model="showOrderMarkers"
             size="small"
-            inactive-text="订单标记"
+            inactive-text="订单"
             @change="handleOrderMarkersChange"
+            class="marker-switch"
+          />
+        </el-tooltip>
+        
+        <el-tooltip content="显示/隐藏EMA快慢线" placement="top">
+          <el-switch
+            v-model="showEMALines"
+            size="small"
+            inactive-text="EMA线"
+            @change="handleEMALinesChange"
             class="marker-switch"
           />
         </el-tooltip>
@@ -113,6 +123,7 @@ interface Props {
   loading?: boolean
   showEMAMarkers?: boolean
   showOrderMarkers?: boolean
+  showEMALines?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -121,7 +132,8 @@ const props = withDefaults(defineProps<Props>(), {
   theme: 'light',
   loading: false,
   showEMAMarkers: false,
-  showOrderMarkers: false
+  showOrderMarkers: false,
+  showEMALines: true
 })
 
 // 定义emits
@@ -131,12 +143,14 @@ const emit = defineEmits<{
   'toggle-theme': []
   'ema-markers-change': [show: boolean]
   'order-markers-change': [show: boolean]
+  'ema-lines-change': [show: boolean]
 }>()
 
 // 响应式数据
 const selectedTimeframe = ref(props.timeframe)
 const showEMAMarkers = ref(props.showEMAMarkers)
 const showOrderMarkers = ref(props.showOrderMarkers)
+const showEMALines = ref(props.showEMALines)
 
 // 计算显示的symbol
 const displaySymbol = computed(() => {
@@ -160,6 +174,11 @@ const handleOrderMarkersChange = (show: string | number | boolean) => {
   emit('order-markers-change', Boolean(show))
 }
 
+// 处理EMA线开关变化
+const handleEMALinesChange = (show: string | number | boolean) => {
+  emit('ema-lines-change', Boolean(show))
+}
+
 // 监听props.timeframe变化
 watch(() => props.timeframe, (newTimeframe) => {
   if (newTimeframe && newTimeframe !== selectedTimeframe.value) {
@@ -178,6 +197,13 @@ watch(() => props.showEMAMarkers, (newValue) => {
 watch(() => props.showOrderMarkers, (newValue) => {
   if (newValue !== undefined && newValue !== showOrderMarkers.value) {
     showOrderMarkers.value = newValue
+  }
+})
+
+// 监听props.showEMALines变化
+watch(() => props.showEMALines, (newValue) => {
+  if (newValue !== undefined && newValue !== showEMALines.value) {
+    showEMALines.value = newValue
   }
 })
 </script>
