@@ -342,7 +342,7 @@ export function getTrendDirection(
         // 不管预判是否启用，都显示未交叉的基础信息
         const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
         const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
-        details.push(`未交叉 | 前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
+        details.push(`未交叉：前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
         
         crossFailureReason = `${failureReason} ${details.join('；')}`
         crossReason = ''
@@ -368,14 +368,14 @@ export function getTrendDirection(
     reason = crossReason
   } else if (isLong) {
     direction = 'LONG'
-    const trendReason = `[趋势做多] LONG | ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) > ${emaFastName}`
+    const trendReason = `[趋势做多] LONG  ${emaFastName}(${ema20.toFixed(2)}) > ${emaSlowName}(${ema60.toFixed(2)}) ， 价格(${price.toFixed(2)}) > ${emaFastName}`
     // 开启显示时才合并交叉失败原因
-    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} | ${crossFailureReason}` : trendReason
+    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} ， ${crossFailureReason}` : trendReason
   } else if (isShort) {
     direction = 'SHORT'
-    const trendReason = `[趋势做空] SHORT | ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) | 价格(${price.toFixed(2)}) < ${emaFastName}`
+    const trendReason = `[趋势做空] SHORT  ${emaFastName}(${ema20.toFixed(2)}) < ${emaSlowName}(${ema60.toFixed(2)}) ， 价格(${price.toFixed(2)}) < ${emaFastName}`
     // 开启显示时才合并交叉失败原因
-    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} | ${crossFailureReason}` : trendReason
+    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} ， ${crossFailureReason}` : trendReason
   } else {
     // 交叉失败+趋势结果合并显示
     const reasons: string[] = []
