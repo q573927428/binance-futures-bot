@@ -354,7 +354,6 @@
 
       <el-form-item label="显示交叉失败原因">
         <el-switch v-model="editConfig.indicatorsConfig.showCrossFailureReason" />
-        <small>建议需要调试时开启</small>
       </el-form-item>
 
       <el-divider>预判交叉配置</el-divider>
