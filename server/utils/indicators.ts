@@ -394,8 +394,8 @@ export function getTrendDirection(
     
     reasons.push(`${trendReason} ${trendDetails.join('；')}`)
     
-    // 再加交叉失败原因（IDLE场景一直显示，方便排查为什么没趋势）
-    if (crossFailureReason) {
+    // 交叉失败原因受showCrossFailureReason开关控制
+    if (showCrossFailureReason && crossFailureReason) {
       reasons.push(crossFailureReason)
     }
     
