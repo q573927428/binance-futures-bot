@@ -120,8 +120,8 @@ const props = withDefaults(defineProps<Props>(), {
   timeframe: '1h',
   theme: 'light',
   loading: false,
-  showEMAMarkers: true,
-  showOrderMarkers: true
+  showEMAMarkers: false,
+  showOrderMarkers: false
 })
 
 // 定义emits

@@ -6,8 +6,8 @@
       :timeframe="selectedTimeframe"
       :theme="theme"
       :loading="loading"
-        :show-ema-markers="showEMAMarkers"
-        :show-order-markers="showOrderMarkers"
+      :show-ema-markers="showEMAMarkers"
+      :show-order-markers="showOrderMarkers"
       @timeframe-change="selectTimeframe"
       @refresh="loadKLineData"
       @toggle-theme="toggleTheme"
@@ -128,8 +128,8 @@ const computedTimeframe = computed(() => {
 const selectedTimeframe = ref(computedTimeframe.value)
 
 // 标记控制状态
-const showEMAMarkers = ref(true)
-const showOrderMarkers = ref(true)
+const showEMAMarkers = ref(false)
+const showOrderMarkers = ref(false)
 
 // 请求代次（用于防止过期响应覆盖）
 let requestGeneration = 0
