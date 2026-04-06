@@ -752,20 +752,45 @@ watch(() => ({
   showOrderMarkers: props.showOrderMarkers,
   showEmaLines: props.showEmaLines
 }), (newVal, oldVal) => {
-  // 只有EMA线开关变化时才重新初始化图表
+  // 只有EMA线开关变化时动态添加/移除EMA系列，不重新初始化整个图表
   if (newVal.showEmaLines !== oldVal.showEmaLines) {
-    // 重新初始化图表以显示/隐藏EMA线
-    if (chart) {
-      cleanupChart()
-      nextTick(() => {
-        if (chartContainer.value) {
-          initChart()
-          // 图表重新初始化后，恢复所有标记
-          nextTick(() => {
-            updateMarkers(true)
+    if (chart && candlestickSeries) {
+      if (newVal.showEmaLines) {
+        // 开启EMA线：添加EMA系列并设置数据
+        const currentPriceFormat = priceFormat.value
+        emaSeries = []
+        for (const period of emaPeriods.value) {
+          const emaSeriesItem = chart.addSeries(LineSeries, {
+            color: getEMAColor(period),
+            lineWidth: getEMAWidth(period),
+            title: `EMA${period}`,
+            priceFormat: currentPriceFormat
           })
+          emaSeries.push(emaSeriesItem)
         }
-      })
+        // 设置EMA数据
+        if (emaSeries.length > 0) {
+          for (let i = 0; i < emaPeriods.value.length; i++) {
+            const period = emaPeriods.value[i]
+            const emaSeriesItem = emaSeries[i]
+            
+            if (period && emaSeriesItem) {
+              const emaData = calculateEMASeries(props.klineData, period)
+              if (emaData.length > 0) {
+                emaSeriesItem.setData(emaData)
+              }
+            }
+          }
+        }
+      } else {
+        // 关闭EMA线：移除所有EMA系列
+        for (const emaSeriesItem of emaSeries) {
+          if (emaSeriesItem) {
+            chart.removeSeries(emaSeriesItem)
+          }
+        }
+        emaSeries = []
+      }
     }
   } else {
     // 其他标记变化时只更新标记
