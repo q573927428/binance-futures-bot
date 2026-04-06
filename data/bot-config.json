@@ -13,7 +13,7 @@
   "leverage": 10,
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2,
-  "maxStopLossPercentage": 1.5,
+  "maxStopLossPercentage": 1.6,
   "positionTimeoutHours": 6,
   "scanInterval": 180,
   "positionScanInterval": 30,
@@ -54,7 +54,7 @@
   },
   "dynamicLeverageConfig": {
     "enabled": true,
-    "minLeverage": 2,
+    "minLeverage": 5,
     "maxLeverage": 20,
     "baseLeverage": 8,
     "riskLevelMultipliers": {
@@ -89,9 +89,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx15mThreshold": 56,
-      "adx1hThreshold": 50,
+      "adx1hThreshold": 30,
       "adx4hThreshold": 35,
+      "adx15mThreshold": 56,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
@@ -126,10 +126,8 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 0.3,
-      "skipSymbols": [
-        "HYPE/USDT"
-      ]
+      "minATRPercent": 0.28,
+      "skipSymbols": []
     }
   }
 }
