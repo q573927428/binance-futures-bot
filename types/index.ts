@@ -31,7 +31,7 @@ export interface TrailingStopConfig {
   enabled: boolean                // 是否启用移动止损
   activationRatio: number         // 激活盈亏比（默认 0.5，即盈利达到风险的50%时启用）
   trailingDistance: number        // 跟踪距离（ATR倍数，默认 1.5）
-  updateIntervalSeconds: number   // 更新间隔秒数（默认 60）
+  minMovePercent: number          // 最小移动幅度百分比（默认0.2，止损移动超过这个值才更新）
 }
 
 // 策略分析器持久化数据（用于项目重启时恢复）
@@ -94,7 +94,7 @@ export interface TrailingStopData {
   enabled: boolean                    // 是否启用移动止损
   activationRatio: number             // 激活盈亏比
   trailingDistance: number            // 跟踪距离（ATR倍数）
-  updateIntervalSeconds: number       // 更新间隔秒数
+  minMovePercent: number              // 最小移动幅度百分比
   lastTrailingStopPrice?: number      // 最后一次移动止损价格
   lastTrailingStopUpdateTime?: number // 最后一次移动止损更新时间
   trailingStopCount: number           // 移动止损总次数
@@ -528,7 +528,7 @@ export interface StrategyAnalysisMetrics {
   trailingStopEnabled?: boolean                    // 是否启用移动止损
   trailingStopActivationRatio?: number            // 移动止损激活盈亏比
   trailingStopDistance?: number                   // 移动止损跟踪距离（ATR倍数）
-  trailingStopUpdateInterval?: number             // 移动止损更新间隔秒数
+  trailingStopMinMovePercent?: number             // 移动止损最小移动幅度百分比
   lastTrailingStopPrice?: number                  // 最后一次移动止损价格
   lastTrailingStopUpdateTime?: number             // 最后一次移动止损更新时间
   trailingStopCount?: number                      // 移动止损总次数

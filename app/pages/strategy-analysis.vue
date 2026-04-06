@@ -426,8 +426,8 @@
                               <span class="detail-value">{{ trade.trailingStopDistance?.toFixed(2) || 'N/A' }}</span>
                             </div>
                             <div v-if="trade.trailingStopEnabled" class="detail-item">
-                              <span class="detail-label">更新间隔(秒):</span>
-                              <span class="detail-value">{{ trade.trailingStopUpdateInterval || 'N/A' }}</span>
+                              <span class="detail-label">最小移动幅度(%):</span>
+                              <span class="detail-value">{{ trade.trailingStopMinMovePercent?.toFixed(3) || 'N/A' }}</span>
                             </div>
                             <div v-if="trade.trailingStopEnabled && trade.trailingStopCount" class="detail-item">
                               <span class="detail-label">移动止损次数:</span>

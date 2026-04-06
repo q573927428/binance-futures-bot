@@ -83,25 +83,25 @@ export function calculateTrailingStopLoss(
     newStopLoss = updatedLowestPrice + trailingDistance
   }
   
+  // 计算止损移动的距离
+  const stopLossMove = Math.abs(newStopLoss - stopLoss)
+  const stopLossMovePercent = (stopLossMove / entryPrice) * 100
+  
   // 确保新止损不会低于当前止损（只向有利方向移动）
   let shouldUpdate = false
   if (direction === 'LONG') {
-    if (newStopLoss > stopLoss) {
+    if (newStopLoss > stopLoss && stopLossMovePercent >= config.minMovePercent) {
       shouldUpdate = true
     } else {
       newStopLoss = stopLoss // 保持当前止损
     }
   } else {
-    if (newStopLoss < stopLoss) {
+    if (newStopLoss < stopLoss && stopLossMovePercent >= config.minMovePercent) {
       shouldUpdate = true
     } else {
       newStopLoss = stopLoss // 保持当前止损
     }
   }
-  
-  // 计算止损移动的距离
-  const stopLossMove = Math.abs(newStopLoss - stopLoss)
-  const stopLossMovePercent = (stopLossMove / entryPrice) * 100
   
   return {
     newStopLoss,
@@ -129,14 +129,3 @@ export function calculateTrailingStopLoss(
   }
 }
 
-/**
- * 检查是否需要更新止损（考虑更新间隔）
- */
-export function shouldUpdateTrailingStop(
-  lastUpdateTime: number,
-  updateIntervalSeconds: number
-): boolean {
-  const now = Date.now()
-  const elapsedSeconds = (now - lastUpdateTime) / 1000
-  return elapsedSeconds >= updateIntervalSeconds
-}

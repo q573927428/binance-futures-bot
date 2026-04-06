@@ -288,7 +288,7 @@ export class StrategyAnalyzer {
       trailingStopEnabled: trailingStopData?.enabled,
       trailingStopActivationRatio: trailingStopData?.activationRatio,
       trailingStopDistance: trailingStopData?.trailingDistance,
-      trailingStopUpdateInterval: trailingStopData?.updateIntervalSeconds,
+      trailingStopMinMovePercent: trailingStopData?.minMovePercent,
       lastTrailingStopPrice: trailingStopData?.lastTrailingStopPrice,
       lastTrailingStopUpdateTime: trailingStopData?.lastTrailingStopUpdateTime,
       trailingStopCount: trailingStopData?.trailingStopCount,

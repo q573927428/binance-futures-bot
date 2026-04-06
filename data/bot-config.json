@@ -67,7 +67,7 @@
     "enabled": true,
     "activationRatio": 0.8,
     "trailingDistance": 1.2,
-    "updateIntervalSeconds": 120
+    "minMovePercent": 0.2
   },
   "indicatorsConfig": {
     "emaPeriods": {

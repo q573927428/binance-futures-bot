@@ -268,7 +268,7 @@ export function getDefaultConfig(): BotConfig {
       enabled: true,                  // 启用移动止损
       activationRatio: 0.6,           // 激活盈亏比：盈利达到风险的60%时启用
       trailingDistance: 1.2,          // 跟踪距离：ATR的1.2倍
-      updateIntervalSeconds: 120,     // 更新间隔（秒）：120秒检查一次
+      minMovePercent: 0.2,           // 最小移动幅度百分比：止损移动超过这个值才更新
     },
     indicatorsConfig: {
       emaPeriods: {

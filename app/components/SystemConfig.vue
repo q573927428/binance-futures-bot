@@ -251,8 +251,9 @@
         <el-input-number v-model="editConfig.trailingStopConfig.trailingDistance" :min="0.1" :max="5" :step="0.1" />
       </el-form-item>
 
-      <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="更新间隔(秒)">
-        <el-input-number v-model="editConfig.trailingStopConfig.updateIntervalSeconds" :min="10" :max="300" />
+      <el-form-item v-if="editConfig.trailingStopConfig.enabled" label="最小移动幅度(%)">
+        <el-input-number v-model="editConfig.trailingStopConfig.minMovePercent" :min="0.01" :max="1" :step="0.01" :precision="2" />
+        <small>止损移动超过该百分比才会更新</small>
       </el-form-item>
 
       <el-divider>风险配置</el-divider>

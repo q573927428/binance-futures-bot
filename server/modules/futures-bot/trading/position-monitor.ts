@@ -3,7 +3,7 @@ import { BinanceService } from '../../../utils/binance'
 import { calculatePnL, isPositionTimeout, checkTP1Condition, checkTP2Condition, getOrderSide } from '../../../utils/risk'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
-import { calculateTrailingStopLoss, shouldUpdateTrailingStop } from '../helpers/trailing-stop'
+import { calculateTrailingStopLoss } from '../helpers/trailing-stop'
 import { PriceService } from '../services/price-service'
 import { IndicatorsCache } from '../services/indicators-cache'
 import { StrategyAnalyzer } from '../helpers/strategy-analyzer'
@@ -153,11 +153,6 @@ export class PositionMonitor {
     }
 
     try {
-      // 检查更新间隔
-      const lastUpdate = position.lastStopLossUpdate || position.openTime
-      if (!shouldUpdateTrailingStop(lastUpdate, this.config.trailingStopConfig.updateIntervalSeconds)) {
-        return
-      }
 
       // 计算新的止损价格
       const result = calculateTrailingStopLoss(
@@ -303,7 +298,7 @@ export class PositionMonitor {
           enabled: this.config.trailingStopConfig.enabled,
           activationRatio: this.config.trailingStopConfig.activationRatio,
           trailingDistance: this.config.trailingStopConfig.trailingDistance,
-          updateIntervalSeconds: this.config.trailingStopConfig.updateIntervalSeconds,
+          minMovePercent: this.config.trailingStopConfig.minMovePercent,
           trailingStopCount: 0
         }
       }
