@@ -221,9 +221,9 @@ export class MarketAnalyzer {
         reason: entryResult?.reason || '入场条件满足', 
       }
 
-      // 记录最终分析结果，添加金叉/死叉信号提示
-      const signalType = isCrossSignal ? `（金叉/死叉信号）` : ''
-      this.logAnalysisResult(symbol, true, `所有条件满足，生成交易信号${signalType}`, price)
+      // 记录最终分析结果，包含具体原因
+      const signalReason = entryResult?.reason || '所有条件满足，生成交易信号'
+      logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${signalReason}`)
       
       return signal
     } catch (error: any) {

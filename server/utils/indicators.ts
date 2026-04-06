@@ -311,7 +311,7 @@ export function getTrendDirection(
       if (canPredict && !goldenCross && !deadCross) {
         // 预判交叉信号
         isCrossSignal = true
-        crossDirection = fastCurrent > slowCurrent ? 'LONG' : 'SHORT'
+        crossDirection = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
         const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
         crossReason = `[预判交叉] ${crossDirection}  ${emaFastName}即将${crossType}${emaSlowName} ， 差值: ${(emaDiffPercent * 100).toFixed(3)}% ， 提前入场`
       } else if (goldenCross) {
