@@ -70,6 +70,7 @@
     "minMovePercent": 0.22
   },
   "indicatorsConfig": {
+    "requiredCandles": 300,
     "emaPeriods": {
       "short_term": {
         "fast": 14,

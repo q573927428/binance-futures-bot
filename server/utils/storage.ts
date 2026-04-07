@@ -271,6 +271,7 @@ export function getDefaultConfig(): BotConfig {
       minMovePercent: 0.2,           // 最小移动幅度百分比：止损移动超过这个值才更新
     },
     indicatorsConfig: {
+      requiredCandles: 300, // 计算指标所需K线数量
       emaPeriods: {
         short_term: {
           fast: 20,    // 快速EMA周期 (默认 20)

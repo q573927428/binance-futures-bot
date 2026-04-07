@@ -140,6 +140,9 @@ export interface EMAPeriodsConfig {
 
 // 技术指标配置
 export interface IndicatorsConfig {
+  // 计算指标所需K线数量
+  requiredCandles: number
+  
   // EMA周期配置
   emaPeriods: EMAPeriodsConfig
 

@@ -25,9 +25,8 @@ export async function calculateIndicators(
     const emaMedium = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
     const emaSlow = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
 
-    // 根据策略模式确定需要的K线数量
-    // 中长期策略需要更多K线数据来计算EMA200
-    const requiredCandles = strategyMode === 'medium_term' ? 300 : 300
+    // K线数量从配置读取，默认300根，中长期策略需要足够K线数据来计算EMA200等指标
+    const requiredCandles = config?.indicatorsConfig?.requiredCandles || 300
     
     // 获取不同周期的K线数据
     const candlesMain = await binance.fetchOHLCV(symbol, mainTF, undefined, requiredCandles)
@@ -331,9 +330,11 @@ export function getTrendDirection(
         const details: string[] = []
         
         if (predictiveEnabled) {
+          // 所有情况都输出当前差值，方便调试
+          details.push(`差值: ${(emaDiffPercent * 100).toFixed(3)}%`)
           // 预判交叉启用时先显示预判失败原因
           if (!isNearCross) {
-            details.push(`差值过大: ${(emaDiffPercent * 100).toFixed(3)}% > ${(distancePercent * 100).toFixed(3)}%`)
+            details.push(`超过阈值: ${(distancePercent * 100).toFixed(3)}%`)
           }
           if (!isTrendAligned) {
             details.push('趋势不对齐')

@@ -348,6 +348,10 @@
 
       <el-divider>技术指标配置</el-divider>
 
+      <el-form-item label="计算指标K线数量">
+        <el-input-number v-model="editConfig.indicatorsConfig.requiredCandles" :min="300" :max="1000" :step="10" />
+      </el-form-item>
+
       <el-form-item label="金叉死叉直接入场">
         <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
       </el-form-item>

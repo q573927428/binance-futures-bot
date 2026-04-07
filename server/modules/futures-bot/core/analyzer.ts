@@ -54,12 +54,8 @@ export class MarketAnalyzer {
 
       // 根据策略模式选择K线周期
       const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
-      const strategyMode = this.config.strategyMode || 'short_term'
-      const emaPeriods = this.config.indicatorsConfig?.emaPeriods
-      const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
-      const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
-      const minCandlesForCross = Math.max(emaFastPeriod, emaSlowPeriod) + 1
-      const mainCandlesCount = Math.max(20, minCandlesForCross + 10)
+      // K线数量从配置读取，默认300根，和calculateIndicators保持一致，确保EMA计算稳定准确
+      const mainCandlesCount = this.config.indicatorsConfig?.requiredCandles || 300
       
       // 获取主K线数据（用于趋势方向、AI分析、价格变化计算和入场条件检查）
       const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, mainCandlesCount)
