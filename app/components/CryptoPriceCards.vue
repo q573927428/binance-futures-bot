@@ -135,18 +135,27 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import dayjs from 'dayjs'
 import TradingViewChartModal from './TradingViewChartModal.vue'
 import KLineChartSimple from '../components/kline-chart/KLineChartSimple.vue'
+import { useBotStore } from '../stores/bot'
 
-// 默认加密货币列表
-const DEFAULT_CRYPTOS = [
-  'BTCUSDT',
-  'ETHUSDT', 
-  'BNBUSDT',
-  'SOLUSDT',
-  'DOGEUSDT',
-  'XAUUSDT',
-  'XAGUSDT',
-  'HYPEUSDT',
-]
+const botStore = useBotStore()
+
+// 从配置文件获取加密货币列表，处理去掉/
+const DEFAULT_CRYPTOS = computed<string[]>(() => {
+  if (botStore.config?.symbols && Array.isArray(botStore.config.symbols)) {
+    return botStore.config.symbols.map((symbol: string) => symbol.replace('/', ''))
+  }
+  // 配置加载失败时使用默认值
+  return [
+    'BTCUSDT',
+    'ETHUSDT', 
+    'BNBUSDT',
+    'SOLUSDT',
+    'DOGEUSDT',
+    'XAUUSDT',
+    'XAGUSDT',
+    'HYPEUSDT',
+  ]
+})
 
 // 响应式数据
 const cryptoPrices = ref<CryptoPrice[]>([])
@@ -178,7 +187,7 @@ async function fetchPrices() {
   try {
     const response = await $fetch<ApiResponse>('/api/websocket/prices', {
       params: {
-        symbols: DEFAULT_CRYPTOS.join(',')
+        symbols: DEFAULT_CRYPTOS.value.join(',')
       }
     })
 
@@ -199,7 +208,7 @@ async function fetchPrices() {
 function updateCryptoPrices(prices: Record<string, any>) {
   const updatedPrices: CryptoPrice[] = []
   
-  DEFAULT_CRYPTOS.forEach(symbol => {
+  DEFAULT_CRYPTOS.value.forEach((symbol: string) => {
     const priceData = prices[symbol]
     if (priceData) {
       // 获取当前价格用于比较
@@ -373,6 +382,12 @@ onMounted(() => {
   fetchWebSocketStatus()
   fetchPrices()
   startAutoRefresh()
+  
+  // 订阅共享轮询，自动更新配置
+  botStore.subscribeToPolling('crypto-price-cards', () => {
+    // 配置变化时重新获取价格
+    fetchPrices()
+  })
 })
 
 onUnmounted(() => {
@@ -380,6 +395,8 @@ onUnmounted(() => {
     clearInterval(refreshInterval)
     refreshInterval = null
   }
+  // 取消订阅轮询
+  botStore.unsubscribeFromPolling('crypto-price-cards')
 })
 
 // 类型定义

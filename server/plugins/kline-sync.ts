@@ -59,15 +59,28 @@ export default defineNitroPlugin(async (nitroApp: NitroApp) => {
 async function getSyncConfig(): Promise<KLineSyncConfig> {
   // 这里可以从环境变量、配置文件或数据库获取配置
   // 目前使用默认配置，后续可以扩展
-  
+
   const runtimeConfig = useRuntimeConfig()
   
-  // 可以添加从环境变量读取配置的逻辑
-  // 例如：const symbols = runtimeConfig.klineSyncSymbols?.split(',') || DEFAULT_SYNC_CONFIG.symbols
-  
+  // 从配置文件读取symbols
+  let configSymbols = DEFAULT_SYNC_CONFIG.symbols
+  try {
+    const fs = await import('fs/promises')
+    const path = await import('path')
+    const configPath = path.join(process.cwd(), 'data', 'bot-config.json')
+    const configContent = await fs.readFile(configPath, 'utf-8')
+    const botConfig = JSON.parse(configContent)
+    if (botConfig.symbols && Array.isArray(botConfig.symbols)) {
+      // 处理交易对中的/，如BTC/USDT -> BTCUSDT
+      configSymbols = botConfig.symbols.map((symbol: string) => symbol.replace('/', ''))
+    }
+  } catch (error) {
+    console.error('读取bot配置文件失败，使用默认symbols:', error)
+  }
+
   return {
     ...DEFAULT_SYNC_CONFIG,
-    // 可以在这里覆盖默认配置
+    symbols: configSymbols
   }
 }
 
