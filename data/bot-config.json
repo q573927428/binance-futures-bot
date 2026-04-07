@@ -1,5 +1,5 @@
 {
-  "strategyMode": "short_term",
+  "strategyMode": "medium_term",
   "symbols": [
     "BTC/USDT",
     "ETH/USDT",
@@ -12,12 +12,12 @@
   ],
   "leverage": 10,
   "maxRiskPercentage": 20,
-  "stopLossATRMultiplier": 2,
-  "maxStopLossPercentage": 1.6,
-  "positionTimeoutHours": 6,
+  "stopLossATRMultiplier": 2.5,
+  "maxStopLossPercentage": 2,
+  "positionTimeoutHours": 28,
   "scanInterval": 180,
   "positionScanInterval": 30,
-  "tradeCooldownInterval": 3600,
+  "tradeCooldownInterval": 7200,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -40,8 +40,8 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2,
-      "tp2RiskRewardRatio": 3,
+      "tp1RiskRewardRatio": 2.2,
+      "tp2RiskRewardRatio": 3.6,
       "tp2MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 80,
@@ -54,7 +54,7 @@
   },
   "dynamicLeverageConfig": {
     "enabled": true,
-    "minLeverage": 5,
+    "minLeverage": 10,
     "maxLeverage": 20,
     "baseLeverage": 8,
     "riskLevelMultipliers": {
@@ -65,9 +65,9 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.8,
+    "activationRatio": 1,
     "trailingDistance": 1.2,
-    "minMovePercent": 0.2
+    "minMovePercent": 0.22
   },
   "indicatorsConfig": {
     "emaPeriods": {
@@ -77,22 +77,22 @@
         "slow": 60
       },
       "medium_term": {
-        "fast": 14,
+        "fast": 20,
         "medium": 60,
         "slow": 120
       }
     },
-    "crossEntryEnabled": true,
-    "showCrossFailureReason": false,
+    "crossEntryEnabled": false,
+    "showCrossFailureReason": true,
     "predictiveCross": {
       "enabled": true,
-      "distancePercent": 0.0008,
+      "distancePercent": 0.0012,
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx1hThreshold": 30,
+      "adx1hThreshold": 58,
       "adx4hThreshold": 35,
-      "adx15mThreshold": 56,
+      "adx15mThreshold": 33,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
@@ -105,7 +105,7 @@
       "candleShadowThreshold": 0.03,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.5
+      "volumeEMAMultiplier": 1.2
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.012,
@@ -117,7 +117,7 @@
       "candleShadowThreshold": 0.03,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.6
+      "volumeEMAMultiplier": 1.5
     },
     "priceBreakout": {
       "enabled": false,
@@ -127,7 +127,7 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 0.28,
+      "minATRPercent": 0.38,
       "skipSymbols": []
     }
   }
