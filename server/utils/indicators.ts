@@ -114,6 +114,9 @@ export async function calculateIndicators(
       ema20: ema20Value,
       ema30: ema30Value,
       ema60: ema60Value,
+      emaFastValues,
+      emaMediumValues,
+      emaSlowValues,
       adx15m,
       adx1h,
       adx4h,
@@ -240,7 +243,7 @@ export function getTrendDirection(
   config?: BotConfig,
   candles?: OHLCV[]
 ) {
-  const { ema20, ema60 } = indicators
+  const { ema20, ema60, emaFastValues, emaSlowValues } = indicators
 
   // 获取策略模式，默认为短期
   const strategyMode = config?.strategyMode || 'short_term'
@@ -261,13 +264,8 @@ export function getTrendDirection(
   let crossReason = ''
   let crossFailureReason: string | null = null
 
-  // 预判交叉和实际交叉都需要K线数据，外层统一判断
-  if (candles && candles.length >= Math.max(emaFastPeriod, emaSlowPeriod) + 1) {
-    const closes = candles.map(c => c.close)
-    const emaFastValues = EMA.calculate({ period: emaFastPeriod, values: closes })
-    const emaSlowValues = EMA.calculate({ period: emaSlowPeriod, values: closes })
-
-    if (emaFastValues.length >= 2 && emaSlowValues.length >= 2) {
+  // 使用缓存中已计算好的EMA值，不再重复计算
+  if (emaFastValues.length >= 2 && emaSlowValues.length >= 2) {
       const fastCurrent = emaFastValues[emaFastValues.length - 1] || 0
       const fastPrev = emaFastValues[emaFastValues.length - 2] || 0
       const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
@@ -350,7 +348,6 @@ export function getTrendDirection(
         
         crossFailureReason = details.length > 0 ? `${failureReason} ${details.join('；')}` : null
         crossReason = ''
-      }
     }
   }
 

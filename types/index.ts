@@ -67,6 +67,9 @@ export interface StrategyAnalyzerData {
     ema20: number
     ema30: number
     ema60: number
+    emaFastValues: number[]
+    emaMediumValues: number[]
+    emaSlowValues: number[]
     atr: number
     adxSlope: number
   }
@@ -318,6 +321,10 @@ export interface TechnicalIndicators {
   ema20: number
   ema30: number
   ema60: number
+  // EMA历史数组
+  emaFastValues: number[]
+  emaMediumValues: number[]
+  emaSlowValues: number[]
   
   // ADX (多周期)
   adx15m: number

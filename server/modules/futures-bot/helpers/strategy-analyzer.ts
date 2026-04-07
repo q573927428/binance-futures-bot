@@ -464,6 +464,9 @@ export class StrategyAnalyzer {
         ema20: this.entryIndicators.ema20,
         ema30: this.entryIndicators.ema30,
         ema60: this.entryIndicators.ema60,
+        emaFastValues: this.entryIndicators.emaFastValues,
+        emaMediumValues: this.entryIndicators.emaMediumValues,
+        emaSlowValues: this.entryIndicators.emaSlowValues,
         atr: this.entryIndicators.atr,
         adxSlope: this.entryIndicators.adxSlope
       } : undefined,
@@ -533,6 +536,9 @@ export class StrategyAnalyzer {
         ema20: data.entryIndicators.ema20,
         ema30: data.entryIndicators.ema30,
         ema60: data.entryIndicators.ema60,
+        emaFastValues: data.entryIndicators.emaFastValues,
+        emaMediumValues: data.entryIndicators.emaMediumValues,
+        emaSlowValues: data.entryIndicators.emaSlowValues,
         atr: data.entryIndicators.atr,
         adxSlope: data.entryIndicators.adxSlope
       }
