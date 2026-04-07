@@ -262,7 +262,8 @@ export function getTrendDirection(
   let crossReason = ''
   let crossFailureReason: string | null = null
 
-  if (crossEntryEnabled && candles && candles.length >= Math.max(emaFastPeriod, emaSlowPeriod) + 1) {
+  // 预判交叉和实际交叉都需要K线数据，外层统一判断
+  if (candles && candles.length >= Math.max(emaFastPeriod, emaSlowPeriod) + 1) {
     const closes = candles.map(c => c.close)
     const emaFastValues = EMA.calculate({ period: emaFastPeriod, values: closes })
     const emaSlowValues = EMA.calculate({ period: emaSlowPeriod, values: closes })
@@ -273,7 +274,7 @@ export function getTrendDirection(
       const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
       const slowPrev = emaSlowValues[emaSlowValues.length - 2] || 0
 
-      // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场）
+      // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场） - 独立开关控制
       const predictiveCrossConfig = config?.indicatorsConfig?.predictiveCross
       const predictiveEnabled = predictiveCrossConfig?.enabled ?? true
       const distancePercent = predictiveCrossConfig?.distancePercent ?? 0.0008 // 0.08%
@@ -303,9 +304,9 @@ export function getTrendDirection(
       // 预判交叉条件（去掉K线进度检查）
       const canPredict = predictiveEnabled && isNearCross && isTrendAligned
       
-      // 2. 检查实际交叉
-      const goldenCross = fastPrev <= slowPrev && fastCurrent > slowCurrent
-      const deadCross = fastPrev >= slowPrev && fastCurrent < slowCurrent
+      // 2. 检查实际交叉 - 受crossEntryEnabled开关独立控制
+      const goldenCross = crossEntryEnabled && fastPrev <= slowPrev && fastCurrent > slowCurrent
+      const deadCross = crossEntryEnabled && fastPrev >= slowPrev && fastCurrent < slowCurrent
 
       // 统一交叉信号输出格式：[信号类型] 方向 | 关键数据
       if (canPredict && !goldenCross && !deadCross) {
@@ -339,12 +340,14 @@ export function getTrendDirection(
           }
         }
         
-        // 不管预判是否启用，都显示未交叉的基础信息
-        const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
-        const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
-        details.push(`未交叉：前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
+        // 只有开启显示交叉失败原因 且 实际交叉功能开启时，才显示实际交叉的未交叉基础信息
+        if (showCrossFailureReason && crossEntryEnabled) {
+          const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
+          const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
+          details.push(`未交叉：前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
+        }
         
-        crossFailureReason = `${failureReason} ${details.join('；')}`
+        crossFailureReason = details.length > 0 ? `${failureReason} ${details.join('；')}` : null
         crossReason = ''
       }
     }
