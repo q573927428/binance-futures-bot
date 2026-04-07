@@ -291,11 +291,11 @@ export function getTrendDirection(
         const priceAboveSlowEMA = price > slowCurrent
         const priceBelowSlowEMA = price < slowCurrent
         
-        // 如果价格在慢EMA上方，只允许预判金叉（fastCurrent > slowCurrent）
-        // 如果价格在慢EMA下方，只允许预判死叉（fastCurrent < slowCurrent）
-        if (priceAboveSlowEMA && fastCurrent <= slowCurrent) {
+        // 如果价格在慢EMA上方，但快EMA已经在慢EMA上方，没有金叉可预判
+        // 如果价格在慢EMA下方，但快EMA已经在慢EMA下方，没有死叉可预判
+        if (priceAboveSlowEMA && fastCurrent > slowCurrent) {
           isTrendAligned = false
-        } else if (priceBelowSlowEMA && fastCurrent >= slowCurrent) {
+        } else if (priceBelowSlowEMA && fastCurrent < slowCurrent) {
           isTrendAligned = false
         }
       }
