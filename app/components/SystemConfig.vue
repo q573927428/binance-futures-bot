@@ -270,7 +270,7 @@
         <el-switch v-model="editConfig.riskConfig.forceLiquidateTime.enabled" />
       </el-form-item>
 
-      <el-form-item label="强制平仓时间">
+      <el-form-item v-if="editConfig.riskConfig.forceLiquidateTime.enabled" label="强制平仓时间">
         <el-time-picker
           v-model="forceLiquidateTime"
           format="HH:mm"
