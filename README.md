@@ -267,7 +267,7 @@ TP1 触发（`checkTP1Condition`）：
 
 TP2 触发（`checkTP2Condition`）：
 
-- 先满足最小盈利门槛：`profit >= risk * tp2MinProfitRatio`
+- 先满足最小盈利门槛：`profit >= risk * tp1MinProfitRatio`
 - 再满足任一：
   - 盈亏比达到 `tp2RiskRewardRatio`
   - RSI 到极值（多头 ≥ `rsiExtreme.long` / 空头 ≤ `rsiExtreme.short`）
@@ -331,7 +331,7 @@ TP2 触发（`checkTP2Condition`）：
 
 - `tp1RiskRewardRatio: 3.8`
 - `tp2RiskRewardRatio: 5`
-- `tp2MinProfitRatio: 1`
+- `tp1MinProfitRatio: 1`
 - `rsiExtreme.long: 80`
 - `rsiExtreme.short: 20`
 - `adxDecreaseThreshold: 1.8`

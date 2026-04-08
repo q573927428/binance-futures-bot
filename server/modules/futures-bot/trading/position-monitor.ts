@@ -112,15 +112,15 @@ export class PositionMonitor {
         return { shouldClose: true, reason: '持仓超时' }
       }
 
-      // 检查TP2条件（使用ADX斜率）
-      const tp2Result = checkTP2Condition(price, position, indicators.rsi, indicators.adx15m, indicators.adxSlope, this.config.riskConfig)
+      // 检查TP2条件（高阶止盈，仅盈亏比触发）
+      const tp2Result = checkTP2Condition(price, position, this.config.riskConfig)
       if (tp2Result.triggered) {
         logger.success('止盈', tp2Result.reason, tp2Result.data)
         return { shouldClose: true, reason: 'TP2止盈' }
       }
 
-      // 检查TP1条件 目前 直接全部平仓（简化策略）
-      const tp1Result = checkTP1Condition(price, position, this.config.riskConfig)
+      // 检查TP1条件（整合保护机制：盈亏比，或RSI极值，或ADX走弱）
+      const tp1Result = checkTP1Condition(price, position, indicators.rsi, indicators.adxSlope, this.config.riskConfig)
       if (tp1Result.triggered) {
         logger.success('止盈', tp1Result.reason, tp1Result.data)
         return { shouldClose: true, reason: 'TP1止盈' }

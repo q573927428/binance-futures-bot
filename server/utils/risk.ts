@@ -83,61 +83,13 @@ export function isPositionTimeout(
 }
 
 /**
- * 检查是否达到TP1条件（盈亏比2:1）
+ * 检查是否达到TP1条件（整合保护机制：盈亏比，或RSI极值，或ADX走弱）
+ * 必须至少达到最小盈利才允许触发
  */
 export function checkTP1Condition(
   currentPrice: number,
   position: Position,
-  riskConfig: BotConfig['riskConfig']  // 新增参数
-): { triggered: boolean; reason: string; data: any } {
-  const { entryPrice, initialStopLoss, stopLoss, direction } = position
-  // 使用初始止损计算风险，而不是当前止损
-  const risk = Math.abs(entryPrice - initialStopLoss)
-  
-  let profit = 0
-  if (direction === 'LONG') {
-    profit = currentPrice - entryPrice
-  } else {
-    profit = entryPrice - currentPrice
-  }
-  
-  const requiredRiskRewardRatio = riskConfig.takeProfit.tp1RiskRewardRatio  // 使用配置值
-  const triggered = profit > 0 && profit >= risk * requiredRiskRewardRatio // 使用配置值
-  const riskRewardRatio = risk > 0 ? profit / risk : 0
-  
-  let reason = ''
-  if (triggered) {
-    reason = `达到TP1条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
-  } else {
-    reason = `未达到TP1条件：当前盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
-  }
-  
-  return {
-    triggered,
-    reason,
-    data: {
-      currentPrice,
-      entryPrice,
-      initialStopLoss,
-      currentStopLoss: stopLoss,
-      risk,
-      profit,
-      riskRewardRatio,
-      requiredRatio: requiredRiskRewardRatio,  // 使用配置值
-      direction
-    }
-  }
-}
-
-/**
- * 检查是否达到TP2条件（盈亏比1:2 或 RSI极值 或 ADX走弱）
- * 新增要求：必须至少达到0.5R盈利才允许触发TP2
- */
-export function checkTP2Condition(
-  currentPrice: number,
-  position: Position,
   rsi: number,
-  adx15m: number,
   adxSlope: number,
   riskConfig: BotConfig['riskConfig']
 ): { triggered: boolean; reason: string; data: any } {
@@ -153,7 +105,7 @@ export function checkTP2Condition(
   }
   
   const riskRewardRatio = risk > 0 ? profit / risk : 0
-  const requiredRiskRewardRatio = riskConfig.takeProfit.tp2RiskRewardRatio
+  const requiredRiskRewardRatio = riskConfig.takeProfit.tp1RiskRewardRatio
   
   // 检查各个条件
   const riskRewardTriggered = profit >= risk * requiredRiskRewardRatio
@@ -162,8 +114,8 @@ export function checkTP2Condition(
   // 使用ADX斜率判断走弱（负斜率表示ADX下降，绝对值 >= 阈值时触发）
   const adxTriggered = adxSlope <= -riskConfig.takeProfit.adxDecreaseThreshold
   
-  // 新增：必须至少达到0.5R盈利才允许触发TP2
-  const minProfitRatio = riskConfig.takeProfit.tp2MinProfitRatio || 0.5
+  // 必须至少达到最小盈利才允许触发TP1
+  const minProfitRatio = riskConfig.takeProfit.tp1MinProfitRatio || 1
   const hasMinProfit = profit >= risk * minProfitRatio
   
   // 触发条件：必须达到最小盈利，并且满足以下任意条件
@@ -185,7 +137,7 @@ export function checkTP2Condition(
     if (adxTriggered) {
       reasons.push(`ADX斜率 ${adxSlope.toFixed(2)} ≤ -${riskConfig.takeProfit.adxDecreaseThreshold}`)
     }
-    reason = `达到TP2条件：${reasons.join('，')}（已满足最小盈利${minProfitRatio}R）`
+    reason = `达到TP1条件：${reasons.join('，')}（已满足最小盈利${minProfitRatio}R）`
   } else {
     // 提供更详细的未触发原因
     const reasons: string[] = []
@@ -205,7 +157,7 @@ export function checkTP2Condition(
         reasons.push(`ADX斜率 ${adxSlope.toFixed(2)} > -${riskConfig.takeProfit.adxDecreaseThreshold}`)
       }
     }
-    reason = `未达到TP2条件：${reasons.join('，')}`
+    reason = `未达到TP1条件：${reasons.join('，')}`
   }
   
   return {
@@ -223,7 +175,6 @@ export function checkTP2Condition(
       minProfitRatio,
       hasMinProfit,
       rsi,
-      adx15m,
       adxSlope,
       direction,
       conditionTriggers: {
@@ -236,6 +187,53 @@ export function checkTP2Condition(
         rsiShortExtreme: riskConfig.takeProfit.rsiExtreme.short,
         adxDecreaseThreshold: riskConfig.takeProfit.adxDecreaseThreshold
       }
+    }
+  }
+}
+
+/**
+ * 检查是否达到TP2条件（高阶止盈，仅盈亏比3.6R触发）
+ */
+export function checkTP2Condition(
+  currentPrice: number,
+  position: Position,
+  riskConfig: BotConfig['riskConfig']
+): { triggered: boolean; reason: string; data: any } {
+  const { entryPrice, initialStopLoss, stopLoss, direction } = position
+  // 使用初始止损计算风险，而不是当前止损
+  const risk = Math.abs(entryPrice - initialStopLoss)
+  
+  let profit = 0
+  if (direction === 'LONG') {
+    profit = currentPrice - entryPrice
+  } else {
+    profit = entryPrice - currentPrice
+  }
+  
+  const requiredRiskRewardRatio = riskConfig.takeProfit.tp2RiskRewardRatio
+  const triggered = profit > 0 && profit >= risk * requiredRiskRewardRatio
+  const riskRewardRatio = risk > 0 ? profit / risk : 0
+  
+  let reason = ''
+  if (triggered) {
+    reason = `达到TP2条件：盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
+  } else {
+    reason = `未达到TP2条件：当前盈亏比 ${riskRewardRatio.toFixed(2)}:1（要求${requiredRiskRewardRatio}:1）`
+  }
+  
+  return {
+    triggered,
+    reason,
+    data: {
+      currentPrice,
+      entryPrice,
+      initialStopLoss,
+      currentStopLoss: stopLoss,
+      risk,
+      profit,
+      riskRewardRatio,
+      requiredRatio: requiredRiskRewardRatio,
+      direction
     }
   }
 }

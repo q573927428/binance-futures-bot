@@ -288,7 +288,7 @@
       </el-form-item>
 
       <el-form-item label="TP2最小盈利比例(R)">
-        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp2MinProfitRatio" :min="0.1" :max="20" :step="0.1" />
+        <el-input-number v-model="editConfig.riskConfig.takeProfit.tp1MinProfitRatio" :min="0.1" :max="20" :step="0.1" />
       </el-form-item>
 
       <el-form-item label="多头RSI极值">
