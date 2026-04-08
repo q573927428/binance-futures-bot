@@ -47,10 +47,10 @@
         "long": 80,
         "short": 20
       },
-      "adxDecreaseThreshold": 5,
+      "adxDecreaseThreshold": 2,
       "adxSlopePeriod": 3
     },
-    "dailyTradeLimit": 7
+    "dailyTradeLimit": 5
   },
   "dynamicLeverageConfig": {
     "enabled": true,
@@ -91,9 +91,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx1hThreshold": 18,
-      "adx4hThreshold": 15,
-      "adx15mThreshold": 23,
+      "adx1hThreshold": 58,
+      "adx4hThreshold": 55,
+      "adx15mThreshold": 53,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {

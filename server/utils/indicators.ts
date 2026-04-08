@@ -104,9 +104,9 @@ export async function calculateIndicators(
     const ema60Value = getEMAValue(emaSlowValuesFull, closesMain[closesMain.length - 1] || 0)
 
     // 只保留最后10个EMA值，减少状态文件体积（程序只需要最后2个值用于金叉死叉判断）
-    const emaFastValues = emaFastValuesFull.slice(-10)
-    const emaMediumValues = emaMediumValuesFull.slice(-10)
-    const emaSlowValues = emaSlowValuesFull.slice(-10)
+    const emaFastValues = emaFastValuesFull.slice(-3)
+    const emaMediumValues = emaMediumValuesFull.slice(-3)
+    const emaSlowValues = emaSlowValuesFull.slice(-3)
 
     // 计算ADX斜率（当前值 - N周期前的值）
     const adxSlopePeriod = config?.riskConfig?.takeProfit?.adxSlopePeriod || 3
