@@ -554,10 +554,26 @@ export function checkLongEntry(
     // 根据实际满足的条件构建原因
     const conditions: string[] = []
     
-    if (emaDeviationEnabled && nearEMA) {
+    // 处理回踩/突破二选一的成功原因
+    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
+    const onlyEmaEnabled = emaDeviationEnabled && !priceBreakoutData?.enabled
+    const onlyBreakoutEnabled = !emaDeviationEnabled && priceBreakoutData?.enabled
+    const bothDisabled = !emaDeviationEnabled && !priceBreakoutData?.enabled
+    
+    if (bothEnabled) {
+      if (nearEMA && priceBreakoutPassed) {
+        conditions.push(`价格回踩${nearEMAType}且突破确认`)
+      } else if (nearEMA) {
+        conditions.push(`价格回踩${nearEMAType}`)
+      } else if (priceBreakoutPassed) {
+        conditions.push(`价格突破确认`)
+      }
+    } else if (onlyEmaEnabled && nearEMA) {
       conditions.push(`价格回踩${nearEMAType}`)
-    } else if (!emaDeviationEnabled) {
-      conditions.push(`回踩条件已禁用`)
+    } else if (onlyBreakoutEnabled && priceBreakoutPassed) {
+      conditions.push(`价格突破确认`)
+    } else if (bothDisabled) {
+      conditions.push(`回踩/突破条件已禁用`)
     }
     
     if (emaSlowDeviationEnabled) {
@@ -573,26 +589,38 @@ export function checkLongEntry(
       conditions.push(`成交量确认`)
     }
     
-    if (priceBreakoutData?.enabled && priceBreakoutPassed) {
-      conditions.push(`价格突破确认`)
-    } else if (priceBreakoutData?.enabled) {
-      conditions.push(`价格突破条件已启用但未满足`)
-    }
-    
     reason = conditions.join('，')
   } else {
     const reasons: string[] = []
     
-    // 检查回踩条件
-    if (emaDeviationEnabled && !nearEMA) {
-      // 安全计算百分比，避免除以0
+    // 处理回踩/突破二选一的失败原因
+    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
+    const emaFailed = emaDeviationEnabled && !nearEMA
+    const breakoutFailed = priceBreakoutData?.enabled && !priceBreakoutPassed
+    
+    if (bothEnabled && emaFailed && breakoutFailed) {
+      // 两个都启用且都失败，合并显示
       const calculatePercentage = (value: number, base: number) => {
         if (base === 0) return 'N/A'
         return ((value - base) / base * 100).toFixed(2)
       }
       const ema20Percent = calculatePercentage(price, ema20)
       const ema30Percent = calculatePercentage(price, ema30)
-      reasons.push(`价格未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+      reasons.push(`价格既未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）也未${priceBreakoutReason.toLowerCase()}`)
+    } else {
+      // 单独显示失败的条件
+      if (emaFailed) {
+        const calculatePercentage = (value: number, base: number) => {
+          if (base === 0) return 'N/A'
+          return ((value - base) / base * 100).toFixed(2)
+        }
+        const ema20Percent = calculatePercentage(price, ema20)
+        const ema30Percent = calculatePercentage(price, ema30)
+        reasons.push(`价格未回踩EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+      }
+      if (breakoutFailed) {
+        reasons.push(`${priceBreakoutReason}`)
+      }
     }
     
     // 检查EMA60偏离条件
@@ -611,10 +639,6 @@ export function checkLongEntry(
     
     if (!volumePassed) {
       reasons.push(`${volumeReason}`)
-    }
-    
-    if (priceBreakoutData?.enabled && !priceBreakoutPassed) {
-      reasons.push(`${priceBreakoutReason}`)
     }
     
     reason = reasons.join('；')
@@ -792,10 +816,26 @@ export function checkShortEntry(
     // 根据实际满足的条件构建原因
     const conditions: string[] = []
     
-    if (emaDeviationEnabled && nearEMA) {
+    // 处理回踩/突破二选一的成功原因
+    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
+    const onlyEmaEnabled = emaDeviationEnabled && !priceBreakoutData?.enabled
+    const onlyBreakoutEnabled = !emaDeviationEnabled && priceBreakoutData?.enabled
+    const bothDisabled = !emaDeviationEnabled && !priceBreakoutData?.enabled
+    
+    if (bothEnabled) {
+      if (nearEMA && priceBreakoutPassed) {
+        conditions.push(`价格反弹${nearEMAType}且突破确认`)
+      } else if (nearEMA) {
+        conditions.push(`价格反弹${nearEMAType}`)
+      } else if (priceBreakoutPassed) {
+        conditions.push(`价格突破确认`)
+      }
+    } else if (onlyEmaEnabled && nearEMA) {
       conditions.push(`价格反弹${nearEMAType}`)
-    } else if (!emaDeviationEnabled) {
-      conditions.push(`回踩条件已禁用`)
+    } else if (onlyBreakoutEnabled && priceBreakoutPassed) {
+      conditions.push(`价格突破确认`)
+    } else if (bothDisabled) {
+      conditions.push(`反弹/突破条件已禁用`)
     }
     
     if (emaSlowDeviationEnabled) {
@@ -811,26 +851,38 @@ export function checkShortEntry(
       conditions.push(`成交量确认`)
     }
     
-    if (priceBreakoutData?.enabled && priceBreakoutPassed) {
-      conditions.push(`价格突破确认`)
-    } else if (priceBreakoutData?.enabled) {
-      conditions.push(`价格突破条件已启用但未满足`)
-    }
-    
     reason = conditions.join('，')
   } else {
     const reasons: string[] = []
     
-    // 检查回踩条件
-    if (emaDeviationEnabled && !nearEMA) {
-      // 安全计算百分比，避免除以0
+    // 处理反弹/突破二选一的失败原因
+    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
+    const emaFailed = emaDeviationEnabled && !nearEMA
+    const breakoutFailed = priceBreakoutData?.enabled && !priceBreakoutPassed
+    
+    if (bothEnabled && emaFailed && breakoutFailed) {
+      // 两个都启用且都失败，合并显示
       const calculatePercentage = (value: number, base: number) => {
         if (base === 0) return 'N/A'
         return ((value - base) / base * 100).toFixed(2)
       }
       const ema20Percent = calculatePercentage(price, ema20)
       const ema30Percent = calculatePercentage(price, ema30)
-      reasons.push(`价格未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+      reasons.push(`价格既未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）也未${priceBreakoutReason.toLowerCase()}`)
+    } else {
+      // 单独显示失败的条件
+      if (emaFailed) {
+        const calculatePercentage = (value: number, base: number) => {
+          if (base === 0) return 'N/A'
+          return ((value - base) / base * 100).toFixed(2)
+        }
+        const ema20Percent = calculatePercentage(price, ema20)
+        const ema30Percent = calculatePercentage(price, ema30)
+        reasons.push(`价格未反弹EMA（距离${emaFastName}: ${ema20Percent}%，${emaMediumName}: ${ema30Percent}%）`)
+      }
+      if (breakoutFailed) {
+        reasons.push(`${priceBreakoutReason}`)
+      }
     }
     
     // 检查EMA60偏离条件
@@ -849,10 +901,6 @@ export function checkShortEntry(
     
     if (!volumePassed) {
       reasons.push(`${volumeReason}`)
-    }
-    
-    if (priceBreakoutData?.enabled && !priceBreakoutPassed) {
-      reasons.push(`${priceBreakoutReason}`)
     }
     
     reason = reasons.join('；')
