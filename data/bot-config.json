@@ -91,9 +91,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx1hThreshold": 58,
-      "adx4hThreshold": 55,
-      "adx15mThreshold": 53,
+      "adx15mThreshold": 23,
+      "adx1hThreshold": 18,
+      "adx4hThreshold": 15,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
@@ -103,10 +103,10 @@
       "emaSlowDeviationEnabled": false,
       "rsiMin": 40,
       "rsiMax": 65,
-      "candleShadowThreshold": 0.03,
+      "candleShadowThreshold": 0.008,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.2
+      "volumeEMAMultiplier": 1.5
     },
     "shortEntry": {
       "emaDeviationThreshold": 0.012,
@@ -115,10 +115,10 @@
       "emaSlowDeviationEnabled": false,
       "rsiMin": 35,
       "rsiMax": 60,
-      "candleShadowThreshold": 0.03,
+      "candleShadowThreshold": 0.009,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.5
+      "volumeEMAMultiplier": 1.8
     },
     "priceBreakout": {
       "enabled": false,
