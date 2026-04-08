@@ -547,7 +547,7 @@ export function checkLongEntry(
   const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
   
   // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
-  const passed = emaConditionPassed && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
+  const passed = (emaConditionPassed || breakoutConditionPassed) && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed
 
   let reason = ''
   if (passed) {
@@ -785,7 +785,7 @@ export function checkShortEntry(
   const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
   
   // 所有条件必须同时满足（回踩/突破二选一，其他条件必须满足）
-  const passed = emaConditionPassed && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed && breakoutConditionPassed
+  const passed = (emaConditionPassed || breakoutConditionPassed) && ema60DeviationPassed && rsiInRange && isConfirmCandle && volumePassed
 
   let reason = ''
   if (passed) {
