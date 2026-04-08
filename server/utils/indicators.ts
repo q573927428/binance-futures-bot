@@ -43,9 +43,9 @@ export async function calculateIndicators(
     }
 
     // 计算EMA（基于主周期）
-    const emaFastValues = EMA.calculate({ period: emaFast, values: closesMain })
-    const emaMediumValues = EMA.calculate({ period: emaMedium, values: closesMain })
-    const emaSlowValues = EMA.calculate({ period: emaSlow, values: closesMain })
+    const emaFastValuesFull = EMA.calculate({ period: emaFast, values: closesMain })
+    const emaMediumValuesFull = EMA.calculate({ period: emaMedium, values: closesMain })
+    const emaSlowValuesFull = EMA.calculate({ period: emaSlow, values: closesMain })
 
     // 获取EMA值，如果计算失败则使用最后一个收盘价作为替代
     const getEMAValue = (emaValues: number[], defaultValue: number) => {
@@ -99,9 +99,14 @@ export async function calculateIndicators(
     }
 
     // 使用getEMAValue函数获取EMA值
-    const ema20Value = getEMAValue(emaFastValues, closesMain[closesMain.length - 1] || 0)
-    const ema30Value = getEMAValue(emaMediumValues, closesMain[closesMain.length - 1] || 0)
-    const ema60Value = getEMAValue(emaSlowValues, closesMain[closesMain.length - 1] || 0)
+    const ema20Value = getEMAValue(emaFastValuesFull, closesMain[closesMain.length - 1] || 0)
+    const ema30Value = getEMAValue(emaMediumValuesFull, closesMain[closesMain.length - 1] || 0)
+    const ema60Value = getEMAValue(emaSlowValuesFull, closesMain[closesMain.length - 1] || 0)
+
+    // 只保留最后10个EMA值，减少状态文件体积（程序只需要最后2个值用于金叉死叉判断）
+    const emaFastValues = emaFastValuesFull.slice(-10)
+    const emaMediumValues = emaMediumValuesFull.slice(-10)
+    const emaSlowValues = emaSlowValuesFull.slice(-10)
 
     // 计算ADX斜率（当前值 - N周期前的值）
     const adxSlopePeriod = config?.riskConfig?.takeProfit?.adxSlopePeriod || 3
