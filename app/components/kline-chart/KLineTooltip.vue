@@ -52,6 +52,24 @@
           {{ (data.emaDiffPercent ?? 0) > 0 ? '+' : '' }}{{ (data.emaDiffPercent ?? 0).toFixed(2) }}%
         </span>
       </span>
+      <span class="data-item">
+        <span class="label">ATR%:</span>
+        <span class="value">
+          {{ (data.atrPercent ?? 0).toFixed(2) }}%
+        </span>
+      </span>
+      <span class="data-item">
+        <span class="label">RSI:</span>
+        <span class="value" :class="{ 'price-up': (data.rsi ?? 0) >= 70, 'price-down': (data.rsi ?? 0) <= 30 }">
+          {{ (data.rsi ?? 0).toFixed(1) }}
+        </span>
+      </span>
+      <span class="data-item">
+        <span class="label">ADX:</span>
+        <span class="value" :class="{ 'price-up': (data.adx ?? 0) >= 25, 'price-down': (data.adx ?? 0) < 20 }">
+          {{ (data.adx ?? 0).toFixed(1) }}
+        </span>
+      </span>
     </div>
   </div>
 </template>
@@ -75,6 +93,9 @@ interface Props {
     volume: number
     changePercent: number
     emaDiffPercent?: number | null
+    atrPercent?: number | null
+    rsi?: number | null
+    adx?: number | null
   }
   position?: {
     left: string
@@ -179,8 +200,8 @@ const isDOGE = computed(() => isDOGESymbol(props.symbol))
 .tooltip-content .data-item .value {
   font-weight: 600;
   font-family: 'Courier New', monospace;
-  min-width: 50px;
   text-align: right;
+  padding-left: 1px;
   padding-top: 3px;
 }
 

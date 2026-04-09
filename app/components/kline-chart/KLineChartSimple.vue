@@ -75,7 +75,9 @@ const chartCanvasRef = ref<InstanceType<typeof KLineChartCanvas> | null>(null)
 // 导入工具函数
 import { formatTime } from './utils/kline-formatters'
 import { generateClientId, isDOGESymbol } from './utils/kline-helpers'
-import { calculateEMASeries } from '../../utils/ema-calculator'
+import { calculateEMASeries, calculateATRSeries, calculateATRPercent } from '../../utils/ema-calculator'
+import { calculateRSISeries } from '../../utils/rsi-calculator'
+import { calculateADXSeries } from '../../utils/adx-calculator'
 
 // 初始化bot store
 const botStore = useBotStore()
@@ -189,7 +191,10 @@ const tooltipData = ref({
   close: 0,
   volume: 0,
   changePercent: 0,
-  emaDiffPercent: 0
+  emaDiffPercent: 0,
+  atrPercent: 0,
+  rsi: 0,
+  adx: 0
 })
 const tooltipTime = ref('')
 const tooltipPosition = ref({
@@ -358,6 +363,32 @@ const calculateLatestEmaDiff = (klineData: SimpleKLineData[]): number => {
   return slow === 0 ? 0 : ((fast - slow) / slow) * 100
 }
 
+// 计算最新ATR百分比
+const calculateLatestAtrPercent = (klineData: SimpleKLineData[]): number => {
+  if (klineData.length < 14) return 0
+  const atrSeries = calculateATRSeries(klineData, 14)
+  if (atrSeries.length === 0) return 0
+  const atr = atrSeries[atrSeries.length - 1]?.value || 0
+  const price = klineData[klineData.length - 1]?.c || 0
+  return calculateATRPercent(atr, price)
+}
+
+// 计算最新RSI
+const calculateLatestRsi = (klineData: SimpleKLineData[]): number => {
+  if (klineData.length < 14) return 0
+  const rsiSeries = calculateRSISeries(klineData, 14)
+  if (rsiSeries.length === 0) return 0
+  return rsiSeries[rsiSeries.length - 1]?.value || 0
+}
+
+// 计算最新ADX
+const calculateLatestAdx = (klineData: SimpleKLineData[]): number => {
+  if (klineData.length < 14) return 0
+  const adxSeries = calculateADXSeries(klineData, 14)
+  if (adxSeries.length === 0) return 0
+  return adxSeries[adxSeries.length - 1]?.adx || 0
+}
+
 // 显示最新K线数据
 const showLatestKline = () => {
   if (klineData.value.length > 0) {
@@ -365,6 +396,9 @@ const showLatestKline = () => {
     if (latestKline) {
       const changePercent = ((latestKline.c - latestKline.o) / latestKline.o) * 100
       const emaDiffPercent = calculateLatestEmaDiff(klineData.value)
+      const atrPercent = calculateLatestAtrPercent(klineData.value)
+      const rsi = calculateLatestRsi(klineData.value)
+      const adx = calculateLatestAdx(klineData.value)
       tooltipData.value = {
         open: latestKline.o,
         high: latestKline.h,
@@ -372,7 +406,10 @@ const showLatestKline = () => {
         close: latestKline.c,
         volume: latestKline.v || 0,
         changePercent,
-        emaDiffPercent
+        emaDiffPercent,
+        atrPercent,
+        rsi,
+        adx
       }
       tooltipTime.value = formatTime(latestKline.t)
       tooltipVisible.value = true
@@ -465,6 +502,9 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
   if (tooltipVisible.value) {
     const changePercent = ((updatedKline.c - updatedKline.o) / updatedKline.o) * 100
     const emaDiffPercent = calculateLatestEmaDiff(klineData.value)
+    const atrPercent = calculateLatestAtrPercent(klineData.value)
+    const rsi = calculateLatestRsi(klineData.value)
+    const adx = calculateLatestAdx(klineData.value)
     tooltipData.value = {
       open: updatedKline.o,
       high: updatedKline.h,
@@ -472,7 +512,10 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
       close: updatedKline.c,
       volume: updatedKline.v || 0,
       changePercent,
-      emaDiffPercent
+      emaDiffPercent,
+      atrPercent,
+      rsi,
+      adx
     }
     tooltipTime.value = formatTime(updatedKline.t)
   }

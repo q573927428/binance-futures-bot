@@ -38,8 +38,12 @@ import {
   detectEMACrossovers,
   getEMACrossoverColor,
   getEMACrossoverShape,
-  getEMACrossoverText
+  getEMACrossoverText,
+  calculateATRSeries,
+  calculateATRPercent
 } from '../../utils/ema-calculator'
+import { calculateRSISeries } from '../../utils/rsi-calculator'
+import { calculateADXSeries } from '../../utils/adx-calculator'
 import { prepareCandlestickData, prepareVolumeData, getChartOptions } from './utils/kline-helpers'
 import { isDOGESymbol } from './utils/kline-helpers'
 import { useBotStore } from '../../stores/bot'
@@ -91,6 +95,15 @@ const cachedEmaSeries = ref<{
   slow: Array<{ time: number; value: number }>
   diffPercent: number[]
 } | null>(null)
+
+// 缓存ATR百分比序列
+const cachedAtrPercentSeries = ref<number[] | null>(null)
+
+// 缓存RSI序列
+const cachedRsiSeries = ref<number[] | null>(null)
+
+// 缓存ADX序列
+const cachedAdxSeries = ref<Array<{ adx: number; plusDI: number; minusDI: number }> | null>(null)
 
 // 监听klineData和emaPeriods变化，预计算EMA序列和差值
 watch(() => [props.klineData, emaPeriods.value, props.showEmaLines], () => {
@@ -144,9 +157,80 @@ const emaDiffPercent = computed<number | null>(() => {
   return cachedEmaSeries.value.diffPercent[cachedEmaSeries.value.diffPercent.length - 1] ?? null
 })
 
+// 监听klineData变化，预计算ATR百分比序列
+watch(() => props.klineData, () => {
+  if (props.klineData.length === 0) {
+    cachedAtrPercentSeries.value = null
+    return
+  }
+  
+  const atrSeries = calculateATRSeries(props.klineData, 14)
+  if (atrSeries.length === 0) {
+    cachedAtrPercentSeries.value = null
+    return
+  }
+  
+  // 计算ATR百分比
+  const atrPercent: number[] = []
+  for (let i = 0; i < atrSeries.length; i++) {
+    const atr = atrSeries[i]?.value || 0
+    const price = props.klineData[i]?.c || 0
+    atrPercent.push(calculateATRPercent(atr, price))
+  }
+  
+  cachedAtrPercentSeries.value = atrPercent
+}, { deep: true, immediate: true })
+
+// 监听klineData变化，预计算RSI序列
+watch(() => props.klineData, () => {
+  if (props.klineData.length === 0) {
+    cachedRsiSeries.value = null
+    return
+  }
+  
+  const rsiSeries = calculateRSISeries(props.klineData, 14)
+  if (rsiSeries.length === 0) {
+    cachedRsiSeries.value = null
+    return
+  }
+  
+  cachedRsiSeries.value = rsiSeries.map(item => item.value || 0)
+}, { deep: true, immediate: true })
+
+// 监听klineData变化，预计算ADX序列
+watch(() => props.klineData, () => {
+  if (props.klineData.length === 0) {
+    cachedAdxSeries.value = null
+    return
+  }
+  
+  const adxSeries = calculateADXSeries(props.klineData, 14)
+  if (adxSeries.length === 0) {
+    cachedAdxSeries.value = null
+    return
+  }
+  
+  cachedAdxSeries.value = adxSeries.map(item => ({
+    adx: item.adx || 0,
+    plusDI: item.plusDI || 0,
+    minusDI: item.minusDI || 0
+  }))
+}, { deep: true, immediate: true })
+
 // 定义emits
 const emit = defineEmits<{
-  'tooltip-update': [data: { open: number; high: number; low: number; close: number; volume: number; changePercent: number, emaDiffPercent?: number | null }, time: string]
+  'tooltip-update': [data: { 
+    open: number
+    high: number
+    low: number
+    close: number
+    volume: number
+    changePercent: number
+    emaDiffPercent?: number | null
+    atrPercent?: number | null
+    rsi?: number | null
+    adx?: number | null
+  }, time: string]
   'retry': []
 }>()
 
@@ -558,14 +642,31 @@ const emitTooltipUpdate = (kline: SimpleKLineData) => {
     minute: '2-digit'
   })
 
+  // 找到当前K线的索引
+  const klineIndex = props.klineData.findIndex(item => item.t === kline.t)
+  
   // 从缓存中获取当前K线对应的EMA差值百分比
   let emaDiff: number | null = null
-  if (cachedEmaSeries.value) {
-    // 找到当前K线的索引
-    const klineIndex = props.klineData.findIndex(item => item.t === kline.t)
-    if (klineIndex >= 0 && klineIndex < cachedEmaSeries.value.diffPercent.length) {
-      emaDiff = cachedEmaSeries.value.diffPercent[klineIndex] ?? null
-    }
+  if (cachedEmaSeries.value && klineIndex >= 0 && klineIndex < cachedEmaSeries.value.diffPercent.length) {
+    emaDiff = cachedEmaSeries.value.diffPercent[klineIndex] ?? null
+  }
+  
+  // 获取ATR百分比
+  let atrPercent: number | null = null
+  if (cachedAtrPercentSeries.value && klineIndex >= 0 && klineIndex < cachedAtrPercentSeries.value.length) {
+    atrPercent = cachedAtrPercentSeries.value[klineIndex] ?? null
+  }
+  
+  // 获取RSI
+  let rsi: number | null = null
+  if (cachedRsiSeries.value && klineIndex >= 0 && klineIndex < cachedRsiSeries.value.length) {
+    rsi = cachedRsiSeries.value[klineIndex] ?? null
+  }
+  
+  // 获取ADX
+  let adx: number | null = null
+  if (cachedAdxSeries.value && klineIndex >= 0 && klineIndex < cachedAdxSeries.value.length) {
+    adx = cachedAdxSeries.value[klineIndex]?.adx ?? null
   }
   
   emit('tooltip-update', {
@@ -575,7 +676,10 @@ const emitTooltipUpdate = (kline: SimpleKLineData) => {
     close: kline.c,
     volume: kline.v || 0,
     changePercent,
-    emaDiffPercent: emaDiff
+    emaDiffPercent: emaDiff,
+    atrPercent,
+    rsi,
+    adx
   }, timeStr)
 }
 
