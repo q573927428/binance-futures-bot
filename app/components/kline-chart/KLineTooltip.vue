@@ -46,10 +46,10 @@
           {{ formatPercent(data.changePercent) }}
         </span>
       </span>
-      <span v-if="data.emaDiffPercent !== null && data.emaDiffPercent !== undefined" class="data-item">
+      <span class="data-item">
         <span class="label">EMA差:</span>
-        <span class="value" :class="{ 'price-up': data.emaDiffPercent > 0, 'price-down': data.emaDiffPercent < 0 }">
-          {{ data.emaDiffPercent > 0 ? '+' : '' }}{{ data.emaDiffPercent.toFixed(2) }}%
+        <span class="value" :class="{ 'price-up': (data.emaDiffPercent ?? 0) > 0, 'price-down': (data.emaDiffPercent ?? 0) < 0 }">
+          {{ (data.emaDiffPercent ?? 0) > 0 ? '+' : '' }}{{ (data.emaDiffPercent ?? 0).toFixed(2) }}%
         </span>
       </span>
     </div>
@@ -94,7 +94,7 @@ const props = withDefaults(defineProps<Props>(), {
     close: 0,
     volume: 0,
     changePercent: 0,
-    emaDiffPercent: null
+    emaDiffPercent: 0
   }),
   position: () => ({
     left: '20px',

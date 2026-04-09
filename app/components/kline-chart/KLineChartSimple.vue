@@ -75,6 +75,7 @@ const chartCanvasRef = ref<InstanceType<typeof KLineChartCanvas> | null>(null)
 // 导入工具函数
 import { formatTime } from './utils/kline-formatters'
 import { generateClientId, isDOGESymbol } from './utils/kline-helpers'
+import { calculateEMASeries } from '../../utils/ema-calculator'
 
 // 初始化bot store
 const botStore = useBotStore()
@@ -187,7 +188,8 @@ const tooltipData = ref({
   low: 0,
   close: 0,
   volume: 0,
-  changePercent: 0
+  changePercent: 0,
+  emaDiffPercent: 0
 })
 const tooltipTime = ref('')
 const tooltipPosition = ref({
@@ -330,19 +332,47 @@ const handleTooltipUpdate = (data: any, time: string) => {
   tooltipVisible.value = true
 }
 
+// 计算EMA差值百分比
+const calculateLatestEmaDiff = (klineData: SimpleKLineData[]): number => {
+  if (!botStore.config) return 0
+  
+  const strategyMode = botStore.config.strategyMode
+  const emaConfig = botStore.config.indicatorsConfig.emaPeriods[strategyMode]
+  const fastPeriod = emaConfig.fast
+  const slowPeriod = emaConfig.slow
+  
+  if (!fastPeriod || !slowPeriod || klineData.length < Math.max(fastPeriod, slowPeriod)) {
+    return 0
+  }
+  
+  const fastEmaSeries = calculateEMASeries(klineData, fastPeriod)
+  const slowEmaSeries = calculateEMASeries(klineData, slowPeriod)
+  
+  if (fastEmaSeries.length === 0 || slowEmaSeries.length === 0) {
+    return 0
+  }
+  
+  const fast = fastEmaSeries[fastEmaSeries.length - 1]?.value || 0
+  const slow = slowEmaSeries[slowEmaSeries.length - 1]?.value || 0
+  
+  return slow === 0 ? 0 : ((fast - slow) / slow) * 100
+}
+
 // 显示最新K线数据
 const showLatestKline = () => {
   if (klineData.value.length > 0) {
     const latestKline = klineData.value[klineData.value.length - 1]
     if (latestKline) {
       const changePercent = ((latestKline.c - latestKline.o) / latestKline.o) * 100
+      const emaDiffPercent = calculateLatestEmaDiff(klineData.value)
       tooltipData.value = {
         open: latestKline.o,
         high: latestKline.h,
         low: latestKline.l,
         close: latestKline.c,
         volume: latestKline.v || 0,
-        changePercent
+        changePercent,
+        emaDiffPercent
       }
       tooltipTime.value = formatTime(latestKline.t)
       tooltipVisible.value = true
@@ -434,13 +464,15 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
   // 更新tooltip
   if (tooltipVisible.value) {
     const changePercent = ((updatedKline.c - updatedKline.o) / updatedKline.o) * 100
+    const emaDiffPercent = calculateLatestEmaDiff(klineData.value)
     tooltipData.value = {
       open: updatedKline.o,
       high: updatedKline.h,
       low: updatedKline.l,
       close: updatedKline.c,
       volume: updatedKline.v || 0,
-      changePercent
+      changePercent,
+      emaDiffPercent
     }
     tooltipTime.value = formatTime(updatedKline.t)
   }
