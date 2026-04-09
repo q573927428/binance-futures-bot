@@ -320,6 +320,10 @@
         </el-radio-group>
       </el-form-item>
 
+      <el-form-item label="计算指标K线数量">
+        <el-input-number v-model="editConfig.indicatorsConfig.requiredCandles" :min="300" :max="1000" :step="10" />
+      </el-form-item>
+
       <el-divider>EMA周期配置</el-divider>
 
       <el-form-item label="短期快速EMA">
@@ -346,21 +350,15 @@
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="5" :max="250" />
       </el-form-item>
 
-      <el-divider>技术指标配置</el-divider>
-
-      <el-form-item label="计算指标K线数量">
-        <el-input-number v-model="editConfig.indicatorsConfig.requiredCandles" :min="300" :max="1000" :step="10" />
-      </el-form-item>
+      <el-divider>EMA线交叉入场配置</el-divider>
 
       <el-form-item label="金叉死叉直接入场">
         <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
       </el-form-item>
 
-      <el-form-item label="显示交叉失败原因">
+      <el-form-item label="显示交叉失败日志">
         <el-switch v-model="editConfig.indicatorsConfig.showCrossFailureReason" />
       </el-form-item>
-
-      <el-divider>预判交叉配置</el-divider>
 
       <el-form-item label="启用预判交叉">
         <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.enabled" />
@@ -514,6 +512,36 @@
             :value="symbol" 
           />
         </el-select>
+      </el-form-item>
+      
+      <el-divider>价格行为(PA)配置</el-divider>
+      
+      <el-form-item label="启用价格行为策略">
+        <el-switch v-model="editConfig.indicatorsConfig.priceAction.enabled" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="满足条件直接开仓">
+        <el-switch v-model="editConfig.indicatorsConfig.priceAction.skipOtherChecks" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用Pin Bar检测">
+        <el-switch v-model="editConfig.indicatorsConfig.priceAction.pinBarEnabled" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar影线/实体比例">
+        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.shadowBodyRatio" :min="2" :max="10" :step="0.5" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar实体最大占比">
+        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.maxBodyRatio" :min="0.1" :max="0.8" :step="0.05" :precision="2" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用吞没形态检测">
+        <el-switch v-model="editConfig.indicatorsConfig.priceAction.engulfingEnabled" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.engulfingEnabled" label="吞没最小实体比例">
+        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.minEngulfRatio" :min="1.0" :max="3.0" :step="0.1" :precision="1" />
       </el-form-item>
     </el-form>
 

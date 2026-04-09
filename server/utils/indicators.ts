@@ -989,6 +989,132 @@ export function checkMinNotional(
 
 
 /**
+ * 检测Pin Bar针形K线形态
+ */
+function detectPinBar(
+  lastCandle: OHLCV,
+  config: any
+): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
+  const shadowBodyRatio = config.shadowBodyRatio ?? 3;
+  const maxBodyRatio = config.maxBodyRatio ?? 0.3;
+  
+  const lastBodySize = Math.abs(lastCandle.close - lastCandle.open);
+  const lastTotalSize = lastCandle.high - lastCandle.low;
+  const lastUpperShadow = lastCandle.high - Math.max(lastCandle.open, lastCandle.close);
+  const lastLowerShadow = Math.min(lastCandle.open, lastCandle.close) - lastCandle.low;
+  
+  if (lastBodySize / lastTotalSize <= maxBodyRatio) {
+    // 看涨Pin Bar：长下影线
+    if (lastLowerShadow >= lastBodySize * shadowBodyRatio && lastLowerShadow > lastUpperShadow * 2) {
+      return {
+        triggered: true,
+        direction: 'LONG',
+        reason: `[PA信号] 看涨Pin Bar：下影线(${lastLowerShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastLowerShadow/lastBodySize).toFixed(1)}倍，反转做多`
+      };
+    }
+    
+    // 看跌Pin Bar：长上影线
+    if (lastUpperShadow >= lastBodySize * shadowBodyRatio && lastUpperShadow > lastLowerShadow * 2) {
+      return {
+        triggered: true,
+        direction: 'SHORT',
+        reason: `[PA信号] 看跌Pin Bar：上影线(${lastUpperShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastUpperShadow/lastBodySize).toFixed(1)}倍，反转做空`
+      };
+    }
+  }
+  
+  return { triggered: false, direction: null, reason: '未触发Pin Bar信号' };
+}
+
+/**
+ * 检测吞没形态
+ */
+function detectEngulfing(
+  lastCandle: OHLCV,
+  prevCandle: OHLCV,
+  config: any
+): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
+  const minEngulfRatio = config.minEngulfRatio ?? 1.8;
+  
+  const lastBodySize = Math.abs(lastCandle.close - lastCandle.open);
+  const prevBodySize = Math.abs(prevCandle.close - prevCandle.open);
+  const prevIsBullish = prevCandle.close > prevCandle.open;
+  const lastIsBullish = lastCandle.close > lastCandle.open;
+  
+  // 看涨吞没：前阴后阳，阳线实体完全包裹阴线实体
+  if (!prevIsBullish && lastIsBullish && 
+      lastCandle.open < prevCandle.close && 
+      lastCandle.close > prevCandle.open &&
+      lastBodySize >= prevBodySize * minEngulfRatio) {
+    return {
+      triggered: true,
+      direction: 'LONG',
+      reason: `[PA信号] 看涨吞没：阳线实体(${lastBodySize.toFixed(4)})完全包裹前阴线实体(${prevBodySize.toFixed(4)})，反转做多`
+    };
+  }
+  
+  // 看跌吞没：前阳后阴，阴线实体完全包裹阳线实体
+  if (prevIsBullish && !lastIsBullish && 
+      lastCandle.open > prevCandle.close && 
+      lastCandle.close < prevCandle.open &&
+      lastBodySize >= prevBodySize * minEngulfRatio) {
+    return {
+      triggered: true,
+      direction: 'SHORT',
+      reason: `[PA信号] 看跌吞没：阴线实体(${lastBodySize.toFixed(4)})完全包裹前阳线实体(${prevBodySize.toFixed(4)})，反转做空`
+    };
+  }
+  
+  return { triggered: false, direction: null, reason: '未触发吞没形态信号' };
+}
+
+/**
+ * 检查价格行为(PA)信号 统一入口
+ * 支持Pin Bar针形K线和吞没形态
+ */
+export function checkPriceActionSignal(
+  candles: OHLCV[],
+  config?: BotConfig
+): { 
+  triggered: boolean; 
+  direction: 'LONG' | 'SHORT' | null;
+  reason: string;
+} {
+  // @ts-ignore - 后续会更新类型定义
+  const paConfig = config?.indicatorsConfig?.priceAction;
+  
+  // PA未启用直接返回
+  if (!paConfig?.enabled) {
+    return { triggered: false, direction: null, reason: 'PA策略未启用' };
+  }
+  
+  if (candles.length < 2) {
+    return { triggered: false, direction: null, reason: 'K线数据不足' };
+  }
+  
+  const lastCandle = candles[candles.length - 1]!;
+  const prevCandle = candles[candles.length - 2]!;
+  
+  // 1. 检测Pin Bar
+  if (paConfig.pinBarEnabled) {
+    const pinBarResult = detectPinBar(lastCandle, paConfig);
+    if (pinBarResult.triggered) {
+      return pinBarResult;
+    }
+  }
+  
+  // 2. 检测吞没形态
+  if (paConfig.engulfingEnabled) {
+    const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig);
+    if (engulfingResult.triggered) {
+      return engulfingResult;
+    }
+  }
+  
+  return { triggered: false, direction: null, reason: '未触发PA信号' };
+}
+
+/**
  * 检查波动率条件
  */
 export function checkVolatility(

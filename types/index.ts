@@ -118,6 +118,17 @@ export interface VolatilityFilterConfig {
   skipSymbols: string[]      // 跳过波动率检查的交易对列表
 }
 
+// 价格行为(PA)策略配置
+export interface PriceActionConfig {
+  enabled: boolean               // 启用价格行为(PA)策略
+  skipOtherChecks: boolean       // 满足PA条件直接开仓，跳过所有其他检查
+  pinBarEnabled: boolean         // 启用Pin Bar针形K线检测
+  shadowBodyRatio: number        // Pin Bar影线/实体比例阈值
+  maxBodyRatio: number           // Pin Bar实体最大占比阈值
+  engulfingEnabled: boolean      // 启用吞没形态检测
+  minEngulfRatio: number         // 吞没形态最小实体比例阈值
+}
+
 // 预判交叉配置
 export interface PredictiveCrossConfig {
   enabled: boolean               // 预判交叉总开关
@@ -199,6 +210,9 @@ export interface IndicatorsConfig {
   
   // 波动率过滤配置
   volatility: VolatilityFilterConfig
+  
+  // 价格行为(PA)策略配置
+  priceAction: PriceActionConfig
 }
 
 // 系统配置

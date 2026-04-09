@@ -1,6 +1,6 @@
 import type { TradeSignal, BotConfig } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
-import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, checkVolatility } from '../../../utils/indicators'
+import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, checkVolatility, checkPriceActionSignal } from '../../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../../utils/ai-analysis'
 import { logger } from '../../../utils/logger'
 import { IndicatorsCache } from '../services/indicators-cache'
@@ -66,13 +66,63 @@ export class MarketAnalyzer {
         return null
       }
 
+      // 优先检测PA价格行为信号（最高优先级）
+      const paSignal = checkPriceActionSignal(mainCandles, this.config)
+      // @ts-ignore - priceAction配置已添加
+      const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
+      // @ts-ignore - priceAction配置已添加
+      const paSkipOtherChecks = this.config.indicatorsConfig?.priceAction?.skipOtherChecks ?? true
+      
+      // 构建PA检测结果日志片段
+      const paLogSuffix = paEnabled && !paSignal.triggered ? `； PA检测未触发：${paSignal.reason}` : ''
+      
+      // PA信号触发标记
+      let paTriggered = false
+      let paDirection: 'LONG' | 'SHORT' | null = null
+      let paReason = ''
+      
+      if (paSignal.triggered && paSignal.direction) {
+        paTriggered = true
+        paDirection = paSignal.direction
+        paReason = paSignal.reason
+        
+        if (paSkipOtherChecks) {
+          // 跳过其他所有检查，直接生成信号
+          const signal: TradeSignal = {
+            symbol,
+            direction: paSignal.direction,
+            price,
+            confidence: 70,
+            indicators: await this.indicatorsCache.getIndicators(symbol),
+            aiAnalysis: undefined,
+            timestamp: Date.now(),
+            reason: paSignal.reason
+          }
+          logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${paSignal.reason} 跳过其他检查直接开仓`)
+          return signal
+        }
+      }
+
       // 使用指标缓存服务获取技术指标
       const indicators = await this.indicatorsCache.getIndicators(symbol)
 
-      // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号）
-      const trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
+      // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号，如果PA触发则使用PA方向）
+      let trendResult
+      if (paTriggered && paDirection) {
+        // PA触发且不跳过其他检查时，使用PA方向作为交易方向
+        trendResult = {
+          direction: paDirection,
+          reason: paReason,
+          data: {
+            isCrossSignal: false
+          }
+        }
+      } else {
+        // 没有PA信号时使用正常趋势检测
+        trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
+      }
       if (trendResult.direction === 'IDLE') {
-        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}`, price)
+        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}${paLogSuffix}`, price)
         return null
       }
 
@@ -105,6 +155,7 @@ export class MarketAnalyzer {
         if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
           logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
         }
+        logReason += paLogSuffix
         this.logAnalysisResult(symbol, false, logReason, price)
         return null
       }
@@ -119,6 +170,7 @@ export class MarketAnalyzer {
           if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
             logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
           }
+          logReason += paLogSuffix
           this.logAnalysisResult(symbol, false, logReason, price)
           return null
         }
@@ -153,6 +205,7 @@ export class MarketAnalyzer {
         if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
           logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
         }
+        logReason += paLogSuffix
         this.logAnalysisResult(symbol, false, logReason, price)
         return null
       }
@@ -190,7 +243,7 @@ export class MarketAnalyzer {
             this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
           )
           if (!aiConditionsPassed) {
-            this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
+            this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}${paLogSuffix}`, price)
             return null
           }
         } else {
@@ -206,19 +259,25 @@ export class MarketAnalyzer {
       }
 
       // 构建交易信号
+      let finalReason = entryResult?.reason || '入场条件满足'
+      if (paTriggered && paDirection) {
+        // PA触发时，在原因前添加PA信号说明
+        finalReason = `${paReason}，${finalReason}`
+      }
+      
       const signal: TradeSignal = {
         symbol,
         direction: trendResult.direction,
         price,
-        confidence: aiAnalysis?.confidence || 60,
+        confidence: aiAnalysis?.confidence || (paTriggered ? 70 : 60),
         indicators,
         aiAnalysis,
         timestamp: Date.now(),
-        reason: entryResult?.reason || '入场条件满足', 
+        reason: finalReason, 
       }
 
       // 记录最终分析结果，包含具体原因
-      const signalReason = entryResult?.reason || '所有条件满足，生成交易信号'
+      const signalReason = finalReason
       logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${signalReason}`)
       
       return signal

@@ -332,6 +332,15 @@ export function getDefaultConfig(): BotConfig {
         minATRPercent: 0.5,           // 最小ATR百分比阈值（0.5%）
         skipSymbols: [],              // 跳过波动率检查的交易对列表
       },
+      priceAction: {
+        enabled: false,               // 启用价格行为(PA)策略
+        skipOtherChecks: true,       // 满足PA条件直接开仓，跳过所有其他检查
+        pinBarEnabled: true,          // 启用Pin Bar针形K线检测
+        shadowBodyRatio: 3,           // Pin Bar影线/实体比例阈值
+        maxBodyRatio: 0.3,            // Pin Bar实体最大占比阈值
+        engulfingEnabled: true,         // 启用吞没形态检测
+        minEngulfRatio: 1.8,          // 吞没形态最小实体比例阈值
+      },
     },
   }
 }

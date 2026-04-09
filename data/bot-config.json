@@ -91,9 +91,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx15mThreshold": 53,
-      "adx1hThreshold": 58,
-      "adx4hThreshold": 55,
+      "adx15mThreshold": 50,
+      "adx1hThreshold": 50,
+      "adx4hThreshold": 50,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
@@ -128,8 +128,17 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 0.38,
+      "minATRPercent": 1.38,
       "skipSymbols": []
+    },
+    "priceAction": {
+      "enabled": true,
+      "skipOtherChecks": true,
+      "pinBarEnabled": true,
+      "shadowBodyRatio": 3,
+      "maxBodyRatio": 0.3,
+      "engulfingEnabled": true,
+      "minEngulfRatio": 1.1
     }
   }
 }
