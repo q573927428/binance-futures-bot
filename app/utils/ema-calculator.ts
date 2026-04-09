@@ -14,20 +14,33 @@ export function calculateEMA(prices: number[], period: number): number[] {
     return []
   }
 
+  // 与后端 technicalindicators 口径对齐：
+  // 数据不足一个周期时不返回EMA
+  if (prices.length < period) {
+    return []
+  }
+
   const emaValues: number[] = []
   const multiplier = 2 / (period + 1)
 
-  // 第一个EMA是简单移动平均
+  // 第一个有效EMA（索引 period-1）是前 period 个价格的SMA
   let sum = 0
-  for (let i = 0; i < Math.min(period, prices.length); i++) {
+  for (let i = 0; i < period; i++) {
     sum += prices[i] || 0
   }
-  
-  const firstSMA = sum / Math.min(period, prices.length)
+
+  const firstSMA = sum / period
+
+  // 为了保持与K线长度一致，前置区间用首个有效EMA平铺
+  // （不参与后续递推，不影响最新EMA结果）
+  for (let i = 0; i < period - 1; i++) {
+    emaValues.push(firstSMA)
+  }
+
   emaValues.push(firstSMA)
 
-  // 计算后续EMA值
-  for (let i = 1; i < prices.length; i++) {
+  // 从第 period 个价格开始递推EMA
+  for (let i = period; i < prices.length; i++) {
     const currentPrice = prices[i] || 0
     const previousEMA = emaValues[i - 1] || 0
     const currentEMA = (currentPrice - previousEMA) * multiplier + previousEMA
@@ -59,7 +72,7 @@ export function calculateEMASeries(
   // 返回与时间戳对齐的数据
   return klineData.map((item, index) => ({
     time: item.t,
-    value: emaValues[index] || 0
+    value: emaValues[index] ?? 0
   }))
 }
 

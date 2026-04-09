@@ -49,7 +49,7 @@
       <span class="data-item">
         <span class="label">EMA差:</span>
         <span class="value" :class="{ 'price-up': (data.emaDiffPercent ?? 0) > 0, 'price-down': (data.emaDiffPercent ?? 0) < 0 }">
-          {{ (data.emaDiffPercent ?? 0) > 0 ? '+' : '' }}{{ (data.emaDiffPercent ?? 0).toFixed(2) }}%
+          {{ (data.emaDiffPercent ?? 0) > 0 ? '+' : '' }}{{ (data.emaDiffPercent ?? 0).toFixed(3) }}%
         </span>
       </span>
       <span class="data-item">

@@ -14,7 +14,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 28,
+  "positionTimeoutHours": 8,
   "scanInterval": 180,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 3600,
@@ -91,9 +91,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx15mThreshold": 23,
-      "adx1hThreshold": 18,
-      "adx4hThreshold": 15,
+      "adx15mThreshold": 53,
+      "adx1hThreshold": 58,
+      "adx4hThreshold": 55,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
