@@ -71,21 +71,6 @@ const props = withDefaults(defineProps<Props>(), {
   showEmaLines: true
 })
 
-// 定义emits
-const emit = defineEmits<{
-  'tooltip-update': [data: { open: number; high: number; low: number; close: number; volume: number; changePercent: number }, time: string]
-  'retry': []
-}>()
-
-// 图表相关
-const chartContainer = ref<HTMLElement | null>(null)
-let chart: any = null
-let candlestickSeries: any = null
-let volumeSeries: any = null
-let emaSeries: any[] = []
-let resizeObserver: ResizeObserver | null = null
-let markersApi: any = null
-
 // 使用Pinia store获取配置
 const botStore = useBotStore()
 
@@ -99,6 +84,80 @@ const emaPeriods = computed(() => {
   // 返回fast和slow两个周期
   return [emaConfig.fast, emaConfig.slow]
 })
+
+// 缓存EMA序列，避免重复计算
+const cachedEmaSeries = ref<{
+  fast: Array<{ time: number; value: number }>
+  slow: Array<{ time: number; value: number }>
+  diffPercent: number[]
+} | null>(null)
+
+// 监听klineData和emaPeriods变化，预计算EMA序列和差值
+watch(() => [props.klineData, emaPeriods.value, props.showEmaLines], () => {
+  if (!props.showEmaLines || emaPeriods.value.length < 2 || props.klineData.length === 0) {
+    cachedEmaSeries.value = null
+    return
+  }
+  
+  const fastPeriod = emaPeriods.value[0]
+  const slowPeriod = emaPeriods.value[1]
+  
+  if (!fastPeriod || !slowPeriod) {
+    cachedEmaSeries.value = null
+    return
+  }
+  
+  // 只在数据变化时重新计算整个序列
+  const fastEmaSeries = calculateEMASeries(props.klineData, fastPeriod)
+  const slowEmaSeries = calculateEMASeries(props.klineData, slowPeriod)
+  
+  if (fastEmaSeries.length === 0 || slowEmaSeries.length === 0) {
+    cachedEmaSeries.value = null
+    return
+  }
+  
+  // 预计算所有K线对应的差值百分比
+  const diffPercent: number[] = []
+  for (let i = 0; i < fastEmaSeries.length; i++) {
+    const fast = fastEmaSeries[i]?.value || 0
+    const slow = slowEmaSeries[i]?.value || 0
+    if (slow === 0) {
+      diffPercent.push(0)
+    } else {
+      diffPercent.push(((fast - slow) / slow) * 100)
+    }
+  }
+  
+  cachedEmaSeries.value = {
+    fast: fastEmaSeries,
+    slow: slowEmaSeries,
+    diffPercent
+  }
+}, { deep: true, immediate: true })
+
+// 计算最新EMA差值百分比
+const emaDiffPercent = computed<number | null>(() => {
+  if (!cachedEmaSeries.value || cachedEmaSeries.value.diffPercent.length === 0) {
+    return null
+  }
+  
+  return cachedEmaSeries.value.diffPercent[cachedEmaSeries.value.diffPercent.length - 1] ?? null
+})
+
+// 定义emits
+const emit = defineEmits<{
+  'tooltip-update': [data: { open: number; high: number; low: number; close: number; volume: number; changePercent: number, emaDiffPercent?: number | null }, time: string]
+  'retry': []
+}>()
+
+// 图表相关
+const chartContainer = ref<HTMLElement | null>(null)
+let chart: any = null
+let candlestickSeries: any = null
+let volumeSeries: any = null
+let emaSeries: any[] = []
+let resizeObserver: ResizeObserver | null = null
+let markersApi: any = null
 
 // 使用props.timeframe，如果为空则使用默认值15m
 const computedTimeframe = computed(() => {
@@ -498,6 +557,16 @@ const emitTooltipUpdate = (kline: SimpleKLineData) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+
+  // 从缓存中获取当前K线对应的EMA差值百分比
+  let emaDiff: number | null = null
+  if (cachedEmaSeries.value) {
+    // 找到当前K线的索引
+    const klineIndex = props.klineData.findIndex(item => item.t === kline.t)
+    if (klineIndex >= 0 && klineIndex < cachedEmaSeries.value.diffPercent.length) {
+      emaDiff = cachedEmaSeries.value.diffPercent[klineIndex] ?? null
+    }
+  }
   
   emit('tooltip-update', {
     open: kline.o,
@@ -505,7 +574,8 @@ const emitTooltipUpdate = (kline: SimpleKLineData) => {
     low: kline.l,
     close: kline.c,
     volume: kline.v || 0,
-    changePercent
+    changePercent,
+    emaDiffPercent: emaDiff
   }, timeStr)
 }
 
