@@ -211,6 +211,257 @@ export function checkPriceBreakoutShort(
 }
 
 /**
+ * 检查价格是否靠近快速/中速EMA（回踩条件）
+ */
+export function checkEMANearCondition(
+  direction: 'LONG' | 'SHORT',
+  price: number,
+  indicators: TechnicalIndicators,
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  nearEMA: boolean; 
+  nearEMAType: string;
+  reason: string;
+  data: any
+} {
+  const { ema20: emaFast, ema30: emaMedium } = indicators
+  const { fastName: emaFastName, mediumName: emaMediumName } = getEMAPeriodConfig(config)
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const emaDeviationThreshold = entryConfig?.emaDeviationThreshold || 0.005
+  const emaDeviationEnabled = entryConfig?.emaDeviationEnabled ?? true
+
+  const nearFastEMA = Math.abs(price - emaFast) / emaFast <= emaDeviationThreshold
+  const nearMediumEMA = Math.abs(price - emaMedium) / emaMedium <= emaDeviationThreshold
+  const nearEMA = nearFastEMA || nearMediumEMA
+  const nearEMAType = nearFastEMA ? emaFastName : nearMediumEMA ? emaMediumName : 'none'
+  const passed = !emaDeviationEnabled || nearEMA
+
+  let reason = ''
+  if (passed) {
+    reason = emaDeviationEnabled 
+      ? `价格${direction === 'LONG' ? '回踩' : '反弹'}${nearEMAType}`
+      : 'EMA接近检查已禁用'
+  } else {
+    const emaFastPercent = calculatePercentage(price, emaFast)
+    const emaMediumPercent = calculatePercentage(price, emaMedium)
+    reason = `价格未${direction === 'LONG' ? '回踩' : '反弹'}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）`
+  }
+
+  return {
+    passed,
+    nearEMA,
+    nearEMAType,
+    reason,
+    data: {
+      emaDeviationEnabled,
+      emaDeviationThreshold,
+      nearFastEMA,
+      nearMediumEMA,
+      emaFast,
+      emaMedium,
+      price
+    }
+  }
+}
+
+/**
+ * 检查价格与慢线EMA的偏离度是否在允许范围
+ */
+export function checkEMASlowDeviationCondition(
+  direction: 'LONG' | 'SHORT',
+  price: number,
+  indicators: TechnicalIndicators,
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  deviation: number;
+  reason: string;
+  data: any
+} {
+  const { ema60: emaSlow } = indicators
+  const { slowName: emaSlowName } = getEMAPeriodConfig(config)
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const emaSlowDeviationThreshold = entryConfig?.emaSlowDeviationThreshold || 0.05
+  const emaSlowDeviationEnabled = entryConfig?.emaSlowDeviationEnabled ?? true
+
+  const emaSlowDeviation = Math.abs(price - emaSlow) / emaSlow
+  const passed = !emaSlowDeviationEnabled || emaSlowDeviation <= emaSlowDeviationThreshold
+
+  let reason = ''
+  if (passed) {
+    reason = emaSlowDeviationEnabled
+      ? `${emaSlowName}偏离(${(emaSlowDeviation * 100).toFixed(2)}%) ≤ ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`
+      : `${emaSlowName}偏离检查已禁用`
+  } else {
+    reason = `${emaSlowName}偏离过大(${(emaSlowDeviation * 100).toFixed(2)}%) > ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`
+  }
+
+  return {
+    passed,
+    deviation: emaSlowDeviation,
+    reason,
+    data: {
+      emaSlowDeviationEnabled,
+      emaSlowDeviationThreshold,
+      emaSlow,
+      price,
+      emaSlowName
+    }
+  }
+}
+
+/**
+ * 检查RSI是否在配置的合理区间
+ */
+export function checkRSIRangeCondition(
+  direction: 'LONG' | 'SHORT',
+  indicators: TechnicalIndicators,
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  reason: string;
+  data: any
+} {
+  const { rsi } = indicators
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const rsiMin = entryConfig?.rsiMin || 40
+  const rsiMax = entryConfig?.rsiMax || (direction === 'LONG' ? 60 : 55)
+
+  const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
+  const passed = rsiInRange
+
+  let reason = ''
+  if (passed) {
+    reason = `RSI适中(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`
+  } else {
+    reason = `RSI(${rsi.toFixed(1)})不在[${rsiMin} - ${rsiMax}]区间`
+  }
+
+  return {
+    passed,
+    reason,
+    data: {
+      rsi,
+      rsiMin,
+      rsiMax,
+      rsiInRange
+    }
+  }
+}
+
+/**
+ * 检查K线形态是否符合要求（阳线/阴线或上下影线确认）
+ */
+export function checkCandleConfirmCondition(
+  direction: 'LONG' | 'SHORT',
+  lastCandle: OHLCV,
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  candleType: string;
+  reason: string;
+  data: any
+} {
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const candleShadowThreshold = entryConfig?.candleShadowThreshold || 0.005
+  const isLong = direction === 'LONG'
+
+  const isConfirmCandle = isLong
+    ? (lastCandle.close > lastCandle.open || (lastCandle.open - lastCandle.low) / lastCandle.open >= candleShadowThreshold)
+    : (lastCandle.close < lastCandle.open || (lastCandle.high - lastCandle.open) / lastCandle.open >= candleShadowThreshold)
+  
+  const candleType = isLong
+    ? (lastCandle.close > lastCandle.open ? '阳线' : '下影线')
+    : (lastCandle.close < lastCandle.open ? '阴线' : '上影线')
+  
+  const passed = isConfirmCandle
+
+  let reason = ''
+  if (passed) {
+    reason = `${candleType}确认`
+  } else {
+    reason = isLong ? 'K线未确认（非阳线且无明显下影线）' : 'K线未确认（非阴线且无明显上影线）'
+  }
+
+  return {
+    passed,
+    candleType,
+    reason,
+    data: {
+      candleShadowThreshold,
+      isConfirmCandle,
+      lastCandle
+    }
+  }
+}
+
+/**
+ * 检查成交量条件（封装checkVolumeConfirmation）
+ */
+export function checkVolumeCondition(
+  direction: 'LONG' | 'SHORT',
+  lastCandle: OHLCV,
+  volumeHistory: number[],
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  reason: string;
+  data: any
+} {
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const { strategyMode } = getEMAPeriodConfig(config)
+  const volumeConfirmation = entryConfig?.volumeConfirmation ?? true
+  const volumeEMAPeriod = entryConfig?.volumeEMAPeriod || 10
+  const volumeEMAMultiplier = entryConfig?.volumeEMAMultiplier || 1.2
+
+  const { volumePassed, volumeReason, predictedVolume, elapsedRatio } = checkVolumeConfirmation(
+    volumeHistory || [], lastCandle, strategyMode, volumeEMAPeriod, volumeEMAMultiplier, volumeConfirmation
+  )
+
+  return {
+    passed: volumePassed,
+    reason: volumeReason,
+    data: {
+      volumeConfirmation,
+      volumeEMAPeriod,
+      volumeEMAMultiplier,
+      predictedVolume,
+      elapsedRatio
+    }
+  }
+}
+
+/**
+ * 检查价格突破条件（封装checkPriceBreakout）
+ */
+export function checkPriceBreakoutCondition(
+  direction: 'LONG' | 'SHORT',
+  price: number,
+  candles: OHLCV[],
+  config?: BotConfig
+): { 
+  passed: boolean; 
+  reason: string;
+  data: any
+} {
+  if (!candles?.length) {
+    return {
+      passed: true,
+      reason: '价格突破指标未检查',
+      data: null
+    }
+  }
+
+  const res = checkPriceBreakout(direction, price, candles, config)
+  return {
+    passed: res.passed,
+    reason: res.reason,
+    data: res.data
+  }
+}
+
+/**
  * 通用入场条件检查
  */
 function checkEntry(
@@ -222,118 +473,79 @@ function checkEntry(
   volumeHistory?: number[],
   candles15m?: OHLCV[]
 ) {
-  const { ema20: emaFast, ema30: emaMedium, ema60: emaSlow, rsi } = indicators
   const { strategyMode, fastName: emaFastName, mediumName: emaMediumName, slowName: emaSlowName } = getEMAPeriodConfig(config)
-
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
-  const cfg = {
-    emaDeviationThreshold: entryConfig?.emaDeviationThreshold || 0.005,
-    emaDeviationEnabled: entryConfig?.emaDeviationEnabled ?? true,
-    emaSlowDeviationThreshold: entryConfig?.emaSlowDeviationThreshold || 0.05,
-    emaSlowDeviationEnabled: entryConfig?.emaSlowDeviationEnabled ?? true,
-    rsiMin: entryConfig?.rsiMin || 40,
-    rsiMax: entryConfig?.rsiMax || (direction === 'LONG' ? 60 : 55),
-    candleShadowThreshold: entryConfig?.candleShadowThreshold || 0.005,
-    volumeConfirmation: entryConfig?.volumeConfirmation ?? true,
-    volumeEMAPeriod: entryConfig?.volumeEMAPeriod || 10,
-    volumeEMAMultiplier: entryConfig?.volumeEMAMultiplier || 1.2
-  }
-
-  // 基础条件计算
-  const nearFastEMA = Math.abs(price - emaFast) / emaFast <= cfg.emaDeviationThreshold
-  const nearMediumEMA = Math.abs(price - emaMedium) / emaMedium <= cfg.emaDeviationThreshold
-  const nearEMA = nearFastEMA || nearMediumEMA
-  const nearEMAType = nearFastEMA ? emaFastName : nearMediumEMA ? emaMediumName : 'none'
-  const emaSlowDeviation = Math.abs(price - emaSlow) / emaSlow
-  const emaSlowDeviationPassed = !cfg.emaSlowDeviationEnabled || emaSlowDeviation <= cfg.emaSlowDeviationThreshold
-  const rsiInRange = rsi >= cfg.rsiMin && rsi <= cfg.rsiMax
-
-  // K线确认
   const isLong = direction === 'LONG'
-  const isConfirmCandle = isLong
-    ? (lastCandle.close > lastCandle.open || (lastCandle.open - lastCandle.low) / lastCandle.open >= cfg.candleShadowThreshold)
-    : (lastCandle.close < lastCandle.open || (lastCandle.high - lastCandle.open) / lastCandle.open >= cfg.candleShadowThreshold)
-  const candleType = isLong
-    ? (lastCandle.close > lastCandle.open ? '阳线' : '下影线')
-    : (lastCandle.close < lastCandle.open ? '阴线' : '上影线')
-
-  // 成交量检查
-  const { volumePassed, volumeReason } = checkVolumeConfirmation(
-    volumeHistory || [], lastCandle, strategyMode, cfg.volumeEMAPeriod, cfg.volumeEMAMultiplier, cfg.volumeConfirmation
-  )
-
-  // 价格突破检查
-  let priceBreakoutPassed = true, priceBreakoutReason = '价格突破指标未检查', priceBreakoutData: any = null
-  if (candles15m?.length) {
-    const res = checkPriceBreakout(direction, price, candles15m, config)
-    priceBreakoutPassed = res.passed
-    priceBreakoutReason = res.reason
-    priceBreakoutData = res.data
-  }
-
-  // 核心条件判断
-  const emaConditionPassed = !cfg.emaDeviationEnabled || nearEMA
-  const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
-  const passed = (emaConditionPassed || breakoutConditionPassed) && emaSlowDeviationPassed && rsiInRange && isConfirmCandle && volumePassed
-
-  // 原因构建
   const actionType = isLong ? '回踩' : '反弹'
+
+  // 调用独立条件函数
+  const emaNearResult = checkEMANearCondition(direction, price, indicators, config)
+  const emaSlowDevResult = checkEMASlowDeviationCondition(direction, price, indicators, config)
+  const rsiResult = checkRSIRangeCondition(direction, indicators, config)
+  const candleResult = checkCandleConfirmCondition(direction, lastCandle, config)
+  const volumeResult = checkVolumeCondition(direction, lastCandle, volumeHistory || [], config)
+  const breakoutResult = checkPriceBreakoutCondition(direction, price, candles15m || [], config)
+
+  // 核心条件判断（逻辑保持不变）
+  const emaConditionPassed = emaNearResult.passed
+  const breakoutConditionPassed = !breakoutResult.data?.enabled || breakoutResult.passed
+  const passed = (emaConditionPassed || breakoutConditionPassed) && 
+    emaSlowDevResult.passed && 
+    rsiResult.passed && 
+    candleResult.passed && 
+    volumeResult.passed
+
+  // 原因构建（逻辑保持不变）
   let reason = ''
 
   if (passed) {
     const conds: string[] = []
-    const bothEnabled = cfg.emaDeviationEnabled && priceBreakoutData?.enabled
+    const bothEnabled = emaNearResult.data.emaDeviationEnabled && breakoutResult.data?.enabled
     
     if (bothEnabled) {
-      nearEMA && priceBreakoutPassed && conds.push(`价格${actionType}${nearEMAType}且突破确认`)
-      nearEMA && !priceBreakoutPassed && conds.push(`价格${actionType}${nearEMAType}`)
-      !nearEMA && priceBreakoutPassed && conds.push(`价格突破确认`)
-    } else if (cfg.emaDeviationEnabled && nearEMA) {
-      conds.push(`价格${actionType}${nearEMAType}`)
-    } else if (priceBreakoutData?.enabled && priceBreakoutPassed) {
+      emaNearResult.nearEMA && breakoutResult.passed && conds.push(`价格${actionType}${emaNearResult.nearEMAType}且突破确认`)
+      emaNearResult.nearEMA && !breakoutResult.passed && conds.push(`价格${actionType}${emaNearResult.nearEMAType}`)
+      !emaNearResult.nearEMA && breakoutResult.passed && conds.push(`价格突破确认`)
+    } else if (emaNearResult.data.emaDeviationEnabled && emaNearResult.nearEMA) {
+      conds.push(`价格${actionType}${emaNearResult.nearEMAType}`)
+    } else if (breakoutResult.data?.enabled && breakoutResult.passed) {
       conds.push(`价格突破确认`)
-    } else if (!cfg.emaDeviationEnabled && !priceBreakoutData?.enabled) {
+    } else if (!emaNearResult.data.emaDeviationEnabled && !breakoutResult.data?.enabled) {
       conds.push(`${actionType}/突破条件已禁用`)
     }
 
-    cfg.emaSlowDeviationEnabled
-      ? conds.push(`${emaSlowName}偏离(${(emaSlowDeviation * 100).toFixed(2)}%) ≤ ${(cfg.emaSlowDeviationThreshold * 100).toFixed(2)}%`)
-      : conds.push(`${emaSlowName}偏离检查已禁用`)
-
-    conds.push(`RSI适中(${rsi.toFixed(1)})`, `${candleType}确认`)
-    cfg.volumeConfirmation && conds.push(`成交量确认`)
+    conds.push(emaSlowDevResult.reason)
+    conds.push(rsiResult.reason)
+    conds.push(candleResult.reason)
+    emaNearResult.data.emaDeviationEnabled && conds.push(`成交量确认`)
     reason = conds.join('，')
   } else {
     const reasons: string[] = []
-    const emaFailed = cfg.emaDeviationEnabled && !nearEMA
-    const breakoutFailed = priceBreakoutData?.enabled && !priceBreakoutPassed
+    const emaFailed = emaNearResult.data.emaDeviationEnabled && !emaNearResult.nearEMA
+    const breakoutFailed = breakoutResult.data?.enabled && !breakoutResult.passed
 
-    if (cfg.emaDeviationEnabled && priceBreakoutData?.enabled && emaFailed && breakoutFailed) {
-      const emaFastPercent = calculatePercentage(price, emaFast)
-      const emaMediumPercent = calculatePercentage(price, emaMedium)
-      reasons.push(`价格既未${actionType}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）也未${priceBreakoutReason.toLowerCase()}`)
+    if (emaNearResult.data.emaDeviationEnabled && breakoutResult.data?.enabled && emaFailed && breakoutFailed) {
+      reasons.push(`价格既未${actionType}EMA（距离${emaFastName}: ${calculatePercentage(price, indicators.ema20)}%，${emaMediumName}: ${calculatePercentage(price, indicators.ema30)}%）也未${breakoutResult.reason.toLowerCase()}`)
     } else {
-      emaFailed && reasons.push(`价格未${actionType}EMA（距离${emaFastName}: ${calculatePercentage(price, emaFast)}%，${emaMediumName}: ${calculatePercentage(price, emaMedium)}%）`)
-      breakoutFailed && reasons.push(priceBreakoutReason)
+      emaFailed && reasons.push(emaNearResult.reason)
+      breakoutFailed && reasons.push(breakoutResult.reason)
     }
 
-    cfg.emaSlowDeviationEnabled && !emaSlowDeviationPassed && reasons.push(`${emaSlowName}偏离过大(${(emaSlowDeviation * 100).toFixed(2)}%) > ${(cfg.emaSlowDeviationThreshold * 100).toFixed(2)}%`)
-    !rsiInRange && reasons.push(`RSI(${rsi.toFixed(1)})[${cfg.rsiMin} - ${cfg.rsiMax}]`)
-    !isConfirmCandle && reasons.push(isLong ? 'K线未确认（非阳线且无明显下影线）' : 'K线未确认（非阴线且无明显上影线）')
-    !volumePassed && reasons.push(volumeReason)
+    !emaSlowDevResult.passed && reasons.push(emaSlowDevResult.reason)
+    !rsiResult.passed && reasons.push(rsiResult.reason)
+    !candleResult.passed && reasons.push(candleResult.reason)
+    !volumeResult.passed && reasons.push(volumeResult.reason)
     reason = reasons.join('；')
   }
-
   // 返回必要字段，兼顾简洁和可调试性
   return {
     passed,
     reason,
     data: {
-      nearEMA,
-      rsiInRange,
-      isConfirmCandle,
-      volumePassed,
-      priceBreakoutPassed
+      nearEMA: emaNearResult.nearEMA,
+      rsiInRange: rsiResult.passed,
+      isConfirmCandle: candleResult.passed,
+      volumePassed: volumeResult.passed,
+      priceBreakoutPassed: breakoutResult.passed
     }
   }
 }
