@@ -223,212 +223,117 @@ function checkEntry(
   candles15m?: OHLCV[]
 ) {
   const { ema20: emaFast, ema30: emaMedium, ema60: emaSlow, rsi } = indicators
-  // 统一获取EMA配置（复用工具函数，消除重复代码）
   const { strategyMode, fastName: emaFastName, mediumName: emaMediumName, slowName: emaSlowName } = getEMAPeriodConfig(config)
 
-  // 获取方向对应的配置
-  const entryConfig = direction === 'LONG' 
-    ? config?.indicatorsConfig?.longEntry 
-    : config?.indicatorsConfig?.shortEntry
+  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const cfg = {
+    emaDeviationThreshold: entryConfig?.emaDeviationThreshold || 0.005,
+    emaDeviationEnabled: entryConfig?.emaDeviationEnabled ?? true,
+    emaSlowDeviationThreshold: entryConfig?.emaSlowDeviationThreshold || 0.05,
+    emaSlowDeviationEnabled: entryConfig?.emaSlowDeviationEnabled ?? true,
+    rsiMin: entryConfig?.rsiMin || 40,
+    rsiMax: entryConfig?.rsiMax || (direction === 'LONG' ? 60 : 55),
+    candleShadowThreshold: entryConfig?.candleShadowThreshold || 0.005,
+    volumeConfirmation: entryConfig?.volumeConfirmation ?? true,
+    volumeEMAPeriod: entryConfig?.volumeEMAPeriod || 10,
+    volumeEMAMultiplier: entryConfig?.volumeEMAMultiplier || 1.2
+  }
 
-  // 使用配置参数或默认值
-  const emaDeviationThreshold = entryConfig?.emaDeviationThreshold || 0.005
-  const emaDeviationEnabled = entryConfig?.emaDeviationEnabled ?? true
-  const emaSlowDeviationThreshold = entryConfig?.emaSlowDeviationThreshold || 0.05
-  const emaSlowDeviationEnabled = entryConfig?.emaSlowDeviationEnabled ?? true
-  const rsiMin = entryConfig?.rsiMin || 40
-  const rsiMax = entryConfig?.rsiMax || (direction === 'LONG' ? 60 : 55)
-  const candleShadowThreshold = entryConfig?.candleShadowThreshold || 0.005
-  const volumeConfirmation = entryConfig?.volumeConfirmation ?? true
-  const volumeEMAPeriod = entryConfig?.volumeEMAPeriod || 10
-  const volumeEMAMultiplier = entryConfig?.volumeEMAMultiplier || 1.2
-
-  // EMA接近检查
-  const nearFastEMA = Math.abs(price - emaFast) / emaFast <= emaDeviationThreshold
-  const nearMediumEMA = Math.abs(price - emaMedium) / emaMedium <= emaDeviationThreshold
+  // 基础条件计算
+  const nearFastEMA = Math.abs(price - emaFast) / emaFast <= cfg.emaDeviationThreshold
+  const nearMediumEMA = Math.abs(price - emaMedium) / emaMedium <= cfg.emaDeviationThreshold
   const nearEMA = nearFastEMA || nearMediumEMA
   const nearEMAType = nearFastEMA ? emaFastName : nearMediumEMA ? emaMediumName : 'none'
-
-  // 慢线偏离检查
   const emaSlowDeviation = Math.abs(price - emaSlow) / emaSlow
-  const emaSlowDeviationPassed = !emaSlowDeviationEnabled || emaSlowDeviation <= emaSlowDeviationThreshold
+  const emaSlowDeviationPassed = !cfg.emaSlowDeviationEnabled || emaSlowDeviation <= cfg.emaSlowDeviationThreshold
+  const rsiInRange = rsi >= cfg.rsiMin && rsi <= cfg.rsiMax
 
-  // RSI区间检查
-  const rsiInRange = rsi >= rsiMin && rsi <= rsiMax
-
-  // K线确认检查
-  let isConfirmCandle: boolean
-  let candleType: string
-  if (direction === 'LONG') {
-    isConfirmCandle = lastCandle.close > lastCandle.open ||
-      (lastCandle.open - lastCandle.low) / lastCandle.open >= candleShadowThreshold
-    candleType = lastCandle.close > lastCandle.open ? '阳线' : '下影线'
-  } else {
-    isConfirmCandle = lastCandle.close < lastCandle.open ||
-      (lastCandle.high - lastCandle.open) / lastCandle.open >= candleShadowThreshold
-    candleType = lastCandle.close < lastCandle.open ? '阴线' : '上影线'
-  }
+  // K线确认
+  const isLong = direction === 'LONG'
+  const isConfirmCandle = isLong
+    ? (lastCandle.close > lastCandle.open || (lastCandle.open - lastCandle.low) / lastCandle.open >= cfg.candleShadowThreshold)
+    : (lastCandle.close < lastCandle.open || (lastCandle.high - lastCandle.open) / lastCandle.open >= cfg.candleShadowThreshold)
+  const candleType = isLong
+    ? (lastCandle.close > lastCandle.open ? '阳线' : '下影线')
+    : (lastCandle.close < lastCandle.open ? '阴线' : '上影线')
 
   // 成交量检查
   const { volumePassed, volumeReason } = checkVolumeConfirmation(
-    volumeHistory || [],
-    lastCandle,
-    strategyMode,
-    volumeEMAPeriod,
-    volumeEMAMultiplier,
-    volumeConfirmation
+    volumeHistory || [], lastCandle, strategyMode, cfg.volumeEMAPeriod, cfg.volumeEMAMultiplier, cfg.volumeConfirmation
   )
 
   // 价格突破检查
-  let priceBreakoutPassed = true
-  let priceBreakoutReason = '价格突破指标未检查'
-  let priceBreakoutData: any = null
-  
-  if (candles15m && candles15m.length > 0) {
-    const priceBreakoutResult = checkPriceBreakout(direction, price, candles15m, config)
-    priceBreakoutPassed = priceBreakoutResult.passed
-    priceBreakoutReason = priceBreakoutResult.reason
-    priceBreakoutData = priceBreakoutResult.data
+  let priceBreakoutPassed = true, priceBreakoutReason = '价格突破指标未检查', priceBreakoutData: any = null
+  if (candles15m?.length) {
+    const res = checkPriceBreakout(direction, price, candles15m, config)
+    priceBreakoutPassed = res.passed
+    priceBreakoutReason = res.reason
+    priceBreakoutData = res.data
   }
 
   // 核心条件判断
-  const emaConditionPassed = !emaDeviationEnabled || nearEMA
+  const emaConditionPassed = !cfg.emaDeviationEnabled || nearEMA
   const breakoutConditionPassed = !priceBreakoutData?.enabled || priceBreakoutPassed
   const passed = (emaConditionPassed || breakoutConditionPassed) && emaSlowDeviationPassed && rsiInRange && isConfirmCandle && volumePassed
 
   // 原因构建
+  const actionType = isLong ? '回踩' : '反弹'
   let reason = ''
-  const actionType = direction === 'LONG' ? '回踩' : '反弹'
-  const failActionType = direction === 'LONG' ? '回踩' : '反弹'
 
   if (passed) {
-    const conditions: string[] = []
-    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
-    const onlyEmaEnabled = emaDeviationEnabled && !priceBreakoutData?.enabled
-    const onlyBreakoutEnabled = !emaDeviationEnabled && priceBreakoutData?.enabled
-    const bothDisabled = !emaDeviationEnabled && !priceBreakoutData?.enabled
+    const conds: string[] = []
+    const bothEnabled = cfg.emaDeviationEnabled && priceBreakoutData?.enabled
     
     if (bothEnabled) {
-      if (nearEMA && priceBreakoutPassed) {
-        conditions.push(`价格${actionType}${nearEMAType}且突破确认`)
-      } else if (nearEMA) {
-        conditions.push(`价格${actionType}${nearEMAType}`)
-      } else if (priceBreakoutPassed) {
-        conditions.push(`价格突破确认`)
-      }
-    } else if (onlyEmaEnabled && nearEMA) {
-      conditions.push(`价格${actionType}${nearEMAType}`)
-    } else if (onlyBreakoutEnabled && priceBreakoutPassed) {
-      conditions.push(`价格突破确认`)
-    } else if (bothDisabled) {
-      conditions.push(`${actionType}/突破条件已禁用`)
+      nearEMA && priceBreakoutPassed && conds.push(`价格${actionType}${nearEMAType}且突破确认`)
+      nearEMA && !priceBreakoutPassed && conds.push(`价格${actionType}${nearEMAType}`)
+      !nearEMA && priceBreakoutPassed && conds.push(`价格突破确认`)
+    } else if (cfg.emaDeviationEnabled && nearEMA) {
+      conds.push(`价格${actionType}${nearEMAType}`)
+    } else if (priceBreakoutData?.enabled && priceBreakoutPassed) {
+      conds.push(`价格突破确认`)
+    } else if (!cfg.emaDeviationEnabled && !priceBreakoutData?.enabled) {
+      conds.push(`${actionType}/突破条件已禁用`)
     }
-    
-    if (emaSlowDeviationEnabled) {
-      conditions.push(`${emaSlowName}偏离(${(emaSlowDeviation * 100).toFixed(2)}%) ≤ ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
-    } else {
-      conditions.push(`${emaSlowName}偏离检查已禁用`)
-    }
-    
-    conditions.push(`RSI适中(${rsi.toFixed(1)})`)
-    conditions.push(`${candleType}确认`)
-    
-    if (volumeConfirmation) {
-      conditions.push(`成交量确认`)
-    }
-    
-    reason = conditions.join('，')
+
+    cfg.emaSlowDeviationEnabled
+      ? conds.push(`${emaSlowName}偏离(${(emaSlowDeviation * 100).toFixed(2)}%) ≤ ${(cfg.emaSlowDeviationThreshold * 100).toFixed(2)}%`)
+      : conds.push(`${emaSlowName}偏离检查已禁用`)
+
+    conds.push(`RSI适中(${rsi.toFixed(1)})`, `${candleType}确认`)
+    cfg.volumeConfirmation && conds.push(`成交量确认`)
+    reason = conds.join('，')
   } else {
     const reasons: string[] = []
-    const bothEnabled = emaDeviationEnabled && priceBreakoutData?.enabled
-    const emaFailed = emaDeviationEnabled && !nearEMA
+    const emaFailed = cfg.emaDeviationEnabled && !nearEMA
     const breakoutFailed = priceBreakoutData?.enabled && !priceBreakoutPassed
-    
-    if (bothEnabled && emaFailed && breakoutFailed) {
+
+    if (cfg.emaDeviationEnabled && priceBreakoutData?.enabled && emaFailed && breakoutFailed) {
       const emaFastPercent = calculatePercentage(price, emaFast)
       const emaMediumPercent = calculatePercentage(price, emaMedium)
-      reasons.push(`价格既未${failActionType}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）也未${priceBreakoutReason.toLowerCase()}`)
+      reasons.push(`价格既未${actionType}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）也未${priceBreakoutReason.toLowerCase()}`)
     } else {
-      if (emaFailed) {
-        const emaFastPercent = calculatePercentage(price, emaFast)
-        const emaMediumPercent = calculatePercentage(price, emaMedium)
-        reasons.push(`价格未${failActionType}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）`)
-      }
-      if (breakoutFailed) {
-        reasons.push(`${priceBreakoutReason}`)
-      }
+      emaFailed && reasons.push(`价格未${actionType}EMA（距离${emaFastName}: ${calculatePercentage(price, emaFast)}%，${emaMediumName}: ${calculatePercentage(price, emaMedium)}%）`)
+      breakoutFailed && reasons.push(priceBreakoutReason)
     }
-    
-    if (emaSlowDeviationEnabled && !emaSlowDeviationPassed) {
-      const emaSlowPercent = ((price - emaSlow) / emaSlow * 100).toFixed(2)
-      reasons.push(`${emaSlowName}偏离过大(${emaSlowPercent}%) > ${(emaSlowDeviationThreshold * 100).toFixed(2)}%`)
-    }
-    
-    if (!rsiInRange) {
-      reasons.push(`RSI(${rsi.toFixed(1)})[${rsiMin} - ${rsiMax}]`)
-    }
-    
-    if (!isConfirmCandle) {
-      const candleFailReason = direction === 'LONG' 
-        ? 'K线未确认（非阳线且无明显下影线）' 
-        : 'K线未确认（非阴线且无明显上影线）'
-      reasons.push(candleFailReason)
-    }
-    
-    if (!volumePassed) {
-      reasons.push(`${volumeReason}`)
-    }
-    
+
+    cfg.emaSlowDeviationEnabled && !emaSlowDeviationPassed && reasons.push(`${emaSlowName}偏离过大(${(emaSlowDeviation * 100).toFixed(2)}%) > ${(cfg.emaSlowDeviationThreshold * 100).toFixed(2)}%`)
+    !rsiInRange && reasons.push(`RSI(${rsi.toFixed(1)})[${cfg.rsiMin} - ${cfg.rsiMax}]`)
+    !isConfirmCandle && reasons.push(isLong ? 'K线未确认（非阳线且无明显下影线）' : 'K线未确认（非阴线且无明显上影线）')
+    !volumePassed && reasons.push(volumeReason)
     reason = reasons.join('；')
   }
 
+  // 返回必要字段，兼顾简洁和可调试性
   return {
     passed,
     reason,
     data: {
-      price,
-      ema20: emaFast,
-      ema30: emaMedium,
-      ema60: emaSlow,
-      rsi,
-      nearEMA20: nearFastEMA,
-      nearEMA30: nearMediumEMA,
       nearEMA,
-      nearEMAType,
       rsiInRange,
-      rsiValue: rsi,
       isConfirmCandle,
-      candleType,
       volumePassed,
-      volumeReason,
-      priceBreakoutPassed,
-      priceBreakoutReason,
-      priceBreakoutData,
-      lastCandle: {
-        open: lastCandle.open,
-        high: lastCandle.high,
-        low: lastCandle.low,
-        close: lastCandle.close,
-        volume: lastCandle.volume,
-      },
-      conditions: {
-        required: {
-          nearEMA: true,
-          rsiMin,
-          rsiMax,
-          confirmCandle: true,
-          volumeConfirmation,
-          priceBreakout: priceBreakoutData?.enabled || false,
-        },
-        actual: {
-          nearEMA,
-          rsiValue: rsi,
-          rsiInRange,
-          isConfirmCandle,
-          volumePassed,
-          priceBreakoutPassed,
-        }
-      }
+      priceBreakoutPassed
     }
   }
 }
@@ -591,71 +496,34 @@ export async function calculateIndicators(
  * 检查ADX趋势条件（多周期确认）
  */
 export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfig) {
-  const adx15m = indicators.adx15m
-  const adx1h = indicators.adx1h
-  const adx4h = indicators.adx4h
-  
-  // 使用配置参数或默认值
-  const adx1hThreshold = config?.indicatorsConfig?.adxTrend?.adx1hThreshold || 25
-  const adx4hThreshold = config?.indicatorsConfig?.adxTrend?.adx4hThreshold || 28
-  const adx15mThreshold = config?.indicatorsConfig?.adxTrend?.adx15mThreshold || 30
-  const enableAdx15mVs1hCheck = config?.indicatorsConfig?.adxTrend?.enableAdx15mVs1hCheck ?? true
-  
-  // 获取策略模式，默认为短期
+  const { adx15m, adx1h, adx4h } = indicators
+  const adxConfig = config?.indicatorsConfig?.adxTrend
   const strategyMode = config?.strategyMode || 'short_term'
-  
   // 根据策略模式确定周期标签
-  let period1Label = '15m'
-  let period2Label = '1h'
-  let period3Label = '4h'
-  
-  if (strategyMode === 'medium_term') {
-    // 中长期策略：1h为主周期，4h为次要周期，1d为第三周期
-    period1Label = '1h'
-    period2Label = '4h'
-    period3Label = '1d'
-  }
-  
-  // 三个绝对阈值条件
-  const pass15m = adx15m >= adx15mThreshold
-  const pass1h = adx1h >= adx1hThreshold
-  const pass4h = adx4h >= adx4hThreshold
-  
-  // 相对比较条件（根据开关决定）
-  const pass15mVs1h = enableAdx15mVs1hCheck ? adx15m > adx1h : true
+  const [p1, p2, p3] = strategyMode === 'medium_term' ? ['1h', '4h', '1d'] : ['15m', '1h', '4h']
+  const t1 = adxConfig?.adx15mThreshold || 30
+  const t2 = adxConfig?.adx1hThreshold || 25
+  const t3 = adxConfig?.adx4hThreshold || 28
+  const enableCompare = adxConfig?.enableAdx15mVs1hCheck ?? true
 
+  const pass1 = adx15m >= t1
+  const pass2 = adx1h >= t2
+  const pass3 = adx4h >= t3
+  const passCompare = enableCompare ? adx15m > adx1h : true
   // 逻辑：必须满足三个绝对阈值，并且根据开关决定是否检查相对比较
-  const passed = pass15m && pass1h && pass4h && pass15mVs1h
+  const passed = pass1 && pass2 && pass3 && passCompare
 
-  // 提供更详细的调试信息
   let reason = ''
   if (passed) {
-    // 根据具体满足的条件显示不同的原因
-    const conditions: string[] = []
-    conditions.push(`${period1Label} ADX(${adx15m.toFixed(2)}) >= ${adx15mThreshold}`)
-    conditions.push(`${period2Label} ADX(${adx1h.toFixed(2)}) >= ${adx1hThreshold}`)
-    conditions.push(`${period3Label} ADX(${adx4h.toFixed(2)}) >= ${adx4hThreshold}`)
-    
-    if (enableAdx15mVs1hCheck) {
-      conditions.push(`${period1Label} ADX(${adx15m.toFixed(2)}) > ${period2Label} ADX(${adx1h.toFixed(2)})`)
-    }
-    
-    reason = conditions.join(' 且 ') + '（趋势全面确认）'
+    const conds = [`${p1} ADX(${adx15m.toFixed(2)}) >= ${t1}`, `${p2} ADX(${adx1h.toFixed(2)}) >= ${t2}`, `${p3} ADX(${adx4h.toFixed(2)}) >= ${t3}`]
+    enableCompare && conds.push(`${p1} ADX(${adx15m.toFixed(2)}) > ${p2} ADX(${adx1h.toFixed(2)})`)
+    reason = conds.join(' 且 ') + '（趋势全面确认）'
   } else {
-    // 根据具体不满足的条件显示不同的原因
-    const reasons: string[] = []
-    if (!pass15m) {
-      reasons.push(`${period1Label} ADX(${adx15m.toFixed(2)}) < ${adx15mThreshold}`)
-    }
-    if (!pass1h) {
-      reasons.push(`${period2Label} ADX(${adx1h.toFixed(2)}) < ${adx1hThreshold}`)
-    }
-    if (!pass4h) {
-      reasons.push(`${period3Label} ADX(${adx4h.toFixed(2)}) < ${adx4hThreshold}`)
-    }
-    if (enableAdx15mVs1hCheck && !pass15mVs1h) {
-      reasons.push(`${period1Label} ADX(${adx15m.toFixed(2)}) ≤ ${period2Label} ADX(${adx1h.toFixed(2)})`)
-    }
+    const reasons = []
+    !pass1 && reasons.push(`${p1} ADX(${adx15m.toFixed(2)}) < ${t1}`)
+    !pass2 && reasons.push(`${p2} ADX(${adx1h.toFixed(2)}) < ${t2}`)
+    !pass3 && reasons.push(`${p3} ADX(${adx4h.toFixed(2)}) < ${t3}`)
+    enableCompare && !passCompare && reasons.push(`${p1} ADX(${adx15m.toFixed(2)}) ≤ ${p2} ADX(${adx1h.toFixed(2)})`)
     reason = reasons.join('，')
   }
 
@@ -663,30 +531,10 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
     passed,
     reason,
     data: {
-      adx15m,
-      adx1h,
-      adx4h,
-      periodLabels: {
-        period1: period1Label,
-        period2: period2Label,
-        period3: period3Label,
-        strategyMode
-      },
-      required: {
-        adx15m: adx15mThreshold,
-        adx1h: adx1hThreshold,
-        adx4h: adx4hThreshold,
-        enableAdx15mVs1hCheck
-      },
-      actual: {
-        adx15m,
-        adx1h,
-        adx4h,
-        pass15m,
-        pass1h,
-        pass4h,
-        pass15mVs1h
-      }
+      adx15m, adx1h, adx4h,
+      periodLabels: { p1, p2, p3, strategyMode },
+      required: { t1, t2, t3, enableCompare },
+      actual: { pass1, pass2, pass3, passCompare }
     }
   }
 }
@@ -708,104 +556,66 @@ export function checkEMACross(
   let crossFailureReason: string | null = null
 
   // 使用缓存中已计算好的EMA值，不再重复计算
-  if (emaFastValues.length >= 2 && emaSlowValues.length >= 2) {
-      const fastCurrent = emaFastValues[emaFastValues.length - 1] || 0
-      const fastPrev = emaFastValues[emaFastValues.length - 2] || 0
-      const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
-      const slowPrev = emaSlowValues[emaSlowValues.length - 2] || 0
+  if (emaFastValues.length < 2 || emaSlowValues.length < 2) {
+    return { isCrossSignal, crossDirection, crossReason, crossFailureReason }
+  }
 
-      // 统一获取EMA配置（复用工具函数，消除重复代码）
-      const { strategyMode, fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
-      const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
-      // 新增：是否显示交叉失败原因，默认false（生产模式不显示）
-      const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
+  const fastCurrent = emaFastValues.at(-1)!
+  const fastPrev = emaFastValues.at(-2)!
+  const slowCurrent = emaSlowValues.at(-1)!
+  const slowPrev = emaSlowValues.at(-2)!
 
-      // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场） - 独立开关控制
-      const predictiveCrossConfig = config?.indicatorsConfig?.predictiveCross
-      const predictiveEnabled = predictiveCrossConfig?.enabled ?? true
-      const distancePercent = predictiveCrossConfig?.distancePercent ?? 0.0008 // 0.08%
-      const onlyTrend = predictiveCrossConfig?.onlyTrend ?? true
-      
-      // 计算EMA差值百分比（distancePercent已经是百分比，不需要乘以100）
-      const emaDiffPercent = Math.abs(fastCurrent - slowCurrent) / slowCurrent
-      const isNearCross = emaDiffPercent <= distancePercent
-      
-      // 检查顺势条件
-      let isTrendAligned = true
-      if (onlyTrend) {
-        // 价格在慢EMA上方时，只预判金叉（做多信号）
-        // 价格在慢EMA下方时，只预判死叉（做空信号）
-        const priceAboveSlowEMA = price > slowCurrent
-        const priceBelowSlowEMA = price < slowCurrent
-        
-        // 如果价格在慢EMA上方，但快EMA已经在慢EMA上方，没有金叉可预判
-        // 如果价格在慢EMA下方，但快EMA已经在慢EMA下方，没有死叉可预判
-        if (priceAboveSlowEMA && fastCurrent > slowCurrent) {
-          isTrendAligned = false
-        } else if (priceBelowSlowEMA && fastCurrent < slowCurrent) {
-          isTrendAligned = false
-        }
-      }
-      
-      // 预判交叉条件（去掉K线进度检查）
-      const canPredict = predictiveEnabled && isNearCross && isTrendAligned
-      
-      // 2. 检查实际交叉 - 受crossEntryEnabled开关独立控制
-      const goldenCross = crossEntryEnabled && fastPrev <= slowPrev && fastCurrent > slowCurrent
-      const deadCross = crossEntryEnabled && fastPrev >= slowPrev && fastCurrent < slowCurrent
+  const { fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
+  const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
+  const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
 
-      // 统一交叉信号输出格式：[信号类型] 方向 | 关键数据
-      if (canPredict && !goldenCross && !deadCross) {
-        // 预判交叉信号
-        isCrossSignal = true
-        crossDirection = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
-        const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
-        crossReason = `[预判交叉] ${crossDirection}  ${emaFastName}即将${crossType}${emaSlowName} ， 差值: ${(emaDiffPercent * 100).toFixed(3)}% ， 提前入场`
-      } else if (goldenCross) {
-        // 实际金叉信号
-        isCrossSignal = true
-        crossDirection = 'LONG'
-        crossReason = `[实际金叉] LONG ${emaFastName}上穿${emaSlowName} ， 前值: ${fastPrev.toFixed(2)} ≤ ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} > ${slowCurrent.toFixed(2)} ， 直接做多`
-      } else if (deadCross) {
-        // 实际死叉信号
-        isCrossSignal = true
-        crossDirection = 'SHORT'
-        crossReason = `[实际死叉] SHORT ${emaFastName}下穿${emaSlowName} ， 前值: ${fastPrev.toFixed(2)} ≥ ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} < ${slowCurrent.toFixed(2)} ， 直接做空`
-      } else {
-        // 交叉检测失败，统一格式输出原因
-        let failureReason = '[交叉失败]'
-        const details: string[] = []
-        
-        if (predictiveEnabled) {
-          // 所有情况都输出当前差值，方便调试
-          details.push(`差值: ${(emaDiffPercent * 100).toFixed(3)}%`)
-          // 预判交叉启用时先显示预判失败原因
-          if (!isNearCross) {
-            details.push(`超过阈值: ${(distancePercent * 100).toFixed(3)}%`)
-          }
-          if (!isTrendAligned) {
-            details.push('趋势不对齐')
-          }
-        }
-        
-        // 只有开启显示交叉失败原因 且 实际交叉功能开启时，才显示实际交叉的未交叉基础信息
-        if (showCrossFailureReason && crossEntryEnabled) {
-          const prevRelation = fastPrev <= slowPrev ? '≤' : '≥'
-          const currentRelation = fastCurrent <= slowCurrent ? '≤' : '≥'
-          details.push(`未交叉：前值: ${fastPrev.toFixed(2)} ${prevRelation} ${slowPrev.toFixed(2)} ， 当前: ${fastCurrent.toFixed(2)} ${currentRelation} ${slowCurrent.toFixed(2)}`)
-        }
-        
-        crossFailureReason = details.length > 0 ? `${failureReason} ${details.join('；')}` : null
-        crossReason = ''
+  // 预判交叉配置
+  const predConfig = config?.indicatorsConfig?.predictiveCross
+  const predEnabled = predConfig?.enabled ?? true
+  const distancePercent = predConfig?.distancePercent ?? 0.0008
+  const onlyTrend = predConfig?.onlyTrend ?? true
+
+  const emaDiffPercent = Math.abs(fastCurrent - slowCurrent) / slowCurrent
+  const isNearCross = emaDiffPercent <= distancePercent
+  // 价格在慢EMA上方时，只预判金叉（做多信号）
+  // 价格在慢EMA下方时，只预判死叉（做空信号）
+  const isTrendAligned = onlyTrend ? 
+    (price > slowCurrent && fastCurrent <= slowCurrent) || (price < slowCurrent && fastCurrent >= slowCurrent) : true
+
+  const canPredict = predEnabled && isNearCross && isTrendAligned
+  // 检查实际交叉 - 受crossEntryEnabled开关独立控制
+  const goldenCross = crossEntryEnabled && fastPrev <= slowPrev && fastCurrent > slowCurrent
+  const deadCross = crossEntryEnabled && fastPrev >= slowPrev && fastCurrent < slowCurrent
+
+  if (canPredict && !goldenCross && !deadCross) {
+    isCrossSignal = true
+    crossDirection = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
+    const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
+    crossReason = `[预判交叉] ${crossDirection} ${emaFastName}即将${crossType}${emaSlowName}，差值: ${(emaDiffPercent * 100).toFixed(3)}%`
+  } else if (goldenCross) {
+    isCrossSignal = true
+    crossDirection = 'LONG'
+    crossReason = `[实际金叉] LONG ${emaFastName}上穿${emaSlowName}`
+  } else if (deadCross) {
+    isCrossSignal = true
+    crossDirection = 'SHORT'
+    crossReason = `[实际死叉] SHORT ${emaFastName}下穿${emaSlowName}`
+  } else if (showCrossFailureReason) {
+    const details: string[] = []
+    if (predEnabled) {
+      details.push(`差值: ${(emaDiffPercent * 100).toFixed(3)}%`)
+      !isNearCross && details.push(`超过阈值: ${(distancePercent * 100).toFixed(3)}%`)
+      !isTrendAligned && details.push('趋势不对齐')
     }
+    if (crossEntryEnabled) {
+      const prevRel = fastPrev <= slowPrev ? '≤' : '≥'
+      const currRel = fastCurrent <= slowCurrent ? '≤' : '≥'
+      details.push(`未交叉：前值${fastPrev.toFixed(2)}${prevRel}${slowPrev.toFixed(2)}，当前${fastCurrent.toFixed(2)}${currRel}${slowCurrent.toFixed(2)}`)
+    }
+    crossFailureReason = details.length ? `[交叉失败] ${details.join('；')}` : null
   }
 
-  return {
-    isCrossSignal,
-    crossDirection,
-    crossReason,
-    crossFailureReason
-  }
+  return { isCrossSignal, crossDirection, crossReason, crossFailureReason }
 }
 
 /**
@@ -818,70 +628,44 @@ export function getTrendDirection(
   candles?: OHLCV[]
 ) {
   const { ema20: emaFast, ema60: emaSlow, emaFastValues, emaSlowValues } = indicators
-
-  // 统一获取EMA配置（复用工具函数，消除重复代码）
-  const { strategyMode, fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
-  const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
-
+  const { fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
+  const showCrossFail = config?.indicatorsConfig?.showCrossFailureReason ?? false
   // 调用独立交叉检测函数
-  const { isCrossSignal, crossDirection, crossReason, crossFailureReason } = checkEMACross(
-    emaFastValues,
-    emaSlowValues,
-    price,
-    config
-  )
-
-  const emaFastAboveEmaSlow = emaFast > emaSlow
-  const priceAboveFastEMA = price > emaFast
-  const priceBelowFastEMA = price < emaFast
+  const cross = checkEMACross(emaFastValues, emaSlowValues, price, config)
+  const emaFastAboveSlow = emaFast > emaSlow
+  const priceAboveFast = price > emaFast
+  const priceBelowFast = price < emaFast
 
   // 做多条件：快线 > 慢线 且 价格 > 快线
-  const isLong = emaFastAboveEmaSlow && priceAboveFastEMA
-  
+  const isLong = emaFastAboveSlow && priceAboveFast
   // 做空条件：快线 < 慢线 且 价格 < 快线
-  const isShort = !emaFastAboveEmaSlow && priceBelowFastEMA
+  const isShort = !emaFastAboveSlow && priceBelowFast
 
   let direction: 'LONG' | 'SHORT' | 'IDLE' = 'IDLE'
   let reason = ''
 
-  if (isCrossSignal && crossDirection) {
-    direction = crossDirection
-    reason = crossReason
+  if (cross.isCrossSignal && cross.crossDirection) {
+    direction = cross.crossDirection
+    reason = cross.crossReason
   } else if (isLong) {
     direction = 'LONG'
-    const trendReason = `[趋势做多] LONG  ${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)}) ， 价格(${price.toFixed(2)}) > ${emaFastName}`
-    // 开启显示时才合并交叉失败原因
-    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} ， ${crossFailureReason}` : trendReason
+    const trendReason = `[趋势做多] LONG ${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) > ${emaFastName}`
+    reason = showCrossFail && cross.crossFailureReason ? `${trendReason}，${cross.crossFailureReason}` : trendReason
   } else if (isShort) {
     direction = 'SHORT'
-    const trendReason = `[趋势做空] SHORT  ${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)}) ， 价格(${price.toFixed(2)}) < ${emaFastName}`
-    // 开启显示时才合并交叉失败原因
-    reason = showCrossFailureReason && crossFailureReason ? `${trendReason} ， ${crossFailureReason}` : trendReason
+    const trendReason = `[趋势做空] SHORT ${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) < ${emaFastName}`
+    reason = showCrossFail && cross.crossFailureReason ? `${trendReason}，${cross.crossFailureReason}` : trendReason
   } else {
-    // 交叉失败+趋势结果合并显示
-    const reasons: string[] = []
-    
-    // 先加趋势失败原因
-    let trendReason = ''
-    const trendDetails: string[] = []
-    
-    if (emaFastAboveEmaSlow && !priceAboveFastEMA) {
-      trendDetails.push(`${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)}) ， 价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
-    } else if (!emaFastAboveEmaSlow && !priceBelowFastEMA) {
-      trendDetails.push(`${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)}) ， 价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
+    const details: string[] = []
+    if (emaFastAboveSlow && !priceAboveFast) {
+      details.push(`${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
+    } else if (!emaFastAboveSlow && !priceBelowFast) {
+      details.push(`${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
     } else {
-      trendDetails.push(`${emaFastName}(${emaFast.toFixed(2)}) ≈ ${emaSlowName}(${emaSlow.toFixed(2)}) ， 价格震荡`)
+      details.push(`${emaFastName}(${emaFast.toFixed(2)}) ≈ ${emaSlowName}(${emaSlow.toFixed(2)})，价格震荡`)
     }
-    
-    reasons.push(`${trendReason} ${trendDetails.join('；')}`)
-    
-    // 交叉失败原因受showCrossFailureReason开关控制
-    if (showCrossFailureReason && crossFailureReason) {
-      reasons.push(crossFailureReason)
-    }
-    
-    // 合并所有原因
-    reason = reasons.join(' ； ')
+    showCrossFail && cross.crossFailureReason && details.push(cross.crossFailureReason)
+    reason = details.join('；')
   }
 
   return {
@@ -891,17 +675,11 @@ export function getTrendDirection(
       price,
       ema20: emaFast,
       ema60: emaSlow,
-      isCrossSignal,
-      crossDirection,
-      crossCandleTimestamp: candles?.[candles.length - 1]?.timestamp,
-      crossFailureReason, // 单独返回交叉失败原因，供外部使用
-      conditions: {
-        ema20AboveEma60: emaFastAboveEmaSlow,
-        priceAboveEma20: priceAboveFastEMA,
-        priceBelowEma20: priceBelowFastEMA,
-        isLong,
-        isShort
-      }
+      isCrossSignal: cross.isCrossSignal,
+      crossDirection: cross.crossDirection,
+      crossCandleTimestamp: candles?.at(-1)?.timestamp,
+      crossFailureReason: cross.crossFailureReason,
+      conditions: { ema20AboveEma60: emaFastAboveSlow, priceAboveEma20: priceAboveFast, priceBelowEma20: priceBelowFast, isLong, isShort }
     }
   }
 }
