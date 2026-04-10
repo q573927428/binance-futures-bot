@@ -41,12 +41,12 @@ export function calculateTechnicalWeightAdjustment(
   
   // 2. 多周期ADX一致性调整
   const adxConsistency = 
-    (indicators.adx15m >= 20 ? 1 : 0) +
+    (indicators.adx15m >= 25 ? 1 : 0) +
     (indicators.adx1h >= 22 ? 1 : 0) +
-    (indicators.adx4h >= 25 ? 1 : 0)
+    (indicators.adx4h >= 20 ? 1 : 0)
   
   if (adxConsistency === 3) {
-    addPositiveAdjustment(4, 3)
+    addPositiveAdjustment(5, 4)
   } else if (adxConsistency === 2) {
     addPositiveAdjustment(2, 1)
   }
@@ -56,32 +56,47 @@ export function calculateTechnicalWeightAdjustment(
   const isShort = (indicators.ema20 < indicators.ema60 && price < indicators.ema20)
   const rsi = indicators.rsi
   if (isLong) {
-    if (rsi >= 60) {
-      // 强趋势（主升段）
-      addPositiveAdjustment(3, 2)
+    if (rsi >= 75) {
+      // 严重超买，风险升高
+      confidenceAdjustment -= 3
+      scoreAdjustment -= 2
+    } else if (rsi >= 60) {
+      // 强趋势主升段（健康区间）
+      addPositiveAdjustment(4, 3)
     } else if (rsi >= 50) {
-      // 健康趋势（回调区）
-      addPositiveAdjustment(1, 1)
+      // 健康回调区
+      addPositiveAdjustment(2, 2)
+    } else if (rsi >= 45) {
+      // 趋势初期或深度回调，中性
+      // 不加分也不扣分
     } else {
-      // 弱趋势 / 可能反转
-      confidenceAdjustment -= 6
-      scoreAdjustment -= 5
+      // 弱趋势/可能反转，扣分力度适当降低
+      confidenceAdjustment -= 4
+      scoreAdjustment -= 3
     }
   }
-
+  
+  // 空头对称调整
   if (isShort) {
-    if (rsi <= 40) {
-      // 强趋势（主跌段）
-      addPositiveAdjustment(3, 2)
+    if (rsi <= 25) {
+      // 严重超卖，风险升高
+      confidenceAdjustment -= 3
+      scoreAdjustment -= 2
+    } else if (rsi <= 40) {
+      // 强趋势主跌段（健康区间）
+      addPositiveAdjustment(4, 3)
     } else if (rsi <= 50) {
-      // 健康趋势
-      addPositiveAdjustment(1, 1)
+      // 健康回调区
+      addPositiveAdjustment(2, 2)
+    } else if (rsi <= 55) {
+      // 趋势初期或深度反弹，中性
     } else {
-      // 弱趋势 / 可能反转
-      confidenceAdjustment -= 6
-      scoreAdjustment -= 5
+      // 弱趋势/可能反转
+      confidenceAdjustment -= 4
+      scoreAdjustment -= 3
     }
   }
+  
 
   // 4. EMA排列调整
   const emaDistance20_60 = Math.abs(indicators.ema20 - indicators.ema60) / indicators.ema60
@@ -129,7 +144,7 @@ export function calculateTechnicalWeightAdjustment(
       scoreAdjustment -= 3
     } else {
       // 理想趋势波动区间
-      addPositiveAdjustment(2, 1)
+      addPositiveAdjustment(3, 2)
     }
   } else {
     // 非趋势市场 → 直接打压（重点）
@@ -138,8 +153,8 @@ export function calculateTechnicalWeightAdjustment(
   }
   
   // 确保调整在合理范围内
-  const confidenceUpperBound = isPenaltyOnly ? 5 : 12
-  const scoreUpperBound = isPenaltyOnly ? 4 : 10
+  const confidenceUpperBound = isPenaltyOnly ? 5 : 15
+  const scoreUpperBound = isPenaltyOnly ? 4 : 13
   confidenceAdjustment = Math.max(-30, Math.min(confidenceUpperBound, confidenceAdjustment))
   scoreAdjustment = Math.max(-25, Math.min(scoreUpperBound, scoreAdjustment))
   
