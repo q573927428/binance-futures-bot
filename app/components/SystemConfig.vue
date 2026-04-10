@@ -175,7 +175,7 @@
         <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
       </el-form-item>
 
-      <el-divider>AI分析配置</el-divider>
+      <el-divider>AI信号入场配置</el-divider>
 
       <el-form-item label="启用AI分析">
         <el-switch v-model="editConfig.aiConfig.enabled" />

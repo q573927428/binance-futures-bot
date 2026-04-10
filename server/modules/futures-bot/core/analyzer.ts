@@ -102,7 +102,7 @@ export class MarketAnalyzer {
       }
 
       // ==============================
-      // 3. AI分析验证（仅AI开启时执行）
+      // 3. AI分析（仅AI开启时执行，不影响PA/EMA交叉信号，仅作为独立入场信号）
       // ==============================
       let aiAnalysis = undefined
       let aiDirection: 'LONG' | 'SHORT' | null = null
@@ -119,20 +119,16 @@ export class MarketAnalyzer {
           this.config
         )
 
-        // 所有信号都需要检查AI入场条件
+        // 仅当AI作为入场信号时检查条件，PA/EMA交叉信号不受AI限制
         const aiConditionsPassed = checkAIAnalysisConditions(
           aiAnalysis,
           this.config.aiConfig.minConfidence,
           this.config.aiConfig.maxRiskLevel,
           this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
         )
-        if (!aiConditionsPassed) {
-          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
-          return null
-        }
-
-        // AI开启且作为入场信号时，记录有效方向（复用现有useForEntry开关）
-        if (this.config.aiConfig.useForEntry && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
+        
+        // AI满足条件时记录有效方向，不满足时仅不触发AI信号，不阻止PA/EMA交叉
+        if (aiConditionsPassed && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
           aiDirection = aiAnalysis.direction
         }
       }
