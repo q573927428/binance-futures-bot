@@ -22,14 +22,13 @@ export function calculateQuickLeverage(
   // 基础杠杆
   let leverage = config.baseLeverage
   
-  // AI置信度调整：置信度越高，杠杆越高
-  // 置信度60-100 -> 乘数0.7-1.5（扩大范围以获得更分散的杠杆）
-  const confidenceFactor = 0.7 + ((aiAnalysis.confidence - 60) / 40) * 0.8
+  // AI置信度调整：置信度60-100 对应乘数1-1.4，计算简单直观
+  // 每高1分，乘数增加0.01，60分=1倍，100分=1.4倍
+  const confidenceFactor = 1 + (aiAnalysis.confidence - 60) / 100
   leverage *= confidenceFactor
   
-  // AI评分调整：评分越高，杠杆越高
-  // 评分60-100 -> 乘数0.6-1.4（扩大范围以获得更分散的杠杆）
-  const scoreFactor = 0.6 + ((aiAnalysis.score - 60) / 40) * 0.8
+  // AI评分调整：评分60-100 对应乘数1-1.4，计算简单直观
+  const scoreFactor = 1 + (aiAnalysis.score - 60) / 100
   leverage *= scoreFactor
   
   // 风险等级调整：风险越低，杠杆越高
@@ -40,6 +39,7 @@ export function calculateQuickLeverage(
   leverage = Math.max(config.minLeverage, Math.min(config.maxLeverage, leverage))
   return Math.round(leverage)
 }
+
 
 /**
  * 计算安全杠杆倍数（考虑账户风险）
