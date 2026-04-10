@@ -105,6 +105,7 @@ export class MarketAnalyzer {
       // 3. AI分析验证（仅AI开启时执行）
       // ==============================
       let aiAnalysis = undefined
+      let aiDirection: 'LONG' | 'SHORT' | null = null
       if (aiEnabled) {
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
@@ -129,10 +130,15 @@ export class MarketAnalyzer {
           this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
           return null
         }
+
+        // AI开启且作为入场信号时，记录有效方向（复用现有useForEntry开关）
+        if (this.config.aiConfig.useForEntry && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
+          aiDirection = aiAnalysis.direction
+        }
       }
 
       // ==============================
-      // 4. PA信号检测 + 趋势方向判断（后置到硬过滤之后）
+      // 4. PA信号检测 + 趋势方向判断（后置到硬过滤之后，优先级：PA > AI > EMA交叉）
       // ==============================
       const paResult = this.processPASignal(symbol, mainCandles, price, indicators, lastCandle)
 
@@ -146,7 +152,7 @@ export class MarketAnalyzer {
       const paReason = paResult.reason
       const paLogSuffix = paResult.logSuffix
 
-      // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号，如果PA触发则使用PA方向）
+      // 判断趋势方向：优先级 PA > AI > EMA交叉
       let trendResult
       if (paTriggered && paDirection) {
         // PA触发时，使用PA方向作为交易方向
@@ -157,8 +163,17 @@ export class MarketAnalyzer {
             isCrossSignal: false
           }
         }
+      } else if (aiDirection) {
+        // AI触发时，使用AI方向作为交易方向
+        trendResult = {
+          direction: aiDirection,
+          reason: `[AI信号] 方向${aiDirection}，置信度${aiAnalysis?.confidence}`,
+          data: {
+            isCrossSignal: false
+          }
+        }
       } else {
-        // 没有PA信号时使用正常趋势检测（含EMA金叉/死叉）
+        // 没有PA和AI信号时使用正常趋势检测（含EMA金叉/死叉）
         trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
       }
       if (trendResult.direction === 'IDLE') {
