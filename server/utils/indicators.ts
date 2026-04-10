@@ -12,12 +12,17 @@ function calculatePercentage(value: number, base: number): string {
 
 /**
  * 通用工具：获取EMA周期配置
+ * 直接传入BotConfig自动获取参数
  */
-function getEMAPeriodConfig(strategyMode: string, emaPeriods?: any) {
-  const fast = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
-  const medium = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
-  const slow = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
+function getEMAPeriodConfig(config?: BotConfig) {
+  const strategyMode = config?.strategyMode || 'short_term'
+  const periods = config?.indicatorsConfig?.emaPeriods
+
+  const fast = periods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
+  const medium = periods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
+  const slow = periods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
   return {
+    strategyMode,
     fast,
     medium,
     slow,
@@ -218,9 +223,8 @@ function checkEntry(
   candles15m?: OHLCV[]
 ) {
   const { ema20: emaFast, ema30: emaMedium, ema60: emaSlow, rsi } = indicators
-  const strategyMode = config?.strategyMode || 'short_term'
-  const emaPeriods = config?.indicatorsConfig?.emaPeriods
-  const { fastName: emaFastName, mediumName: emaMediumName, slowName: emaSlowName } = getEMAPeriodConfig(strategyMode, emaPeriods)
+  // 统一获取EMA配置（复用工具函数，消除重复代码）
+  const { strategyMode, fastName: emaFastName, mediumName: emaMediumName, slowName: emaSlowName } = getEMAPeriodConfig(config)
 
   // 获取方向对应的配置
   const entryConfig = direction === 'LONG' 
@@ -466,19 +470,13 @@ export async function calculateIndicators(
   config?: BotConfig
 ): Promise<TechnicalIndicators> {
   try {
-    // 获取策略模式，默认为短期
-    const strategyMode = config?.strategyMode || 'short_term'
+    // 统一获取EMA配置（复用工具函数，消除重复代码）
+    const { strategyMode, fast: emaFast, medium: emaMedium, slow: emaSlow } = getEMAPeriodConfig(config)
     
     // 根据策略模式选择K线周期
     const mainTF = strategyMode === 'medium_term' ? '1h' : '15m'
     const secondaryTF = strategyMode === 'medium_term' ? '4h' : '1h'
     const tertiaryTF = strategyMode === 'medium_term' ? '1d' : '4h'
-    
-    // 根据策略模式选择EMA周期（使用配置值，默认为硬编码值）
-    const emaPeriods = config?.indicatorsConfig?.emaPeriods
-    const emaFast = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
-    const emaMedium = emaPeriods?.[strategyMode]?.medium || (strategyMode === 'medium_term' ? 100 : 30)
-    const emaSlow = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
 
     // K线数量从配置读取，默认300根，中长期策略需要足够K线数据来计算EMA200等指标
     const requiredCandles = config?.indicatorsConfig?.requiredCandles || 300
@@ -695,29 +693,14 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
 
 
 /**
- * 判断趋势方向
+ * 检查EMA交叉（金叉/死叉/预判交叉）
  */
-export function getTrendDirection(
+export function checkEMACross(
+  emaFastValues: number[],
+  emaSlowValues: number[],
   price: number,
-  indicators: TechnicalIndicators,
   config?: BotConfig,
-  candles?: OHLCV[]
 ) {
-  const { ema20: emaFast, ema60: emaSlow, emaFastValues, emaSlowValues } = indicators
-
-  // 获取策略模式，默认为短期
-  const strategyMode = config?.strategyMode || 'short_term'
-  
-  // 根据策略模式选择指标名称（使用配置的EMA周期）
-  const emaPeriods = config?.indicatorsConfig?.emaPeriods
-  const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
-  // 新增：是否显示交叉失败原因，默认false（生产模式不显示）
-  const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
-  const emaFastPeriod = emaPeriods?.[strategyMode]?.fast || (strategyMode === 'medium_term' ? 50 : 20)
-  const emaSlowPeriod = emaPeriods?.[strategyMode]?.slow || (strategyMode === 'medium_term' ? 200 : 60)
-  const emaFastName = `EMA${emaFastPeriod}`
-  const emaSlowName = `EMA${emaSlowPeriod}`
-
   // 优先判断EMA金叉/死叉（直接入场信号）
   let isCrossSignal = false
   let crossDirection: 'LONG' | 'SHORT' | null = null
@@ -730,6 +713,12 @@ export function getTrendDirection(
       const fastPrev = emaFastValues[emaFastValues.length - 2] || 0
       const slowCurrent = emaSlowValues[emaSlowValues.length - 1] || 0
       const slowPrev = emaSlowValues[emaSlowValues.length - 2] || 0
+
+      // 统一获取EMA配置（复用工具函数，消除重复代码）
+      const { strategyMode, fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
+      const crossEntryEnabled = config?.indicatorsConfig?.crossEntryEnabled ?? true
+      // 新增：是否显示交叉失败原因，默认false（生产模式不显示）
+      const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
 
       // 1. 先检查预判交叉（在接近交叉但尚未交叉时提前入场） - 独立开关控制
       const predictiveCrossConfig = config?.indicatorsConfig?.predictiveCross
@@ -810,6 +799,37 @@ export function getTrendDirection(
         crossReason = ''
     }
   }
+
+  return {
+    isCrossSignal,
+    crossDirection,
+    crossReason,
+    crossFailureReason
+  }
+}
+
+/**
+ * 判断趋势方向
+ */
+export function getTrendDirection(
+  price: number,
+  indicators: TechnicalIndicators,
+  config?: BotConfig,
+  candles?: OHLCV[]
+) {
+  const { ema20: emaFast, ema60: emaSlow, emaFastValues, emaSlowValues } = indicators
+
+  // 统一获取EMA配置（复用工具函数，消除重复代码）
+  const { strategyMode, fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
+  const showCrossFailureReason = config?.indicatorsConfig?.showCrossFailureReason ?? false
+
+  // 调用独立交叉检测函数
+  const { isCrossSignal, crossDirection, crossReason, crossFailureReason } = checkEMACross(
+    emaFastValues,
+    emaSlowValues,
+    price,
+    config
+  )
 
   const emaFastAboveEmaSlow = emaFast > emaSlow
   const priceAboveFastEMA = price > emaFast

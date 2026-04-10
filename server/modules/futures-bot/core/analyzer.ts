@@ -83,47 +83,17 @@ export class MarketAnalyzer {
       // ==============================
       // 2. PA信号检测（仅PA开启时执行）
       // ==============================
-      let paTriggered = false
-      let paDirection: 'LONG' | 'SHORT' | null = null
-      let paReason = ''
-      let paLogSuffix = ''
-
-      if (paEnabled) {
-        const paSignal = checkPriceActionSignal(
-          mainCandles, 
-          this.config,
-          price,
-          indicators.ema20,
-          indicators.ema60
-        )
-
-        // PA信号防抖：同一根K线同方向信号仅触发一次
-        if (paSignal.triggered && paSignal.direction) {
-          const previousPa = this.paSignalTracker[symbol]
-          if (
-            previousPa &&
-            previousPa.timestamp === lastCandle.timestamp &&
-            previousPa.direction === paSignal.direction
-          ) {
-            this.logAnalysisResult(symbol, false, `PA信号防抖：同一根K线已触发${paSignal.direction}，本次忽略`, price)
-            return null
-          }
-
-          paTriggered = true
-          paDirection = paSignal.direction
-          paReason = paSignal.reason
-          
-          // 记录PA信号到防抖跟踪器
-          this.paSignalTracker[symbol] = {
-            timestamp: lastCandle.timestamp,
-            direction: paSignal.direction,
-          }
-
-          logger.info('PA信号处理', `${symbol} @${this.formatPrice(price)} ${paSignal.reason}，将进行ADX和AI验证`)
-        } else {
-          paLogSuffix = `； PA检测未触发：${paSignal.reason}`
-        }
+      const paResult = this.processPASignal(symbol, mainCandles, price, indicators, lastCandle)
+      
+      if (paResult.shouldAbort) {
+        this.logAnalysisResult(symbol, false, paResult.abortReason!, price)
+        return null
       }
+      
+      const paTriggered = paResult.triggered
+      const paDirection = paResult.direction
+      const paReason = paResult.reason
+      const paLogSuffix = paResult.logSuffix
 
       // ==============================
       // 3. 趋势方向判断
@@ -153,12 +123,14 @@ export class MarketAnalyzer {
 
       // 交叉信号防抖：同一根K线同方向交叉仅触发一次
       if (isCrossSignal && crossCandleTimestamp && (trendResult.direction === 'LONG' || trendResult.direction === 'SHORT')) {
-        const previousCross = this.crossSignalTracker[symbol]
-        if (
-          previousCross &&
-          previousCross.timestamp === crossCandleTimestamp &&
-          previousCross.direction === trendResult.direction
-        ) {
+        const shouldDebounce = this.checkSignalDebounce(
+          symbol,
+          crossCandleTimestamp,
+          trendResult.direction,
+          this.crossSignalTracker
+        )
+
+        if (shouldDebounce) {
           this.logAnalysisResult(symbol, false, `交叉信号防抖：同一根K线已触发${trendResult.direction}，本次忽略`, price)
           return null
         }
@@ -220,14 +192,6 @@ export class MarketAnalyzer {
         logReason += paLogSuffix
         this.logAnalysisResult(symbol, false, logReason, price)
         return null
-      }
-
-      // 成功通过入场后，记录交叉触发，避免同一根K线重复入场
-      if (isCrossSignal && crossCandleTimestamp && (trendResult.direction === 'LONG' || trendResult.direction === 'SHORT')) {
-        this.crossSignalTracker[symbol] = {
-          timestamp: crossCandleTimestamp,
-          direction: trendResult.direction,
-        }
       }
 
       // ==============================
@@ -305,6 +269,107 @@ export class MarketAnalyzer {
     } else {
       // 小于0.01，保留6位小数 (如 SHIB: 0.000023)
       return price.toFixed(6)
+    }
+  }
+
+  /**
+   * 通用防抖检查：同一根K线同方向信号仅触发一次
+   */
+  private checkSignalDebounce(
+    symbol: string,
+    timestamp: number,
+    direction: 'LONG' | 'SHORT',
+    tracker: Record<string, { timestamp: number; direction: 'LONG' | 'SHORT' }>
+  ): boolean {
+    const previous = tracker[symbol]
+    if (
+      previous &&
+      previous.timestamp === timestamp &&
+      previous.direction === direction
+    ) {
+      return true // 已触发过，需要防抖
+    }
+    // 记录本次信号
+    tracker[symbol] = { timestamp, direction }
+    return false // 无需防抖
+  }
+
+  /**
+   * 处理PA信号检测和防抖逻辑
+   */
+  private processPASignal(
+    symbol: string,
+    mainCandles: OHLCV[],
+    price: number,
+    indicators: TechnicalIndicators,
+    lastCandle: OHLCV
+  ): {
+    triggered: boolean
+    direction: 'LONG' | 'SHORT' | null
+    reason: string
+    logSuffix: string
+    shouldAbort: boolean
+    abortReason?: string
+  } {
+    const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
+    
+    if (!paEnabled) {
+      return {
+        triggered: false,
+        direction: null,
+        reason: '',
+        logSuffix: '',
+        shouldAbort: false
+      }
+    }
+
+    const paSignal = checkPriceActionSignal(
+      mainCandles, 
+      this.config,
+      price,
+      indicators.ema20,
+      indicators.ema60
+    )
+
+    let logSuffix = `； PA检测未触发：${paSignal.reason}`
+
+    // PA信号防抖：同一根K线同方向信号仅触发一次
+    if (paSignal.triggered && paSignal.direction) {
+      const shouldDebounce = this.checkSignalDebounce(
+        symbol,
+        lastCandle.timestamp,
+        paSignal.direction,
+        this.paSignalTracker
+      )
+
+      if (shouldDebounce) {
+        return {
+          triggered: false,
+          direction: null,
+          reason: '',
+          logSuffix: '',
+          shouldAbort: true,
+          abortReason: `PA信号防抖：同一根K线已触发${paSignal.direction}，本次忽略`
+        }
+      }
+
+      logger.info('PA信号处理', `${symbol} @${this.formatPrice(price)} ${paSignal.reason}，将进行ADX和AI验证`)
+      
+      return {
+        triggered: true,
+        direction: paSignal.direction,
+        reason: paSignal.reason,
+        logSuffix: '',
+        shouldAbort: false
+      }
+    }
+
+    return {
+      triggered: false,
+      direction: null,
+      reason: '',
+      logSuffix,
+      shouldAbort: false
     }
   }
 
