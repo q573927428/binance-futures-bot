@@ -1,4 +1,4 @@
-import type { TradeSignal, BotConfig } from '../../../../types'
+import type { TradeSignal, BotConfig, OHLCV, TechnicalIndicators } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { getTrendDirection, checkADXTrend, checkLongEntry, checkShortEntry, checkVolatility, checkPriceActionSignal } from '../../../utils/indicators'
 import { analyzeMarketWithAI, checkAIAnalysisConditions } from '../../../utils/ai-analysis'
@@ -46,22 +46,26 @@ export class MarketAnalyzer {
   }
 
   /**
-   * 分析交易对
+   * 分析交易对（优化版：逻辑更简洁，减少冗余计算）
    */
   async analyzeSymbol(symbol: string): Promise<TradeSignal | null> {
     try {
+      // ==============================
+      // 1. 数据准备 + 开关预检查
+      // ==============================
+      // 提前读取开关配置，避免后续无效计算
+      const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
+      const aiEnabled = this.config.aiConfig.enabled && this.config.aiConfig.useForEntry
+
       // 获取当前价格
       const price = await this.binance.fetchPrice(symbol)
 
       // 根据策略模式选择K线周期
       const mainTF = this.config.strategyMode === 'medium_term' ? '1h' : '15m'
-      // K线数量从配置读取，默认300根，和calculateIndicators保持一致，确保EMA计算稳定准确
       const mainCandlesCount = this.config.indicatorsConfig?.requiredCandles || 300
       
-      // 获取主K线数据（用于趋势方向、AI分析、价格变化计算和入场条件检查）
+      // 获取主K线数据
       const mainCandles = await this.binance.fetchOHLCV(symbol, mainTF, undefined, mainCandlesCount)
-
-      // 检查mainCandles是否为空
       if (mainCandles.length === 0) {
         this.logAnalysisResult(symbol, false, 'K线数据为空', price)
         return null
@@ -70,76 +74,64 @@ export class MarketAnalyzer {
       // 使用指标缓存服务获取技术指标
       const indicators = await this.indicatorsCache.getIndicators(symbol)
       const lastCandle = mainCandles[mainCandles.length - 1]!
+      const volumeHistory = mainCandles.map(candle => candle.volume)
+      // 仅当AI开启时才计算24h涨跌幅，减少计算
+      const priceChange24h = aiEnabled 
+        ? ((price - mainCandles[0]!.close) / mainCandles[0]!.close) * 100 
+        : 0
 
-      // 优先检测PA价格行为信号（最高优先级）
-      const paSignal = checkPriceActionSignal(
-        mainCandles, 
-        this.config,
-        price,
-        indicators.ema20,
-        indicators.ema60
-      )
-
-      // PA信号防抖：同一根K线同方向信号仅触发一次
-      let paDuplicate = false
-      if (paSignal.triggered && paSignal.direction) {
-        const key = symbol
-        const previousPa = this.paSignalTracker[key]
-        if (
-          previousPa &&
-          previousPa.timestamp === lastCandle.timestamp &&
-          previousPa.direction === paSignal.direction
-        ) {
-          paDuplicate = true
-          this.logAnalysisResult(symbol, false, `PA信号防抖：同一根K线已触发${paSignal.direction}，本次忽略`, price)
-          return null
-        }
-      }
-      // @ts-ignore - priceAction配置已添加
-      const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
-      // @ts-ignore - priceAction配置已添加
-      const paSkipOtherChecks = this.config.indicatorsConfig?.priceAction?.skipOtherChecks ?? true
-      
-      // 构建PA检测结果日志片段
-      const paLogSuffix = paEnabled && !paSignal.triggered ? `； PA检测未触发：${paSignal.reason}` : ''
-      
-      // PA信号触发标记
+      // ==============================
+      // 2. PA信号检测（仅PA开启时执行）
+      // ==============================
       let paTriggered = false
       let paDirection: 'LONG' | 'SHORT' | null = null
       let paReason = ''
-      
-      if (paSignal.triggered && paSignal.direction) {
-        paTriggered = true
-        paDirection = paSignal.direction
-        paReason = paSignal.reason
-        
-        // 记录PA信号到防抖跟踪器
-        this.paSignalTracker[symbol] = {
-          timestamp: lastCandle.timestamp,
-          direction: paSignal.direction,
-        }
-        
-        if (paSkipOtherChecks) {
-          // 跳过其他所有检查，直接生成信号
-          const signal: TradeSignal = {
-            symbol,
-            direction: paSignal.direction,
-            price,
-            confidence: 70,
-            indicators: indicators,
-            aiAnalysis: undefined,
-            timestamp: Date.now(),
-            reason: paSignal.reason
+      let paLogSuffix = ''
+
+      if (paEnabled) {
+        const paSignal = checkPriceActionSignal(
+          mainCandles, 
+          this.config,
+          price,
+          indicators.ema20,
+          indicators.ema60
+        )
+
+        // PA信号防抖：同一根K线同方向信号仅触发一次
+        if (paSignal.triggered && paSignal.direction) {
+          const previousPa = this.paSignalTracker[symbol]
+          if (
+            previousPa &&
+            previousPa.timestamp === lastCandle.timestamp &&
+            previousPa.direction === paSignal.direction
+          ) {
+            this.logAnalysisResult(symbol, false, `PA信号防抖：同一根K线已触发${paSignal.direction}，本次忽略`, price)
+            return null
           }
-          logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${paSignal.reason} 跳过其他检查直接开仓`)
-          return signal
+
+          paTriggered = true
+          paDirection = paSignal.direction
+          paReason = paSignal.reason
+          
+          // 记录PA信号到防抖跟踪器
+          this.paSignalTracker[symbol] = {
+            timestamp: lastCandle.timestamp,
+            direction: paSignal.direction,
+          }
+
+          logger.info('PA信号处理', `${symbol} @${this.formatPrice(price)} ${paSignal.reason}，将进行ADX和AI验证`)
+        } else {
+          paLogSuffix = `； PA检测未触发：${paSignal.reason}`
         }
       }
 
+      // ==============================
+      // 3. 趋势方向判断
+      // ==============================
       // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号，如果PA触发则使用PA方向）
       let trendResult
       if (paTriggered && paDirection) {
-        // PA触发且不跳过其他检查时，使用PA方向作为交易方向
+        // PA触发时，使用PA方向作为交易方向
         trendResult = {
           direction: paDirection,
           reason: paReason,
@@ -159,10 +151,9 @@ export class MarketAnalyzer {
       const isCrossSignal = trendResult.data?.isCrossSignal === true
       const crossCandleTimestamp = trendResult.data?.crossCandleTimestamp as number | undefined
 
-      // 防抖：同一根K线同方向交叉仅触发一次
+      // 交叉信号防抖：同一根K线同方向交叉仅触发一次
       if (isCrossSignal && crossCandleTimestamp && (trendResult.direction === 'LONG' || trendResult.direction === 'SHORT')) {
-        const key = symbol
-        const previousCross = this.crossSignalTracker[key]
+        const previousCross = this.crossSignalTracker[symbol]
         if (
           previousCross &&
           previousCross.timestamp === crossCandleTimestamp &&
@@ -173,14 +164,27 @@ export class MarketAnalyzer {
         }
       }
 
-      // 保存ADX15m用于后续比较（按symbol记录）
-      // 更新当前symbol的ADX值
+      // ==============================
+      // 4. 基础条件验证（优先级：ADX > 波动率）
+      // ==============================
+      // 保存ADX15m用于后续比较
       this.previousADXMap[symbol] = indicators.adx15m
 
-      // 检查波动率条件（金叉死叉直开也需要检查波动率）
+      // 先检查ADX趋势条件（优先级最高，不通过直接返回，避免后续计算）
+      const adxResult = checkADXTrend(indicators, this.config)
+      if (!adxResult.passed) {
+        let logReason = `ADX趋势条件不满足：${adxResult.reason}`
+        if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
+          logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
+        }
+        logReason += paLogSuffix
+        this.logAnalysisResult(symbol, false, logReason, price)
+        return null
+      }
+
+      // 再检查波动率条件（用户要求必须保留，优先级次高）
       const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
       if (!volatilityResult.passed) {
-        // 有交叉失败原因且开启显示时合并显示
         let logReason = `波动率条件不满足：${volatilityResult.reason}`
         if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
           logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
@@ -190,35 +194,15 @@ export class MarketAnalyzer {
         return null
       }
 
-      // 非金叉/死叉场景，继续执行其他常规过滤条件
-      if (!isCrossSignal) {
-        // 检查ADX趋势条件（多周期）
-        const adxResult = checkADXTrend(indicators, this.config)
-        if (!adxResult.passed) {
-          // 有交叉失败原因且开启显示时合并显示
-          let logReason = `ADX趋势条件不满足：${adxResult.reason}`
-          if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
-            logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
-          }
-          logReason += paLogSuffix
-          this.logAnalysisResult(symbol, false, logReason, price)
-          return null
-        }
-      }
-      
-      const firstCandle = mainCandles[0]!
-      const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
-
-      // 获取成交量历史数据（用于成交量确认）
-      const volumeHistory = mainCandles.map(candle => candle.volume)
-      
-      // 检查入场条件
+      // ==============================
+      // 5. 入场条件检查
+      // ==============================
       let entryResult: any = null
 
       if (isCrossSignal) {
         entryResult = {
           passed: true,
-          reason: `${trendResult.reason}（跳过ADX/波动率/常规入场指标与AI入场门槛）`
+          reason: trendResult.reason
         }
       } else if (trendResult.direction === 'LONG') {
         entryResult = checkLongEntry(price, indicators, lastCandle, this.config, volumeHistory, mainCandles)
@@ -229,7 +213,6 @@ export class MarketAnalyzer {
       const entryOk = entryResult?.passed || false
 
       if (!entryOk) {
-        // 有交叉失败原因且开启显示时合并显示
         let logReason = `入场条件不满足：方向${trendResult.direction} ${entryResult?.reason || '未知原因'}`
         if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
           logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
@@ -247,9 +230,11 @@ export class MarketAnalyzer {
         }
       }
 
-      // AI分析（如果启用）
+      // ==============================
+      // 6. AI分析验证（仅AI开启时执行）
+      // ==============================
       let aiAnalysis = undefined
-      if (this.config.aiConfig.enabled && this.config.aiConfig.useForEntry) {
+      if (aiEnabled) {
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
           price,
@@ -262,32 +247,22 @@ export class MarketAnalyzer {
           this.config
         )
 
-        // 对于金叉/死叉信号，跳过AI入场条件检查（AI分析结果仍用于动态杠杆计算）
-        if (!isCrossSignal) {
-          // 检查AI分析条件（仅对非交叉信号进行入场条件检查）
-          const aiConditionsPassed = checkAIAnalysisConditions(
-            aiAnalysis,
-            this.config.aiConfig.minConfidence,
-            this.config.aiConfig.maxRiskLevel,
-            this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
-          )
-          if (!aiConditionsPassed) {
-            this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}${paLogSuffix}`, price)
-            return null
-          }
-        } else {
-          // 金叉/死叉信号：记录AI分析结果但不进行入场条件检查
-          logger.info('AI分析', `金叉/死叉信号跳过AI入场条件检查，AI分析结果将用于动态杠杆计算`, {
-            symbol,
-            direction: aiAnalysis.direction,
-            confidence: aiAnalysis.confidence,
-            score: aiAnalysis.score,
-            riskLevel: aiAnalysis.riskLevel
-          })
+        // 所有信号都需要检查AI入场条件
+        const aiConditionsPassed = checkAIAnalysisConditions(
+          aiAnalysis,
+          this.config.aiConfig.minConfidence,
+          this.config.aiConfig.maxRiskLevel,
+          this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
+        )
+        if (!aiConditionsPassed) {
+          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}${paLogSuffix}`, price)
+          return null
         }
       }
 
-      // 构建交易信号
+      // ==============================
+      // 7. 生成交易信号
+      // ==============================
       let finalReason = entryResult?.reason || '入场条件满足'
       if (paTriggered && paDirection) {
         // PA触发时，在原因前添加PA信号说明
@@ -306,8 +281,7 @@ export class MarketAnalyzer {
       }
 
       // 记录最终分析结果，包含具体原因
-      const signalReason = finalReason
-      logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${signalReason}`)
+      logger.success('分析结果', `${symbol} @${this.formatPrice(price)} ${finalReason}`)
       
       return signal
     } catch (error: any) {
