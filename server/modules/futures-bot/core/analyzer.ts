@@ -54,7 +54,6 @@ export class MarketAnalyzer {
       // 1. 数据准备 + 开关预检查
       // ==============================
       // 提前读取开关配置，避免后续无效计算
-      const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
       const aiEnabled = this.config.aiConfig.enabled && this.config.aiConfig.useForEntry
 
       // 获取当前价格
@@ -81,23 +80,72 @@ export class MarketAnalyzer {
         : 0
 
       // ==============================
-      // 2. PA信号检测（仅PA开启时执行）
+      // 2. 基础条件验证（优先级：ADX > 波动率）
+      // ==============================
+      // 保存ADX15m用于后续比较
+      this.previousADXMap[symbol] = indicators.adx15m
+
+      // 先检查ADX趋势条件（优先级最高，不通过直接返回，避免后续计算）
+      const adxResult = checkADXTrend(indicators, this.config)
+      if (!adxResult.passed) {
+        let logReason = `ADX趋势条件不满足：${adxResult.reason}`
+        this.logAnalysisResult(symbol, false, logReason, price)
+        return null
+      }
+
+      // 再检查波动率条件（用户要求必须保留，优先级次高）
+      const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
+      if (!volatilityResult.passed) {
+        let logReason = `波动率条件不满足：${volatilityResult.reason}`
+        this.logAnalysisResult(symbol, false, logReason, price)
+        return null
+      }
+
+      // ==============================
+      // 3. AI分析验证（仅AI开启时执行）
+      // ==============================
+      let aiAnalysis = undefined
+      if (aiEnabled) {
+        aiAnalysis = await analyzeMarketWithAI(
+          symbol,
+          price,
+          indicators.ema20,
+          indicators.ema60,
+          indicators.rsi,
+          lastCandle.volume,
+          priceChange24h,
+          indicators,
+          this.config
+        )
+
+        // 所有信号都需要检查AI入场条件
+        const aiConditionsPassed = checkAIAnalysisConditions(
+          aiAnalysis,
+          this.config.aiConfig.minConfidence,
+          this.config.aiConfig.maxRiskLevel,
+          this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
+        )
+        if (!aiConditionsPassed) {
+          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}`, price)
+          return null
+        }
+      }
+
+      // ==============================
+      // 4. PA信号检测 + 趋势方向判断（后置到硬过滤之后）
       // ==============================
       const paResult = this.processPASignal(symbol, mainCandles, price, indicators, lastCandle)
-      
+
       if (paResult.shouldAbort) {
         this.logAnalysisResult(symbol, false, paResult.abortReason!, price)
         return null
       }
-      
+
       const paTriggered = paResult.triggered
       const paDirection = paResult.direction
       const paReason = paResult.reason
       const paLogSuffix = paResult.logSuffix
 
-      // ==============================
-      // 3. 趋势方向判断
-      // ==============================
       // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号，如果PA触发则使用PA方向）
       let trendResult
       if (paTriggered && paDirection) {
@@ -110,7 +158,7 @@ export class MarketAnalyzer {
           }
         }
       } else {
-        // 没有PA信号时使用正常趋势检测
+        // 没有PA信号时使用正常趋势检测（含EMA金叉/死叉）
         trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
       }
       if (trendResult.direction === 'IDLE') {
@@ -134,36 +182,6 @@ export class MarketAnalyzer {
           this.logAnalysisResult(symbol, false, `交叉信号防抖：同一根K线已触发${trendResult.direction}，本次忽略`, price)
           return null
         }
-      }
-
-      // ==============================
-      // 4. 基础条件验证（优先级：ADX > 波动率）
-      // ==============================
-      // 保存ADX15m用于后续比较
-      this.previousADXMap[symbol] = indicators.adx15m
-
-      // 先检查ADX趋势条件（优先级最高，不通过直接返回，避免后续计算）
-      const adxResult = checkADXTrend(indicators, this.config)
-      if (!adxResult.passed) {
-        let logReason = `ADX趋势条件不满足：${adxResult.reason}`
-        if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
-          logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
-        }
-        logReason += paLogSuffix
-        this.logAnalysisResult(symbol, false, logReason, price)
-        return null
-      }
-
-      // 再检查波动率条件（用户要求必须保留，优先级次高）
-      const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
-      if (!volatilityResult.passed) {
-        let logReason = `波动率条件不满足：${volatilityResult.reason}`
-        if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
-          logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
-        }
-        logReason += paLogSuffix
-        this.logAnalysisResult(symbol, false, logReason, price)
-        return null
       }
 
       // ==============================
@@ -195,37 +213,7 @@ export class MarketAnalyzer {
       }
 
       // ==============================
-      // 6. AI分析验证（仅AI开启时执行）
-      // ==============================
-      let aiAnalysis = undefined
-      if (aiEnabled) {
-        aiAnalysis = await analyzeMarketWithAI(
-          symbol,
-          price,
-          indicators.ema20,
-          indicators.ema60,
-          indicators.rsi,
-          lastCandle.volume,
-          priceChange24h,
-          indicators,
-          this.config
-        )
-
-        // 所有信号都需要检查AI入场条件
-        const aiConditionsPassed = checkAIAnalysisConditions(
-          aiAnalysis,
-          this.config.aiConfig.minConfidence,
-          this.config.aiConfig.maxRiskLevel,
-          this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
-        )
-        if (!aiConditionsPassed) {
-          this.logAnalysisResult(symbol, false, `AI分析条件不满足：方向${aiAnalysis.direction}、置信度${aiAnalysis.confidence}、评分${aiAnalysis.score}、风险${aiAnalysis.riskLevel}${paLogSuffix}`, price)
-          return null
-        }
-      }
-
-      // ==============================
-      // 7. 生成交易信号
+      // 6. 生成交易信号
       // ==============================
       let finalReason = entryResult?.reason || '入场条件满足'
       if (paTriggered && paDirection) {
@@ -353,7 +341,7 @@ export class MarketAnalyzer {
         }
       }
 
-      logger.info('PA信号处理', `${symbol} @${this.formatPrice(price)} ${paSignal.reason}，将进行ADX和AI验证`)
+      logger.info('PA信号处理', `${symbol} @${this.formatPrice(price)} ${paSignal.reason}，已通过ADX/波动率/AI，进入趋势与入场验证`)
       
       return {
         triggered: true,

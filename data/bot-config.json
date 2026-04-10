@@ -14,7 +14,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 8,
+  "positionTimeoutHours": 6,
   "scanInterval": 180,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 3600,
@@ -40,8 +40,8 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2.2,
-      "tp2RiskRewardRatio": 3.2,
+      "tp1RiskRewardRatio": 2.5,
+      "tp2RiskRewardRatio": 3.5,
       "tp1MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 80,
@@ -54,7 +54,7 @@
   },
   "dynamicLeverageConfig": {
     "enabled": true,
-    "minLeverage": 10,
+    "minLeverage": 5,
     "maxLeverage": 20,
     "baseLeverage": 8,
     "riskLevelMultipliers": {
@@ -65,9 +65,9 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 1,
+    "activationRatio": 0.8,
     "trailingDistance": 1.2,
-    "minMovePercent": 0.22
+    "minMovePercent": 0.18
   },
   "indicatorsConfig": {
     "requiredCandles": 300,
@@ -78,7 +78,7 @@
         "slow": 60
       },
       "medium_term": {
-        "fast": 20,
+        "fast": 14,
         "medium": 60,
         "slow": 120
       }
@@ -91,9 +91,9 @@
       "onlyTrend": true
     },
     "adxTrend": {
-      "adx15mThreshold": 50,
-      "adx1hThreshold": 50,
-      "adx4hThreshold": 50,
+      "adx15mThreshold": 23,
+      "adx1hThreshold": 20,
+      "adx4hThreshold": 15,
       "enableAdx15mVs1hCheck": false
     },
     "longEntry": {
@@ -128,17 +128,17 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 1.38,
+      "minATRPercent": 0.38,
       "skipSymbols": []
     },
     "priceAction": {
       "enabled": true,
       "skipOtherChecks": true,
       "pinBarEnabled": true,
-      "shadowBodyRatio": 3,
+      "shadowBodyRatio": 5,
       "maxBodyRatio": 0.3,
       "engulfingEnabled": true,
-      "minEngulfRatio": 1.1
+      "minEngulfRatio": 1.8
     }
   }
 }
