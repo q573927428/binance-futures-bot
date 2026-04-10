@@ -14,6 +14,7 @@ export class MarketAnalyzer {
   private indicatorsCache: IndicatorsCache
   private previousADXMap: Record<string, number> = {}
   private crossSignalTracker: Record<string, { timestamp: number; direction: 'LONG' | 'SHORT' }> = {}
+  private paSignalTracker: Record<string, { timestamp: number; direction: 'LONG' | 'SHORT' }> = {}
 
   constructor(binance: BinanceService, config: BotConfig) {
     this.binance = binance
@@ -66,8 +67,34 @@ export class MarketAnalyzer {
         return null
       }
 
+      // 使用指标缓存服务获取技术指标
+      const indicators = await this.indicatorsCache.getIndicators(symbol)
+      const lastCandle = mainCandles[mainCandles.length - 1]!
+
       // 优先检测PA价格行为信号（最高优先级）
-      const paSignal = checkPriceActionSignal(mainCandles, this.config)
+      const paSignal = checkPriceActionSignal(
+        mainCandles, 
+        this.config,
+        price,
+        indicators.ema20,
+        indicators.ema60
+      )
+
+      // PA信号防抖：同一根K线同方向信号仅触发一次
+      let paDuplicate = false
+      if (paSignal.triggered && paSignal.direction) {
+        const key = symbol
+        const previousPa = this.paSignalTracker[key]
+        if (
+          previousPa &&
+          previousPa.timestamp === lastCandle.timestamp &&
+          previousPa.direction === paSignal.direction
+        ) {
+          paDuplicate = true
+          this.logAnalysisResult(symbol, false, `PA信号防抖：同一根K线已触发${paSignal.direction}，本次忽略`, price)
+          return null
+        }
+      }
       // @ts-ignore - priceAction配置已添加
       const paEnabled = this.config.indicatorsConfig?.priceAction?.enabled ?? false
       // @ts-ignore - priceAction配置已添加
@@ -86,6 +113,12 @@ export class MarketAnalyzer {
         paDirection = paSignal.direction
         paReason = paSignal.reason
         
+        // 记录PA信号到防抖跟踪器
+        this.paSignalTracker[symbol] = {
+          timestamp: lastCandle.timestamp,
+          direction: paSignal.direction,
+        }
+        
         if (paSkipOtherChecks) {
           // 跳过其他所有检查，直接生成信号
           const signal: TradeSignal = {
@@ -93,7 +126,7 @@ export class MarketAnalyzer {
             direction: paSignal.direction,
             price,
             confidence: 70,
-            indicators: await this.indicatorsCache.getIndicators(symbol),
+            indicators: indicators,
             aiAnalysis: undefined,
             timestamp: Date.now(),
             reason: paSignal.reason
@@ -102,9 +135,6 @@ export class MarketAnalyzer {
           return signal
         }
       }
-
-      // 使用指标缓存服务获取技术指标
-      const indicators = await this.indicatorsCache.getIndicators(symbol)
 
       // 判断趋势方向（优先识别EMA金叉/死叉直接入场信号，如果PA触发则使用PA方向）
       let trendResult
@@ -177,7 +207,6 @@ export class MarketAnalyzer {
       }
       
       const firstCandle = mainCandles[0]!
-      const lastCandle = mainCandles[mainCandles.length - 1]!
       const priceChange24h = ((price - firstCandle.close) / firstCandle.close) * 100
 
       // 获取成交量历史数据（用于成交量确认）

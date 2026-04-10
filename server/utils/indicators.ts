@@ -993,37 +993,53 @@ export function checkMinNotional(
  */
 function detectPinBar(
   lastCandle: OHLCV,
-  config: any
+  config: any,
+  emaFast: number,
+  emaSlow: number,
+  price: number
 ): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
   const shadowBodyRatio = config.shadowBodyRatio ?? 3;
   const maxBodyRatio = config.maxBodyRatio ?? 0.3;
-  
+
   const lastBodySize = Math.abs(lastCandle.close - lastCandle.open);
   const lastTotalSize = lastCandle.high - lastCandle.low;
   const lastUpperShadow = lastCandle.high - Math.max(lastCandle.open, lastCandle.close);
   const lastLowerShadow = Math.min(lastCandle.open, lastCandle.close) - lastCandle.low;
   
+  // 趋势判断
+  const isUptrend = price > emaSlow && emaFast > emaSlow; // 上升趋势：价格在慢线上方 + 快线在慢线上方
+  const isDowntrend = price < emaSlow && emaFast < emaSlow; // 下降趋势：价格在慢线下方 + 快线在慢线下方
+  
   if (lastBodySize / lastTotalSize <= maxBodyRatio) {
-    // 看涨Pin Bar：长下影线
-    if (lastLowerShadow >= lastBodySize * shadowBodyRatio && lastLowerShadow > lastUpperShadow * 2) {
+    // 看涨Pin Bar：长下影线 + 上升趋势
+    if (isUptrend && lastLowerShadow >= lastBodySize * shadowBodyRatio && lastLowerShadow > lastUpperShadow * 2) {
       return {
         triggered: true,
         direction: 'LONG',
-        reason: `[PA信号] 看涨Pin Bar：下影线(${lastLowerShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastLowerShadow/lastBodySize).toFixed(1)}倍，反转做多`
+        reason: `[PA信号] 看涨Pin Bar：下影线(${lastLowerShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastLowerShadow/lastBodySize).toFixed(1)}倍，上升趋势确认，反转做多`
       };
     }
     
-    // 看跌Pin Bar：长上影线
-    if (lastUpperShadow >= lastBodySize * shadowBodyRatio && lastUpperShadow > lastLowerShadow * 2) {
+    // 看跌Pin Bar：长上影线 + 下降趋势
+    if (isDowntrend && lastUpperShadow >= lastBodySize * shadowBodyRatio && lastUpperShadow > lastLowerShadow * 2) {
       return {
         triggered: true,
         direction: 'SHORT',
-        reason: `[PA信号] 看跌Pin Bar：上影线(${lastUpperShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastUpperShadow/lastBodySize).toFixed(1)}倍，反转做空`
+        reason: `[PA信号] 看跌Pin Bar：上影线(${lastUpperShadow.toFixed(4)})是实体(${lastBodySize.toFixed(4)})的${(lastUpperShadow/lastBodySize).toFixed(1)}倍，下降趋势确认，反转做空`
       };
     }
   }
   
-  return { triggered: false, direction: null, reason: '未触发Pin Bar信号' };
+  let reason = '未触发Pin Bar信号';
+  if (!isUptrend && !isDowntrend) {
+    reason = '未触发Pin Bar信号：当前为震荡趋势，不满足趋势条件';
+  } else if (isUptrend) {
+    reason = '未触发Pin Bar信号：上升趋势仅允许看涨Pin Bar';
+  } else if (isDowntrend) {
+    reason = '未触发Pin Bar信号：下降趋势仅允许看跌Pin Bar';
+  }
+  
+  return { triggered: false, direction: null, reason };
 }
 
 /**
@@ -1074,7 +1090,10 @@ function detectEngulfing(
  */
 export function checkPriceActionSignal(
   candles: OHLCV[],
-  config?: BotConfig
+  config?: BotConfig,
+  price?: number,
+  emaFast?: number,
+  emaSlow?: number
 ): { 
   triggered: boolean; 
   direction: 'LONG' | 'SHORT' | null;
@@ -1096,8 +1115,8 @@ export function checkPriceActionSignal(
   const prevCandle = candles[candles.length - 2]!;
   
   // 1. 检测Pin Bar
-  if (paConfig.pinBarEnabled) {
-    const pinBarResult = detectPinBar(lastCandle, paConfig);
+  if (paConfig.pinBarEnabled && price !== undefined && emaFast !== undefined && emaSlow !== undefined) {
+    const pinBarResult = detectPinBar(lastCandle, paConfig, emaFast, emaSlow, price);
     if (pinBarResult.triggered) {
       return pinBarResult;
     }
