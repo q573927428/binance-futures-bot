@@ -130,9 +130,9 @@ export class MarketAnalyzer {
         )
         
         // AI满足条件时记录有效方向，不满足时仅不触发AI信号，不阻止PA/EMA交叉
-        if (aiConditionsResult.passed && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
-          aiDirection = aiAnalysis.direction
-        } else if (!aiConditionsResult.passed) {
+        if (aiConditionsResult.passed) {
+          aiDirection = aiAnalysis.direction as 'LONG' | 'SHORT'
+        } else {
           aiFailReason = `； AI未通过：${aiConditionsResult.reason}`
         }
       }

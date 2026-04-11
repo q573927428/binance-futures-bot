@@ -803,15 +803,15 @@ export function checkEMACross(
     isCrossSignal = true
     crossDirection = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
     const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
-    crossReason = `[预判交叉] ${crossDirection} ${emaFastName}即将${crossType}${emaSlowName}，差值: ${(emaDiffPercent * 100).toFixed(3)}%`
+    crossReason = `预判交叉：${crossDirection} ${emaFastName}即将${crossType}${emaSlowName}，差值: ${(emaDiffPercent * 100).toFixed(3)}%`
   } else if (goldenCross) {
     isCrossSignal = true
     crossDirection = 'LONG'
-    crossReason = `[实际金叉] LONG ${emaFastName}上穿${emaSlowName}`
+    crossReason = `实际金叉：LONG ${emaFastName}上穿${emaSlowName}`
   } else if (deadCross) {
     isCrossSignal = true
     crossDirection = 'SHORT'
-    crossReason = `[实际死叉] SHORT ${emaFastName}下穿${emaSlowName}`
+    crossReason = `实际死叉]：SHORT ${emaFastName}下穿${emaSlowName}`
   } else if (showCrossFailureReason) {
     const details: string[] = []
     if (predEnabled) {
@@ -824,7 +824,7 @@ export function checkEMACross(
       const currRel = fastCurrent <= slowCurrent ? '≤' : '≥'
       details.push(`未交叉：前值${fastPrev.toFixed(2)}${prevRel}${slowPrev.toFixed(2)}，当前${fastCurrent.toFixed(2)}${currRel}${slowCurrent.toFixed(2)}`)
     }
-    crossFailureReason = details.length ? `[交叉失败] ${details.join('；')}` : null
+    crossFailureReason = details.length ? `交叉失败：${details.join('；')}` : null
   }
 
   return { isCrossSignal, crossDirection, crossReason, crossFailureReason }
