@@ -816,7 +816,7 @@ export function checkEMACross(
     const details: string[] = []
     if (predEnabled) {
       details.push(`差值: ${(emaDiffPercent * 100).toFixed(3)}%`)
-      !isNearCross && details.push(`超过阈值: ${(distancePercent * 100).toFixed(3)}%`)
+      !isNearCross && details.push(`阈值: ${(distancePercent * 100).toFixed(3)}%`)
       !isTrendAligned && details.push('趋势不对齐')
     }
     if (crossEntryEnabled) {

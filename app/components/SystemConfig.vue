@@ -181,6 +181,10 @@
         <el-switch v-model="editConfig.aiConfig.enabled" />
       </el-form-item>
 
+      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小评分">
+        <el-input-number v-model="editConfig.aiConfig.minScore" :min="0" :max="100" />
+      </el-form-item>
+
       <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
         <el-input-number v-model="editConfig.aiConfig.minConfidence" :min="0" :max="100" />
       </el-form-item>

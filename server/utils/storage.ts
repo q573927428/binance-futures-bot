@@ -222,6 +222,7 @@ export function getDefaultConfig(): BotConfig {
     aiConfig: { 
       enabled: true,                  // 启用AI分析
       analysisInterval: 1500,         // AI分析间隔（秒）
+      minScore:70,                    // AI分析分数（0-100）
       minConfidence: 70,              // 最小置信度（0-100）
       conditionMode: 'SCORE_ONLY',    // AI条件模式：仅评分/评分+置信度
       maxRiskLevel: 'MEDIUM',         // 最大风险等级：LOW/MEDIUM/HIGH

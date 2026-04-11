@@ -21,7 +21,8 @@
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minConfidence": 70,
+    "minScore": 70,
+    "minConfidence": 75,
     "conditionMode": "SCORE_ONLY",
     "maxRiskLevel": "MEDIUM",
     "technicalPostAdjustmentMode": "PENALTY_ONLY",
@@ -128,7 +129,7 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 0.38,
+      "minATRPercent": 0.58,
       "skipSymbols": []
     },
     "priceAction": {

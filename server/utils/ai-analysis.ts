@@ -464,18 +464,34 @@ export async function analyzeMarketWithAI(
  */
 export function checkAIAnalysisConditions(
   aiAnalysis: AIAnalysis,
+  minScore: number,
   minConfidence: number,
   maxRiskLevel: RiskLevel,
   conditionMode: AIConditionMode = 'SCORE_ONLY'
-): boolean {
-  // 方向不能是IDLE ✅ 修改为检查方向
-  if (aiAnalysis.direction === 'IDLE') return false
+): { passed: boolean; reason: string; score: number; confidence: number; riskLevel: RiskLevel } {
+  const failReasons: string[] = []
+  const result = {
+    passed: false,
+    score: aiAnalysis.score,
+    confidence: aiAnalysis.confidence,
+    riskLevel: aiAnalysis.riskLevel,
+    reason: ''
+  }
 
-  // 评分必须>=阈值
-  if (aiAnalysis.score < minConfidence) return false
+  // 方向不能是IDLE ✅ 修改为检查方向
+  if (aiAnalysis.direction === 'IDLE') {
+    failReasons.push('方向(IDLE)')
+  }
+
+  // 评分必须>=评分要求
+  if (aiAnalysis.score < minScore) {
+    failReasons.push(`评分${aiAnalysis.score} < ${minScore}`)
+  }
   
   // 置信度检查（可选，默认关闭，避免score/confidence双门槛导致分数失真）
-  if (conditionMode === 'SCORE_AND_CONFIDENCE' && aiAnalysis.confidence < minConfidence) return false
+  if (conditionMode === 'SCORE_AND_CONFIDENCE' && aiAnalysis.confidence < minConfidence) {
+    failReasons.push(`置信度${aiAnalysis.confidence} < ${minConfidence}`)
+  }
   
   // 风险等级检查
   const riskLevels: Record<RiskLevel, number> = {
@@ -485,10 +501,22 @@ export function checkAIAnalysisConditions(
   }
   
   if (riskLevels[aiAnalysis.riskLevel] > riskLevels[maxRiskLevel]) {
-    return false
+    failReasons.push(`风险等级${aiAnalysis.riskLevel} > ${maxRiskLevel}`)
   }
   
-  return true
+  if (failReasons.length === 0) {
+    return {
+      ...result,
+      passed: true,
+      reason: ''
+    }
+  }
+
+  return {
+    ...result,
+    passed: false,
+    reason: failReasons.join('，')
+  }
 }
 
 /**

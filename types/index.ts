@@ -303,6 +303,7 @@ export interface AIConfig {
   enabled: boolean          // 启用AI分析
   analysisInterval?: number // AI分析间隔（秒）
   minConfidence: number     // 最小置信度（0-100）
+  minScore: number          // 最小得分（0-100）   
   maxRiskLevel: RiskLevel   // 最大风险等级
   useForEntry: boolean      // 用于开仓决策
   useForExit: boolean       // 用于平仓决策

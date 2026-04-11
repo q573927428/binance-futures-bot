@@ -106,6 +106,7 @@ export class MarketAnalyzer {
       // ==============================
       let aiAnalysis = undefined
       let aiDirection: 'LONG' | 'SHORT' | null = null
+      let aiFailReason = ''
       if (aiEnabled) {
         aiAnalysis = await analyzeMarketWithAI(
           symbol,
@@ -120,16 +121,19 @@ export class MarketAnalyzer {
         )
 
         // 仅当AI作为入场信号时检查条件，PA/EMA交叉信号不受AI限制
-        const aiConditionsPassed = checkAIAnalysisConditions(
+        const aiConditionsResult = checkAIAnalysisConditions(
           aiAnalysis,
+          this.config.aiConfig.minScore,
           this.config.aiConfig.minConfidence,
           this.config.aiConfig.maxRiskLevel,
           this.config.aiConfig.conditionMode ?? 'SCORE_ONLY'
         )
         
         // AI满足条件时记录有效方向，不满足时仅不触发AI信号，不阻止PA/EMA交叉
-        if (aiConditionsPassed && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
+        if (aiConditionsResult.passed && (aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT') && aiAnalysis.confidence >= this.config.aiConfig.minConfidence) {
           aiDirection = aiAnalysis.direction
+        } else if (!aiConditionsResult.passed) {
+          aiFailReason = `； AI未通过：${aiConditionsResult.reason}`
         }
       }
 
@@ -173,7 +177,7 @@ export class MarketAnalyzer {
         trendResult = getTrendDirection(price, indicators, this.config, mainCandles)
       }
       if (trendResult.direction === 'IDLE') {
-        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}${paLogSuffix}`, price)
+        this.logAnalysisResult(symbol, false, `无明确趋势方向：${trendResult.reason}${paLogSuffix}${aiFailReason}`, price)
         return null
       }
 
@@ -218,7 +222,7 @@ export class MarketAnalyzer {
         if (this.config.indicatorsConfig?.showCrossFailureReason && trendResult.data?.crossFailureReason) {
           logReason = `${logReason} ； ${trendResult.data.crossFailureReason}`
         }
-        logReason += paLogSuffix
+        logReason += paLogSuffix + aiFailReason
         this.logAnalysisResult(symbol, false, logReason, price)
         return null
       }
@@ -330,7 +334,7 @@ export class MarketAnalyzer {
       indicators.ema60
     )
 
-    let logSuffix = `； PA检测未触发：${paSignal.reason}`
+    let logSuffix = `； PA检测：${paSignal.reason}`
 
     // PA信号防抖：同一根K线同方向信号仅触发一次
     if (paSignal.triggered && paSignal.direction) {
