@@ -385,7 +385,7 @@
          <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.medium_term" :min="6" :max="100" />
        </el-form-item>
 
-       <el-divider>【📌入场】AI信号</el-divider>
+       <el-divider>【📌】AI信号</el-divider>
 
        <el-form-item label="启用AI分析">
          <el-switch v-model="editConfig.aiConfig.enabled" />
@@ -433,7 +433,7 @@
          <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
        </el-form-item>
 
-       <el-divider>【📌入场】交叉信号</el-divider>
+       <el-divider>【📌】交叉信号</el-divider>
 
        <el-form-item label="金叉死叉直接入场">
          <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
@@ -456,7 +456,7 @@
          <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.onlyTrend" />
        </el-form-item>
 
-       <el-divider>【📌入场】趋势信号</el-divider>
+       <el-divider>【📌】趋势信号</el-divider>
 
        <el-form-item label="启用EMA回踩检查">
          <el-switch v-model="editConfig.indicatorsConfig.entryConfig.emaDeviationEnabled" />
@@ -503,7 +503,7 @@
          <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.minScoreThreshold" :min="0" :max="100" :step="5" />
        </el-form-item>
 
-       <el-divider>【📌入场】价格行为</el-divider>
+       <el-divider>【📌】价格行为</el-divider>
        
        <el-form-item label="启用价格行为策略">
          <el-switch v-model="editConfig.indicatorsConfig.priceAction.enabled" />

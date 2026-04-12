@@ -511,9 +511,10 @@ export class BinanceService {
   }> {
     try {
       const oi = await this.publicExchange.fetchOpenInterest(symbol) as any
+      const openInterestValue = Number(oi.openInterest || oi.contracts || oi.openInterestAmount || oi.info?.sumOpenInterest || 0)
       return {
         symbol: oi.symbol,
-        openInterest: Number(Number(oi.openInterest || oi.contracts || 0).toFixed(5)),
+        openInterest: Number(openInterestValue.toFixed(5)),
         timestamp: oi.timestamp || Date.now()
       }
     } catch (error: any) {
@@ -544,10 +545,16 @@ export class BinanceService {
         since,
         limit
       ) as any[]
-      return oiHistory.map(item => ({
-        timestamp: item.timestamp || 0,
-        openInterest: Number(Number(item.openInterest || item.contracts || 0).toFixed(5))
-      }))
+      
+      const processedHistory = oiHistory.map(item => {
+        const openInterestValue = Number(item.openInterest || item.contracts || item.openInterestAmount || item.info?.sumOpenInterest || 0)
+        return {
+          timestamp: item.timestamp || 0,
+          openInterest: Number(openInterestValue.toFixed(5))
+        }
+      })
+      
+      return processedHistory
     } catch (error: any) {
       throw new Error(`获取历史持仓量失败: ${error.message}`)
     }

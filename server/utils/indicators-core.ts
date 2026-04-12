@@ -131,13 +131,15 @@ export async function calculateIndicators(
         // 计算OI变化率
         if (oiHistory.length >= oiChangePeriod) {
           const oldOI = oiHistory[0]?.openInterest ?? 0
+          let rawChangeRate = 0
           if (oldOI > 0) {
-            openInterestChangePercent = Number(((openInterest - oldOI) / oldOI * 100).toFixed(2))
+            rawChangeRate = (openInterest - oldOI) / oldOI * 100
+            openInterestChangePercent = Number(rawChangeRate.toFixed(3))
           }
         } else if (oiHistory.length > 0) {
           const oldOI = oiHistory[0]?.openInterest ?? 0
           if (oldOI > 0) {
-            openInterestChangePercent = Number(((openInterest - oldOI) / oldOI * 100).toFixed(2))
+            openInterestChangePercent = Number(((openInterest - oldOI) / oldOI * 100).toFixed(3))
           }
         }
         
