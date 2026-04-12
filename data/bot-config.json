@@ -140,6 +140,15 @@
       "maxBodyRatio": 0.3,
       "engulfingEnabled": true,
       "minEngulfRatio": 1.8
+    },
+    "openInterest": {
+      "enabled": true,
+      "trendPeriod": 12,
+      "trendThresholdPercent": 0.5,
+      "changePeriod": {
+        "short_term": 96,
+        "medium_term": 24
+      }
     }
   }
 }

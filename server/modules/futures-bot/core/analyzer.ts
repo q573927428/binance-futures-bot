@@ -133,7 +133,7 @@ export class MarketAnalyzer {
         if (aiConditionsResult.passed) {
           aiDirection = aiAnalysis.direction as 'LONG' | 'SHORT'
         } else {
-          aiFailReason = `； AI未通过：${aiConditionsResult.reason}`
+          aiFailReason = `； AI入场检测：${aiConditionsResult.reason}`
         }
       }
 
@@ -334,7 +334,7 @@ export class MarketAnalyzer {
       indicators.ema60
     )
 
-    let logSuffix = `； PA检测：${paSignal.reason}`
+    let logSuffix = `； PA入场检测：${paSignal.reason}`
 
     // PA信号防抖：同一根K线同方向信号仅触发一次
     if (paSignal.triggered && paSignal.direction) {

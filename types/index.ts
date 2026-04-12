@@ -72,6 +72,9 @@ export interface StrategyAnalyzerData {
     emaSlowValues: number[]
     atr: number
     adxSlope: number
+    openInterest: number
+    openInterestChangePercent: number
+    openInterestTrend: 'increasing' | 'decreasing' | 'flat'
   }
   
   // AI分析指标（可选）
@@ -213,6 +216,14 @@ export interface IndicatorsConfig {
   
   // 价格行为(PA)策略配置
   priceAction: PriceActionConfig
+  
+  // OI持仓量配置
+  openInterest: {
+    enabled: boolean // 是否启用OI分析
+    trendPeriod: number // OI趋势计算周期（默认10）
+    trendThresholdPercent: number // OI趋势变化阈值百分比（默认2%）
+    changePeriod: Record<StrategyMode, number> // OI变化率计算周期（根据策略模式）
+  }
 }
 
 // 系统配置
@@ -354,6 +365,11 @@ export interface TechnicalIndicators {
   
   // ATR
   atr: number
+  
+  // OI持仓量
+  openInterest: number // 当前持仓量
+  openInterestChangePercent: number // 持仓量变化率（%）
+  openInterestTrend: 'increasing' | 'decreasing' | 'flat' // OI趋势
 }
 
 // AI分析结果

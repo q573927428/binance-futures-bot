@@ -385,6 +385,9 @@ export class PositionOpener {
           adxSlope: 0,
           rsi: 50,
           atr: entryPrice * 0.01, // 默认1% ATR
+          openInterest: 0,
+          openInterestChangePercent: 0,
+          openInterestTrend: 'flat' as const
         }
       }
 

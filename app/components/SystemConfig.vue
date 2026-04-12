@@ -547,6 +547,28 @@
       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.engulfingEnabled" label="吞没最小实体比例">
         <el-input-number v-model="editConfig.indicatorsConfig.priceAction.minEngulfRatio" :min="1.0" :max="3.0" :step="0.1" :precision="1" />
       </el-form-item>
+      
+      <el-divider>持仓量(OI)配置</el-divider>
+      
+      <el-form-item label="启用OI分析">
+        <el-switch v-model="editConfig.indicatorsConfig.openInterest.enabled" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="OI趋势计算周期">
+        <el-input-number v-model="editConfig.indicatorsConfig.openInterest.trendPeriod" :min="5" :max="50" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="OI趋势变化阈值(%)">
+        <el-input-number v-model="editConfig.indicatorsConfig.openInterest.trendThresholdPercent" :min="0.1" :max="10" :step="0.1" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="短期策略变化周期">
+        <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.short_term" :min="12" :max="200" />
+      </el-form-item>
+      
+      <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="中长期策略变化周期">
+        <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.medium_term" :min="6" :max="100" />
+      </el-form-item>
     </el-form>
 
     <template #footer>

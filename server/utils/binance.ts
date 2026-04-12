@@ -500,4 +500,57 @@ export class BinanceService {
     }
   }
 
+  /**
+   * 获取当前持仓量（OI）
+   * @param symbol 交易对
+   */
+  async fetchOpenInterest(symbol: string): Promise<{
+    symbol: string
+    openInterest: number
+    timestamp: number
+  }> {
+    try {
+      const oi = await this.publicExchange.fetchOpenInterest(symbol) as any
+      return {
+        symbol: oi.symbol,
+        openInterest: Number(Number(oi.openInterest || oi.contracts || 0).toFixed(5)),
+        timestamp: oi.timestamp || Date.now()
+      }
+    } catch (error: any) {
+      throw new Error(`获取持仓量失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 获取历史持仓量数据
+   * @param symbol 交易对
+   * @param timeframe 时间周期
+   * @param since 开始时间戳
+   * @param limit 数量限制
+   */
+  async fetchOpenInterestHistory(
+    symbol: string,
+    timeframe: string = '5m',
+    since?: number,
+    limit = 100
+  ): Promise<Array<{
+    timestamp: number
+    openInterest: number
+  }>> {
+    try {
+      const oiHistory = await this.publicExchange.fetchOpenInterestHistory(
+        symbol,
+        timeframe,
+        since,
+        limit
+      ) as any[]
+      return oiHistory.map(item => ({
+        timestamp: item.timestamp || 0,
+        openInterest: Number(Number(item.openInterest || item.contracts || 0).toFixed(5))
+      }))
+    } catch (error: any) {
+      throw new Error(`获取历史持仓量失败: ${error.message}`)
+    }
+  }
+
 }

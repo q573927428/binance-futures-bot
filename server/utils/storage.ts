@@ -342,6 +342,16 @@ export function getDefaultConfig(): BotConfig {
         engulfingEnabled: true,         // 启用吞没形态检测
         minEngulfRatio: 1.8,          // 吞没形态最小实体比例阈值
       },
+      // OI持仓量配置
+      openInterest: {
+        enabled: true, // 是否启用OI分析
+        trendPeriod: 12, // OI趋势计算周期（默认12）
+        trendThresholdPercent: 0.5, // OI趋势判定阈值（EMA相邻两期变化百分比，默认0.5%）
+        changePeriod: {
+          short_term: 96,
+          medium_term: 24
+        }
+      },
     },
   }
 }

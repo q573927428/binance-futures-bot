@@ -468,8 +468,11 @@ export class StrategyAnalyzer {
         emaMediumValues: this.entryIndicators.emaMediumValues,
         emaSlowValues: this.entryIndicators.emaSlowValues,
         atr: this.entryIndicators.atr,
-        adxSlope: this.entryIndicators.adxSlope
-      } : undefined,
+        adxSlope: this.entryIndicators.adxSlope,
+        openInterest: this.entryIndicators.openInterest,
+        openInterestChangePercent: this.entryIndicators.openInterestChangePercent,
+        openInterestTrend: this.entryIndicators.openInterestTrend
+       } : undefined,
       
       // AI分析指标
       aiAnalysis: this.aiAnalysis ? {
@@ -540,8 +543,11 @@ export class StrategyAnalyzer {
         emaMediumValues: data.entryIndicators.emaMediumValues,
         emaSlowValues: data.entryIndicators.emaSlowValues,
         atr: data.entryIndicators.atr,
-        adxSlope: data.entryIndicators.adxSlope
-      }
+        adxSlope: data.entryIndicators.adxSlope,
+        openInterest: data.entryIndicators.openInterest || 0,
+        openInterestChangePercent: data.entryIndicators.openInterestChangePercent || 0,
+        openInterestTrend: data.entryIndicators.openInterestTrend || 'flat'
+       }
     }
     
     // 恢复AI分析指标（如果存在）
