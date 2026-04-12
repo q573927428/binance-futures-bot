@@ -516,18 +516,18 @@ export function checkEntry(
     scoreDetails.push(`EMA接近：+0分 (${emaNearResult.reason})`)
   }
 
-  // EMA偏离度（15分）
+  // EMA偏离度（10分）
   if (emaSlowDevResult.passed) {
-    totalScore += 15
-    scoreDetails.push(`EMA偏离：+15分 (${emaSlowDevResult.reason})`)
+    totalScore += 10
+    scoreDetails.push(`EMA偏离：+10分 (${emaSlowDevResult.reason})`)
   } else {
     scoreDetails.push(`EMA偏离：+0分 (${emaSlowDevResult.reason})`)
   }
 
-  // RSI区间（15分）
+  // RSI区间（10分）
   if (rsiResult.passed) {
-    totalScore += 15
-    scoreDetails.push(`RSI区间：+15分 (${rsiResult.reason})`)
+    totalScore += 10
+    scoreDetails.push(`RSI区间：+10分 (${rsiResult.reason})`)
   } else {
     scoreDetails.push(`RSI区间：+0分 (${rsiResult.reason})`)
   }
@@ -540,10 +540,10 @@ export function checkEntry(
     scoreDetails.push(`K线确认：+0分 (${candleResult.reason})`)
   }
 
-  // 成交量确认（10分）
+  // 成交量确认（20分）
   if (volumeResult.passed) {
-    totalScore += 10
-    scoreDetails.push(`成交量：+10分 (${volumeResult.reason})`)
+    totalScore += 20
+    scoreDetails.push(`成交量：+20分 (${volumeResult.reason})`)
   } else {
     scoreDetails.push(`成交量：+0分 (${volumeResult.reason})`)
   }
