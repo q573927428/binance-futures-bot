@@ -175,54 +175,6 @@
         <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
       </el-form-item>
 
-      <el-divider>AI信号入场配置</el-divider>
-
-      <el-form-item label="启用AI分析">
-        <el-switch v-model="editConfig.aiConfig.enabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小评分">
-        <el-input-number v-model="editConfig.aiConfig.minScore" :min="0" :max="100" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
-        <el-input-number v-model="editConfig.aiConfig.minConfidence" :min="0" :max="100" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI条件模式">
-        <el-select v-model="editConfig.aiConfig.conditionMode" placeholder="选择条件模式">
-          <el-option label="仅评分" value="SCORE_ONLY" />
-          <el-option label="评分+置信度" value="SCORE_AND_CONFIDENCE" />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析后处理模式">
-        <el-select v-model="editConfig.aiConfig.technicalPostAdjustmentMode" placeholder="选择后处理模式">
-          <el-option label="惩罚优先" value="PENALTY_ONLY" />
-          <el-option label="平衡模式" value="BALANCED" />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="最大风险等级">
-        <el-select v-model="editConfig.aiConfig.maxRiskLevel" placeholder="选择风险等级">
-          <el-option label="低" value="LOW" />
-          <el-option label="中" value="MEDIUM" />
-          <el-option label="高" value="HIGH" />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="用于开仓决策">
-        <el-switch v-model="editConfig.aiConfig.useForEntry" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="用于平仓决策">
-        <el-switch v-model="editConfig.aiConfig.useForExit" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.aiConfig.enabled" label="缓存时长(分钟)">
-        <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
-      </el-form-item>
-
       <el-divider>动态杠杆配置</el-divider>
 
       <el-form-item label="启用动态杠杆">
@@ -354,29 +306,6 @@
         <el-input-number v-model="editConfig.indicatorsConfig.emaPeriods.medium_term.slow" :min="5" :max="250" />
       </el-form-item>
 
-      <el-divider>EMA线交叉入场配置</el-divider>
-
-      <el-form-item label="金叉死叉直接入场">
-        <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
-      </el-form-item>
-
-      <el-form-item label="显示交叉失败日志">
-        <el-switch v-model="editConfig.indicatorsConfig.showCrossFailureReason" />
-      </el-form-item>
-
-      <el-form-item label="启用预判交叉">
-        <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.enabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="EMA距离阈值">
-        <el-input-number v-model="editConfig.indicatorsConfig.predictiveCross.distancePercent" :min="0.0001" :max="0.01" :step="0.0001" :precision="4" />
-        <small>百分比(0.0008=0.08%)</small>
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="只在顺势时预判">
-        <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.onlyTrend" />
-      </el-form-item>
-
       <el-divider>ADX趋势配置</el-divider>
 
       <el-form-item :label="`${editConfig.strategyMode === 'medium_term' ? '1小时' : '15分钟'}ADX阈值`">
@@ -393,90 +322,6 @@
 
       <el-form-item :label="`ADX${editConfig.strategyMode === 'medium_term' ? '1h' : '15m'} > ${editConfig.strategyMode === 'medium_term' ? '4h' : '1h'}检查`">
         <el-switch v-model="editConfig.indicatorsConfig.adxTrend.enableAdx15mVs1hCheck" />
-      </el-form-item>
-
-      <el-divider>做多入场条件</el-divider>
-
-      <el-form-item label="启用EMA回踩检查">
-        <el-switch v-model="editConfig.indicatorsConfig.longEntry.emaDeviationEnabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.emaDeviationEnabled" label="EMA偏离阈值(%)">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
-        <el-switch v-model="editConfig.indicatorsConfig.longEntry.emaSlowDeviationEnabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item label="RSI最小值">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.rsiMin" :min="20" :max="80" />
-      </el-form-item>
-
-      <el-form-item label="RSI最大值">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.rsiMax" :min="20" :max="80" />
-      </el-form-item>
-
-      <el-form-item label="K线下影线阈值(%)">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.candleShadowThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item label="启用成交量确认">
-        <el-switch v-model="editConfig.indicatorsConfig.longEntry.volumeConfirmation" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="EMA成交量周期">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeEMAPeriod" :min="5" :max="50" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.longEntry.volumeConfirmation" label="EMA成交量倍数">
-        <el-input-number v-model="editConfig.indicatorsConfig.longEntry.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
-      </el-form-item>
-
-      <el-divider>做空入场条件</el-divider>
-
-      <el-form-item label="启用EMA回踩检查">
-        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationEnabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.emaDeviationEnabled" label="EMA偏离阈值(%)">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
-        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationEnabled" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item label="RSI最小值">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.rsiMin" :min="20" :max="80" />
-      </el-form-item>
-
-      <el-form-item label="RSI最大值">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.rsiMax" :min="20" :max="80" />
-      </el-form-item>
-
-      <el-form-item label="K线上影线阈值(%)">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.candleShadowThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
-      </el-form-item>
-
-      <el-form-item label="启用成交量确认">
-        <el-switch v-model="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="EMA成交量周期">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeEMAPeriod" :min="5" :max="50" />
-      </el-form-item>
-
-      <el-form-item v-if="editConfig.indicatorsConfig.shortEntry.volumeConfirmation" label="EMA成交量倍数">
-        <el-input-number v-model="editConfig.indicatorsConfig.shortEntry.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
       </el-form-item>
 
       <el-divider>价格突破配置</el-divider>
@@ -518,37 +363,7 @@
         </el-select>
       </el-form-item>
       
-      <el-divider>价格行为(PA)配置</el-divider>
-      
-      <el-form-item label="启用价格行为策略">
-        <el-switch v-model="editConfig.indicatorsConfig.priceAction.enabled" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="满足条件直接开仓">
-        <el-switch v-model="editConfig.indicatorsConfig.priceAction.skipOtherChecks" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用Pin Bar检测">
-        <el-switch v-model="editConfig.indicatorsConfig.priceAction.pinBarEnabled" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar影线/实体比例">
-        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.shadowBodyRatio" :min="2" :max="10" :step="0.5" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar实体最大占比">
-        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.maxBodyRatio" :min="0.1" :max="0.8" :step="0.05" :precision="2" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用吞没形态检测">
-        <el-switch v-model="editConfig.indicatorsConfig.priceAction.engulfingEnabled" />
-      </el-form-item>
-      
-      <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.engulfingEnabled" label="吞没最小实体比例">
-        <el-input-number v-model="editConfig.indicatorsConfig.priceAction.minEngulfRatio" :min="1.0" :max="3.0" :step="0.1" :precision="1" />
-      </el-form-item>
-      
-      <el-divider>持仓量(OI)配置</el-divider>
+       <el-divider>持仓量(OI)配置</el-divider>
       
       <el-form-item label="启用OI分析">
         <el-switch v-model="editConfig.indicatorsConfig.openInterest.enabled" />
@@ -566,10 +381,158 @@
         <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.short_term" :min="12" :max="200" />
       </el-form-item>
       
-      <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="中长期策略变化周期">
-        <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.medium_term" :min="6" :max="100" />
-      </el-form-item>
-    </el-form>
+       <el-form-item v-if="editConfig.indicatorsConfig.openInterest.enabled" label="中长期策略变化周期">
+         <el-input-number v-model="editConfig.indicatorsConfig.openInterest.changePeriod.medium_term" :min="6" :max="100" />
+       </el-form-item>
+
+       <el-divider>【📌入场】AI信号</el-divider>
+
+       <el-form-item label="启用AI分析">
+         <el-switch v-model="editConfig.aiConfig.enabled" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小评分">
+         <el-input-number v-model="editConfig.aiConfig.minScore" :min="0" :max="100" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="AI最小置信度">
+         <el-input-number v-model="editConfig.aiConfig.minConfidence" :min="0" :max="100" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="AI条件模式">
+         <el-select v-model="editConfig.aiConfig.conditionMode" placeholder="选择条件模式">
+           <el-option label="仅评分" value="SCORE_ONLY" />
+           <el-option label="评分+置信度" value="SCORE_AND_CONFIDENCE" />
+         </el-select>
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="AI分析后处理模式">
+         <el-select v-model="editConfig.aiConfig.technicalPostAdjustmentMode" placeholder="选择后处理模式">
+           <el-option label="惩罚优先" value="PENALTY_ONLY" />
+           <el-option label="平衡模式" value="BALANCED" />
+         </el-select>
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="最大风险等级">
+         <el-select v-model="editConfig.aiConfig.maxRiskLevel" placeholder="选择风险等级">
+           <el-option label="低" value="LOW" />
+           <el-option label="中" value="MEDIUM" />
+           <el-option label="高" value="HIGH" />
+         </el-select>
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="用于开仓决策">
+         <el-switch v-model="editConfig.aiConfig.useForEntry" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="用于平仓决策">
+         <el-switch v-model="editConfig.aiConfig.useForExit" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.aiConfig.enabled" label="缓存时长(分钟)">
+         <el-input-number v-model="editConfig.aiConfig.cacheDuration" :min="1" :max="60" />
+       </el-form-item>
+
+       <el-divider>【📌入场】交叉信号</el-divider>
+
+       <el-form-item label="金叉死叉直接入场">
+         <el-switch v-model="editConfig.indicatorsConfig.crossEntryEnabled" />
+       </el-form-item>
+
+       <el-form-item label="显示交叉失败日志">
+         <el-switch v-model="editConfig.indicatorsConfig.showCrossFailureReason" />
+       </el-form-item>
+
+       <el-form-item label="启用预判交叉">
+         <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.enabled" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="EMA距离阈值">
+         <el-input-number v-model="editConfig.indicatorsConfig.predictiveCross.distancePercent" :min="0.0001" :max="0.01" :step="0.0001" :precision="4" />
+         <small>百分比(0.0008=0.08%)</small>
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.predictiveCross.enabled" label="只在顺势时预判">
+         <el-switch v-model="editConfig.indicatorsConfig.predictiveCross.onlyTrend" />
+       </el-form-item>
+
+       <el-divider>【📌入场】趋势信号</el-divider>
+
+       <el-form-item label="启用EMA回踩检查">
+         <el-switch v-model="editConfig.indicatorsConfig.entryConfig.emaDeviationEnabled" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.emaDeviationEnabled" label="EMA偏离阈值(%)">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
+       </el-form-item>
+
+       <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
+         <el-switch v-model="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationEnabled" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
+       </el-form-item>
+
+       <el-form-item label="RSI最小值">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.rsiMin" :min="20" :max="80" />
+       </el-form-item>
+
+       <el-form-item label="RSI最大值">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.rsiMax" :min="20" :max="80" />
+       </el-form-item>
+
+       <el-form-item label="K线影线阈值(%)">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.candleShadowThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
+         <small>多头检查下影线，空头检查上影线</small>
+       </el-form-item>
+
+       <el-form-item label="启用成交量确认">
+         <el-switch v-model="editConfig.indicatorsConfig.entryConfig.volumeConfirmation" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.volumeConfirmation" label="EMA成交量周期">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.volumeEMAPeriod" :min="5" :max="50" />
+       </el-form-item>
+
+       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.volumeConfirmation" label="EMA成交量倍数">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.volumeEMAMultiplier" :min="0.5" :max="3" :step="0.1" :precision="2" />
+       </el-form-item>
+       
+       <el-form-item label="入场最低评分阈值">
+         <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.minScoreThreshold" :min="0" :max="100" :step="5" />
+       </el-form-item>
+
+       <el-divider>【📌入场】价格行为</el-divider>
+       
+       <el-form-item label="启用价格行为策略">
+         <el-switch v-model="editConfig.indicatorsConfig.priceAction.enabled" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="满足条件直接开仓">
+         <el-switch v-model="editConfig.indicatorsConfig.priceAction.skipOtherChecks" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用Pin Bar检测">
+         <el-switch v-model="editConfig.indicatorsConfig.priceAction.pinBarEnabled" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar影线/实体比例">
+         <el-input-number v-model="editConfig.indicatorsConfig.priceAction.shadowBodyRatio" :min="2" :max="10" :step="0.5" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.pinBarEnabled" label="Pin Bar实体最大占比">
+         <el-input-number v-model="editConfig.indicatorsConfig.priceAction.maxBodyRatio" :min="0.1" :max="0.8" :step="0.05" :precision="2" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled" label="启用吞没形态检测">
+         <el-switch v-model="editConfig.indicatorsConfig.priceAction.engulfingEnabled" />
+       </el-form-item>
+       
+       <el-form-item v-if="editConfig.indicatorsConfig.priceAction.enabled && editConfig.indicatorsConfig.priceAction.engulfingEnabled" label="吞没最小实体比例">
+         <el-input-number v-model="editConfig.indicatorsConfig.priceAction.minEngulfRatio" :min="1.0" :max="3.0" :step="0.1" :precision="1" />
+       </el-form-item>
+     </el-form>
 
     <template #footer>
       <el-button @click="configDialogVisible = false">取消</el-button>

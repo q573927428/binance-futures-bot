@@ -1,4 +1,4 @@
-import type { TechnicalIndicators, BotConfig } from '../../../../types'
+import type { TechnicalIndicators, BotConfig, OHLCV } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculateIndicators } from '../../../utils/indicators'
 import { logger } from '../../../utils/logger'
@@ -93,7 +93,7 @@ export class IndicatorsCache {
   /**
    * 获取指标（带缓存和请求去重）
    */
-  async getIndicators(symbol: string): Promise<TechnicalIndicators> {
+  async getIndicators(symbol: string, candlesMain?: OHLCV[]): Promise<TechnicalIndicators> {
     const cached = this.cache.get(symbol)
     const now = Date.now()
 
@@ -112,7 +112,7 @@ export class IndicatorsCache {
     }
 
     // 创建新请求
-    const requestPromise = this.fetchAndCacheIndicators(symbol)
+    const requestPromise = this.fetchAndCacheIndicators(symbol, candlesMain)
     this.pendingRequests.set(symbol, requestPromise)
 
     try {
@@ -127,9 +127,9 @@ export class IndicatorsCache {
   /**
    * 内部方法：获取并缓存指标
    */
-  private async fetchAndCacheIndicators(symbol: string): Promise<TechnicalIndicators> {
+  private async fetchAndCacheIndicators(symbol: string, candlesMain?: OHLCV[]): Promise<TechnicalIndicators> {
     try {
-      const indicators = await calculateIndicators(this.binance, symbol, this.config)
+      const indicators = await calculateIndicators(this.binance, symbol, this.config, candlesMain)
       this.setCache(symbol, indicators)
       return indicators
     } catch (error: any) {

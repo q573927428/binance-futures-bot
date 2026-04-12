@@ -1,4 +1,4 @@
-import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig, AIConditionMode } from '../../types'
+import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig, AIConditionMode, TradingSignal } from '../../types'
 
 interface AIAnalysisCache {
   data: AIAnalysis
@@ -111,8 +111,9 @@ export function calculateTechnicalWeightAdjustment(
   // 5. EMA30支撑/阻力调整
   const priceToEMA30 = Math.abs(price - indicators.ema30) / indicators.ema30
   // 使用配置文件中的阈值，默认为0.02
-  const longEmaDeviationThreshold = config?.indicatorsConfig?.longEntry?.emaDeviationThreshold ?? 0.02
-  const shortEmaDeviationThreshold = config?.indicatorsConfig?.shortEntry?.emaDeviationThreshold ?? 0.02
+  const emaDeviationThreshold = config?.indicatorsConfig?.entryConfig?.emaDeviationThreshold ?? 0.02
+  const longEmaDeviationThreshold = emaDeviationThreshold
+  const shortEmaDeviationThreshold = emaDeviationThreshold
   
   if (isLong && price > indicators.ema30 && priceToEMA30 <= longEmaDeviationThreshold) {
     // 多头回踩EMA（健康趋势）
@@ -464,6 +465,7 @@ export async function analyzeMarketWithAI(
  */
 /**
  * 检查AI分析条件
+ * @returns 统一格式的AI检测信号
  */
 export function checkAIAnalysisConditions(
   aiAnalysis: AIAnalysis,
@@ -471,13 +473,7 @@ export function checkAIAnalysisConditions(
   minConfidence: number,
   maxRiskLevel: RiskLevel,
   conditionMode: AIConditionMode = 'SCORE_ONLY'
-): {
-  passed: boolean
-  reason: string
-  score: number
-  confidence: number
-  riskLevel: RiskLevel
-} {
+): TradingSignal {
   // 1. 风险等级权重映射（常量提升，只初始化一次）
   const RISK_LEVEL_WEIGHT: Readonly<Record<RiskLevel, number>> = {
     LOW: 1,
@@ -487,6 +483,15 @@ export function checkAIAnalysisConditions(
 
   // 2. 收集所有不通过原因
   const failReasons: string[] = []
+  const data: Record<string, any> = {
+    score: aiAnalysis.score,
+    confidence: aiAnalysis.confidence,
+    riskLevel: aiAnalysis.riskLevel,
+    minScore,
+    minConfidence,
+    maxRiskLevel,
+    conditionMode
+  }
 
   // 3. 逐项校验
   if (aiAnalysis.direction === 'IDLE') {
@@ -494,25 +499,36 @@ export function checkAIAnalysisConditions(
   }
 
   if (aiAnalysis.score < minScore) {
-    failReasons.push(`评分(${aiAnalysis.score})  < (${minScore})`)
+    failReasons.push(`评分(${aiAnalysis.score}) < ${minScore}`)
   }
 
   if (conditionMode === 'SCORE_AND_CONFIDENCE' && aiAnalysis.confidence < minConfidence) {
-    failReasons.push(`置信度(${aiAnalysis.confidence}) < (${minConfidence})`)
+    failReasons.push(`置信度(${aiAnalysis.confidence}) < ${minConfidence}`)
   }
 
   if (RISK_LEVEL_WEIGHT[aiAnalysis.riskLevel] > RISK_LEVEL_WEIGHT[maxRiskLevel]) {
-    failReasons.push(`风险等级(${aiAnalysis.riskLevel})  > (${maxRiskLevel})`)
+    failReasons.push(`风险等级(${aiAnalysis.riskLevel}) > ${maxRiskLevel}`)
   }
 
   // 4. 统一返回结果
-  const passed = failReasons.length === 0
+  const triggered = failReasons.length === 0
+  let direction: 'LONG' | 'SHORT' | null = null
+  let reason = ''
+  
+  if (triggered) {
+    direction = aiAnalysis.direction === 'LONG' || aiAnalysis.direction === 'SHORT' ? aiAnalysis.direction : null
+    reason = `AI检测通过，方向${direction}，得分${aiAnalysis.score}，置信度${aiAnalysis.confidence}`
+  } else {
+    direction = null
+    reason = `AI检测不通过：${failReasons.join('，')}`
+  }
+
   return {
-    passed,
-    reason: passed ? '' : failReasons.join('，'),
-    score: aiAnalysis.score,
-    confidence: aiAnalysis.confidence,
-    riskLevel: aiAnalysis.riskLevel,
+    type: 'AI',
+    triggered,
+    direction,
+    reason,
+    data
   }
 }
 

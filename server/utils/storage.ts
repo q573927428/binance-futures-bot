@@ -285,73 +285,63 @@ export function getDefaultConfig(): BotConfig {
           slow: 200,   // 慢速EMA周期 (默认 200)
         },
       },
-      crossEntryEnabled: true,      // 启用EMA交叉直接入场（金叉做多/死叉做空）
-      showCrossFailureReason: false, // 是否显示交叉失败原因，默认false（生产模式日志更简洁）
-      predictiveCross: {
-        enabled: true,               // 预判交叉总开关
-        distancePercent: 0.0008,      // EMA快慢线距离小于此百分比时触发预判（默认0.08%）
-        onlyTrend: true,             // 只在顺势时预判（默认true）
-      },
-      adxTrend: {
-        adx1hThreshold: 20,           // 1小时ADX阈值
-        adx4hThreshold: 15,           // 4小时ADX阈值
-        adx15mThreshold: 25,          // 15分钟ADX阈值
-        enableAdx15mVs1hCheck: false, // 启用15分钟ADX > 1小时ADX检查
-      },
-      longEntry: {
-        emaDeviationEnabled: true,    // 启用EMA回踩偏离检查
-        emaDeviationThreshold: 0.03,  // EMA回踩偏离阈值 (3%)
-        emaSlowDeviationEnabled: true,  // 启用价格偏离EMA慢线检查
-        emaSlowDeviationThreshold: 0.05, // 价格距离EMA慢线阈值 (5%)
-        rsiMin: 35,                   // RSI最小值
-        rsiMax: 65,                   // RSI最大值
-        candleShadowThreshold: 0.005, // K线下影线阈值 (0.5%)
-        volumeConfirmation: true,     // 启用成交量确认
-        volumeEMAPeriod: 12,          // EMA成交量周期
-        volumeEMAMultiplier: 1.2,     // EMA成交量倍数
-      },
-      shortEntry: {
-        emaDeviationEnabled: true,    // 启用EMA回踩偏离检查
-        emaDeviationThreshold: 0.02,  // EMA回踩偏离阈值 (2%)
-        emaSlowDeviationEnabled: true,  // 启用价格偏离EMA慢线检查
-        emaSlowDeviationThreshold: 0.05, // 价格距离EMA慢线阈值 (5%)
-        rsiMin: 35,                   // RSI最小值
-        rsiMax: 65,                   // RSI最大值
-        candleShadowThreshold: 0.005, // K线上影线阈值 (0.5%)
-        volumeConfirmation: true,     // 启用成交量确认
-        volumeEMAPeriod: 12,          // EMA成交量周期
-        volumeEMAMultiplier: 1.2,     // EMA成交量倍数
-      },
-      priceBreakout: {
-        enabled: false,               // 启用价格突破指标
-        period: 5,                    // 突破周期（K线数）
-        requireConfirmation: true,    // 需要收盘价确认
-        confirmationCandles: 1,       // 确认K线数量
-      },
-      volatility: {
-        enabled: true,                // 启用波动率过滤
-        minATRPercent: 0.5,           // 最小ATR百分比阈值（0.5%）
-        skipSymbols: [],              // 跳过波动率检查的交易对列表
-      },
-      priceAction: {
-        enabled: false,               // 启用价格行为(PA)策略
-        skipOtherChecks: true,       // 满足PA条件直接开仓，跳过所有其他检查
-        pinBarEnabled: true,          // 启用Pin Bar针形K线检测
-        shadowBodyRatio: 3,           // Pin Bar影线/实体比例阈值
-        maxBodyRatio: 0.3,            // Pin Bar实体最大占比阈值
-        engulfingEnabled: true,         // 启用吞没形态检测
-        minEngulfRatio: 1.8,          // 吞没形态最小实体比例阈值
-      },
-      // OI持仓量配置
-      openInterest: {
-        enabled: true, // 是否启用OI分析
-        trendPeriod: 12, // OI趋势计算周期（默认12）
-        trendThresholdPercent: 0.5, // OI趋势判定阈值（EMA相邻两期变化百分比，默认0.5%）
-        changePeriod: {
-          short_term: 96,
-          medium_term: 24
-        }
-      },
+       adxTrend: {
+         adx1hThreshold: 20,           // 1小时ADX阈值
+         adx4hThreshold: 15,           // 4小时ADX阈值
+         adx15mThreshold: 25,          // 15分钟ADX阈值
+         enableAdx15mVs1hCheck: false, // 启用15分钟ADX > 1小时ADX检查
+       },
+       priceBreakout: {
+         enabled: false,               // 启用价格突破指标
+         period: 5,                    // 突破周期（K线数）
+         requireConfirmation: true,    // 需要收盘价确认
+         confirmationCandles: 1,       // 确认K线数量
+       },
+       volatility: {
+         enabled: true,                // 启用波动率过滤
+         minATRPercent: 0.5,           // 最小ATR百分比阈值（0.5%）
+         skipSymbols: [],              // 跳过波动率检查的交易对列表
+       },
+       // OI持仓量配置
+       openInterest: {
+         enabled: true, // 是否启用OI分析
+         trendPeriod: 12, // OI趋势计算周期（默认12）
+         trendThresholdPercent: 0.5, // OI趋势判定阈值（EMA相邻两期变化百分比，默认0.5%）
+         changePeriod: {
+           short_term: 96,
+           medium_term: 24
+         }
+       },
+       // 入场相关配置
+       crossEntryEnabled: true,      // 启用EMA交叉直接入场（金叉做多/死叉做空）
+       showCrossFailureReason: false, // 是否显示交叉失败原因，默认false（生产模式日志更简洁）
+       predictiveCross: {
+         enabled: true,               // 预判交叉总开关
+         distancePercent: 0.0008,      // EMA快慢线距离小于此百分比时触发预判（默认0.08%）
+         onlyTrend: true,             // 只在顺势时预判（默认true）
+       },
+       entryConfig: {
+         emaDeviationThreshold: 0.005,         // EMA回踩偏离阈值（百分比）
+         emaDeviationEnabled: true,            // 是否启用EMA回踩检查
+         emaSlowDeviationThreshold: 0.05,      // 慢速EMA偏离阈值（百分比）
+         emaSlowDeviationEnabled: true,        // 是否启用慢速EMA偏离检查
+         rsiMin: 35,                           // RSI最小值（入场时RSI需大于该值）
+         rsiMax: 35,                         // RSI最大值（入场时RSI需小于该值）
+         candleShadowThreshold: 0.005,         // K线影线阈值（百分比，多头检查下影线，空头检查上影线）
+         volumeConfirmation: true,             // 是否启用成交量确认
+         volumeEMAPeriod: 10,                  // 成交量EMA计算周期
+         volumeEMAMultiplier: 1.5,             // 成交量EMA倍数阈值（当前成交量需大于EMA*该倍数）
+         minScoreThreshold: 70,                // 入场最低综合评分阈值（0-100）
+       },
+       priceAction: {
+         enabled: false,               // 启用价格行为(PA)策略
+         skipOtherChecks: true,       // 满足PA条件直接开仓，跳过所有其他检查
+         pinBarEnabled: true,          // 启用Pin Bar针形K线检测
+         shadowBodyRatio: 3,           // Pin Bar影线/实体比例阈值
+         maxBodyRatio: 0.3,            // Pin Bar实体最大占比阈值
+         engulfingEnabled: true,         // 启用吞没形态检测
+         minEngulfRatio: 1.8,          // 吞没形态最小实体比例阈值
+       },
     },
   }
 }

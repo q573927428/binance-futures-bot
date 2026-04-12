@@ -1,5 +1,5 @@
 import { EMA } from 'technicalindicators'
-import type { OHLCV, TechnicalIndicators, BotConfig } from '../../types'
+import type { OHLCV, TechnicalIndicators, BotConfig, TradingSignal } from '../../types'
 import { calculatePercentage, getEMAPeriodConfig } from './indicators-shared'
 
 /**
@@ -197,7 +197,7 @@ export function checkEMANearCondition(
 } {
   const { ema20: emaFast, ema30: emaMedium } = indicators
   const { fastName: emaFastName, mediumName: emaMediumName } = getEMAPeriodConfig(config)
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const entryConfig = config?.indicatorsConfig?.entryConfig
   const emaDeviationThreshold = entryConfig?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = entryConfig?.emaDeviationEnabled ?? true
 
@@ -251,7 +251,7 @@ export function checkEMASlowDeviationCondition(
 } {
   const { ema60: emaSlow } = indicators
   const { slowName: emaSlowName } = getEMAPeriodConfig(config)
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const entryConfig = config?.indicatorsConfig?.entryConfig
   const emaSlowDeviationThreshold = entryConfig?.emaSlowDeviationThreshold || 0.05
   const emaSlowDeviationEnabled = entryConfig?.emaSlowDeviationEnabled ?? true
 
@@ -294,7 +294,7 @@ export function checkRSIRangeCondition(
   data: any
 } {
   const { rsi } = indicators
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const entryConfig = config?.indicatorsConfig?.entryConfig
   const rsiMin = entryConfig?.rsiMin || 40
   const rsiMax = entryConfig?.rsiMax || (direction === 'LONG' ? 60 : 55)
 
@@ -333,7 +333,7 @@ export function checkCandleConfirmCondition(
   reason: string;
   data: any
 } {
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const entryConfig = config?.indicatorsConfig?.entryConfig
   const candleShadowThreshold = entryConfig?.candleShadowThreshold || 0.005
   const isLong = direction === 'LONG'
 
@@ -379,7 +379,7 @@ export function checkVolumeCondition(
   reason: string;
   data: any
 } {
-  const entryConfig = direction === 'LONG' ? config?.indicatorsConfig?.longEntry : config?.indicatorsConfig?.shortEntry
+  const entryConfig = config?.indicatorsConfig?.entryConfig
   const { strategyMode } = getEMAPeriodConfig(config)
   const volumeConfirmation = entryConfig?.volumeConfirmation ?? true
   const volumeEMAPeriod = entryConfig?.volumeEMAPeriod || 10
@@ -432,20 +432,73 @@ export function checkPriceBreakoutCondition(
 }
 
 /**
- * 通用入场条件检查
+ * 通用入场条件检查（自带方向判断+OI集成+评分制）
+ * @returns 统一格式的入场检测信号
  */
-function checkEntry(
-  direction: 'LONG' | 'SHORT',
+export function checkEntry(
   price: number,
   indicators: TechnicalIndicators,
   lastCandle: OHLCV,
   config?: BotConfig,
   volumeHistory?: number[],
   candles15m?: OHLCV[]
-) {
-  const { fastName: emaFastName, mediumName: emaMediumName } = getEMAPeriodConfig(config)
+): TradingSignal {
+  const { fastName: emaFastName, mediumName: emaMediumName, slowName: emaSlowName } = getEMAPeriodConfig(config)
+  const { ema20: emaFast, ema60: emaSlow, openInterestTrend, openInterestChangePercent } = indicators
+  const entryConfig = config?.indicatorsConfig?.entryConfig
+  const oiConfig = config?.indicatorsConfig?.openInterest
+  const minScoreThreshold = entryConfig?.minScoreThreshold || 70
+
+  // 第一步：自行判断趋势方向（仅作为必要条件，不加分）
+  const emaFastAboveSlow = emaFast > emaSlow
+  let direction: 'LONG' | 'SHORT' | null = null
+  let totalScore = 0
+  const scoreDetails: string[] = []
+  const data: Record<string, any> = {}
+
+  const isLongCondition = emaFastAboveSlow
+  const isShortCondition = !emaFastAboveSlow
+
+  if (isLongCondition) {
+    direction = 'LONG'
+    scoreDetails.push(`方向 LONG ${emaFastName}(${emaFast.toFixed(4)}) > ${emaSlowName}(${emaSlow.toFixed(4)})`)
+  } else if (isShortCondition) {
+    direction = 'SHORT'
+    scoreDetails.push(`方向 SHORT ${emaFastName}(${emaFast.toFixed(4)}) < ${emaSlowName}(${emaSlow.toFixed(4)})`)
+  } else {
+    return {
+      type: 'ENTRY',
+      triggered: false,
+      direction: null,
+      reason: `无明确趋势方向：IDLE ${emaFastName}(${emaFast.toFixed(4)})，${emaSlowName}(${emaSlow.toFixed(4)})`,
+      data: { score: 0 }
+    }
+  }
+
   const isLong = direction === 'LONG'
   const actionType = isLong ? '回踩' : '反弹'
+
+  // 第二步：OI趋势匹配（25分）
+  if (oiConfig?.enabled) {
+    let oiMatch = false
+    if (isLong) {
+      // 多头需要OI增仓且变化率为正
+      oiMatch = openInterestTrend !== 'decreasing' && openInterestChangePercent > 0
+    } else {
+      // 空头需要OI增仓且变化率为负
+      oiMatch = openInterestTrend !== 'decreasing' && openInterestChangePercent < 0
+    }
+
+    if (oiMatch) {
+      totalScore += 25
+      scoreDetails.push(`OI匹配：+25分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
+    } else {
+      scoreDetails.push(`OI不匹配：+0分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
+    }
+  } else {
+    totalScore += 25
+    scoreDetails.push('OI未启用：+25分')
+  }
 
   // 调用独立条件函数
   const emaNearResult = checkEMANearCondition(direction, price, indicators, config)
@@ -455,97 +508,73 @@ function checkEntry(
   const volumeResult = checkVolumeCondition(direction, lastCandle, volumeHistory || [], config)
   const breakoutResult = checkPriceBreakoutCondition(direction, price, candles15m || [], config)
 
-  // 核心条件判断（逻辑保持不变）
-  const emaConditionPassed = emaNearResult.passed
-  const breakoutConditionPassed = !breakoutResult.data?.enabled || breakoutResult.passed
-  const passed = (emaConditionPassed || breakoutConditionPassed) && 
-    emaSlowDevResult.passed && 
-    rsiResult.passed && 
-    candleResult.passed && 
-    volumeResult.passed
-
-  // 原因构建（逻辑保持不变）
-  let reason = ''
-
-  if (passed) {
-    const conds: string[] = []
-    const bothEnabled = emaNearResult.data.emaDeviationEnabled && breakoutResult.data?.enabled
-    
-    if (bothEnabled) {
-      emaNearResult.nearEMA && breakoutResult.passed && conds.push(`价格${actionType}${emaNearResult.nearEMAType}且突破确认`)
-      emaNearResult.nearEMA && !breakoutResult.passed && conds.push(`价格${actionType}${emaNearResult.nearEMAType}`)
-      !emaNearResult.nearEMA && breakoutResult.passed && conds.push(`价格突破确认`)
-    } else if (emaNearResult.data.emaDeviationEnabled && emaNearResult.nearEMA) {
-      conds.push(`价格${actionType}${emaNearResult.nearEMAType}`)
-    } else if (breakoutResult.data?.enabled && breakoutResult.passed) {
-      conds.push(`价格突破确认`)
-    } else if (!emaNearResult.data.emaDeviationEnabled && !breakoutResult.data?.enabled) {
-      conds.push(`${actionType}/突破条件已禁用`)
-    }
-
-    conds.push(emaSlowDevResult.reason)
-    conds.push(rsiResult.reason)
-    conds.push(candleResult.reason)
-    emaNearResult.data.emaDeviationEnabled && conds.push(`成交量确认`)
-    reason = conds.join('，')
+  // EMA接近条件（20分）
+  if (emaNearResult.passed) {
+    totalScore += 20
+    scoreDetails.push(`EMA接近：+20分 (${emaNearResult.reason})`)
   } else {
-    const reasons: string[] = []
-    const emaFailed = emaNearResult.data.emaDeviationEnabled && !emaNearResult.nearEMA
-    const breakoutFailed = breakoutResult.data?.enabled && !breakoutResult.passed
-
-    if (emaNearResult.data.emaDeviationEnabled && breakoutResult.data?.enabled && emaFailed && breakoutFailed) {
-      reasons.push(`价格既未${actionType}EMA（距离${emaFastName}: ${calculatePercentage(price, indicators.ema20)}%，${emaMediumName}: ${calculatePercentage(price, indicators.ema30)}%）也未${breakoutResult.reason.toLowerCase()}`)
-    } else {
-      emaFailed && reasons.push(emaNearResult.reason)
-      breakoutFailed && reasons.push(breakoutResult.reason)
-    }
-
-    !emaSlowDevResult.passed && reasons.push(emaSlowDevResult.reason)
-    !rsiResult.passed && reasons.push(rsiResult.reason)
-    !candleResult.passed && reasons.push(candleResult.reason)
-    !volumeResult.passed && reasons.push(volumeResult.reason)
-    reason = reasons.join('；')
+    scoreDetails.push(`EMA接近：+0分 (${emaNearResult.reason})`)
   }
-  // 返回必要字段，兼顾简洁和可调试性
+
+  // EMA偏离度（15分）
+  if (emaSlowDevResult.passed) {
+    totalScore += 15
+    scoreDetails.push(`EMA偏离：+15分 (${emaSlowDevResult.reason})`)
+  } else {
+    scoreDetails.push(`EMA偏离：+0分 (${emaSlowDevResult.reason})`)
+  }
+
+  // RSI区间（15分）
+  if (rsiResult.passed) {
+    totalScore += 15
+    scoreDetails.push(`RSI区间：+15分 (${rsiResult.reason})`)
+  } else {
+    scoreDetails.push(`RSI区间：+0分 (${rsiResult.reason})`)
+  }
+
+  // K线确认（15分）
+  if (candleResult.passed) {
+    totalScore += 15
+    scoreDetails.push(`K线确认：+15分 (${candleResult.reason})`)
+  } else {
+    scoreDetails.push(`K线确认：+0分 (${candleResult.reason})`)
+  }
+
+  // 成交量确认（10分）
+  if (volumeResult.passed) {
+    totalScore += 10
+    scoreDetails.push(`成交量：+10分 (${volumeResult.reason})`)
+  } else {
+    scoreDetails.push(`成交量：+0分 (${volumeResult.reason})`)
+  }
+
+  // 判断是否通过
+  const triggered = totalScore >= minScoreThreshold
+  const reason = triggered 
+    ? `趋势入场检测，总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
+    : `趋势入场检测，总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
+
+  // 填充扩展数据
+  data.score = totalScore
+  data.minScoreThreshold = minScoreThreshold
+  data.nearEMA = emaNearResult.nearEMA
+  data.rsiInRange = rsiResult.passed
+  data.isConfirmCandle = candleResult.passed
+  data.volumePassed = volumeResult.passed
+  data.priceBreakoutPassed = breakoutResult.passed
+  data.emaFast = emaFast
+  data.emaSlow = emaSlow
+  data.openInterestTrend = openInterestTrend
+  data.openInterestChangePercent = openInterestChangePercent
+
+  // 返回统一格式
   return {
-    passed,
+    type: 'ENTRY',
+    triggered,
+    direction,
     reason,
-    data: {
-      nearEMA: emaNearResult.nearEMA,
-      rsiInRange: rsiResult.passed,
-      isConfirmCandle: candleResult.passed,
-      volumePassed: volumeResult.passed,
-      priceBreakoutPassed: breakoutResult.passed
-    }
+    data
   }
-}
-
-/**
- * 检查做多入场条件（兼容旧接口）
- */
-export function checkLongEntry(
-  price: number,
-  indicators: TechnicalIndicators,
-  lastCandle: OHLCV,
-  config?: BotConfig,
-  volumeHistory?: number[],
-  candles15m?: OHLCV[]
-) {
-  return checkEntry('LONG', price, indicators, lastCandle, config, volumeHistory, candles15m)
-}
-
-/**
- * 检查做空入场条件（兼容旧接口）
- */
-export function checkShortEntry(
-  price: number,
-  indicators: TechnicalIndicators,
-  lastCandle: OHLCV,
-  config?: BotConfig,
-  volumeHistory?: number[],
-  candles15m?: OHLCV[]
-) {
-  return checkEntry('SHORT', price, indicators, lastCandle, config, volumeHistory, candles15m)
 }
 
 /**
@@ -647,6 +676,7 @@ function detectEngulfing(
 /**
  * 检查价格行为(PA)信号 统一入口
  * 支持Pin Bar针形K线和吞没形态
+ * @returns 统一格式的PA信号
  */
 export function checkPriceActionSignal(
   candles: OHLCV[],
@@ -654,31 +684,54 @@ export function checkPriceActionSignal(
   price?: number,
   emaFast?: number,
   emaSlow?: number
-): { 
-  triggered: boolean; 
-  direction: 'LONG' | 'SHORT' | null;
-  reason: string;
-} {
+): TradingSignal {
   // @ts-ignore - 后续会更新类型定义
   const paConfig = config?.indicatorsConfig?.priceAction;
   
   // PA未启用直接返回
   if (!paConfig?.enabled) {
-    return { triggered: false, direction: null, reason: 'PA策略未启用' };
+    return {
+      type: 'PA',
+      triggered: false,
+      direction: null,
+      reason: 'PA策略未启用',
+      data: { paEnabled: false }
+    };
   }
   
   if (candles.length < 2) {
-    return { triggered: false, direction: null, reason: 'K线数据不足' };
+    return {
+      type: 'PA',
+      triggered: false,
+      direction: null,
+      reason: 'K线数据不足',
+      data: { candlesLength: candles.length }
+    };
   }
   
   const lastCandle = candles[candles.length - 1]!;
   const prevCandle = candles[candles.length - 2]!;
+  const data: Record<string, any> = {
+    paConfig,
+    lastCandle,
+    prevCandle,
+    price,
+    emaFast,
+    emaSlow
+  };
   
   // 1. 检测Pin Bar
   if (paConfig.pinBarEnabled && price !== undefined && emaFast !== undefined && emaSlow !== undefined) {
     const pinBarResult = detectPinBar(lastCandle, paConfig, emaFast, emaSlow, price);
     if (pinBarResult.triggered) {
-      return pinBarResult;
+      data.signalType = 'pinBar';
+      return {
+        type: 'PA',
+        triggered: pinBarResult.triggered,
+        direction: pinBarResult.direction,
+        reason: pinBarResult.reason,
+        data
+      };
     }
   }
   
@@ -686,11 +739,24 @@ export function checkPriceActionSignal(
   if (paConfig.engulfingEnabled) {
     const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig);
     if (engulfingResult.triggered) {
-      return engulfingResult;
+      data.signalType = 'engulfing';
+      return {
+        type: 'PA',
+        triggered: engulfingResult.triggered,
+        direction: engulfingResult.direction,
+        reason: engulfingResult.reason,
+        data
+      };
     }
   }
   
-  return { triggered: false, direction: null, reason: '未触发PA信号' };
+  return {
+    type: 'PA',
+    triggered: false,
+    direction: null,
+    reason: '未触发PA信号',
+    data
+  };
 }
 
 /**

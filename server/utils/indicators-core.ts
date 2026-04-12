@@ -1,5 +1,5 @@
 import { EMA, RSI, ADX, ATR } from 'technicalindicators'
-import type { OHLCV, TechnicalIndicators, BotConfig } from '../../types'
+import type { OHLCV, TechnicalIndicators, BotConfig, TradingSignal } from '../../types'
 import { BinanceService } from './binance'
 import { getEMAPeriodConfig } from './indicators-shared'
 
@@ -9,7 +9,8 @@ import { getEMAPeriodConfig } from './indicators-shared'
 export async function calculateIndicators(
   binance: BinanceService,
   symbol: string,
-  config?: BotConfig
+  config?: BotConfig,
+  candlesMain?: OHLCV[]
 ): Promise<TechnicalIndicators> {
   try {
     // 统一获取EMA配置（复用工具函数，消除重复代码）
@@ -24,13 +25,13 @@ export async function calculateIndicators(
     const requiredCandles = config?.indicatorsConfig?.requiredCandles || 300
     
     // 获取不同周期的K线数据
-    const candlesMain = await binance.fetchOHLCV(symbol, mainTF, undefined, requiredCandles)
+    const mainCandles = candlesMain || await binance.fetchOHLCV(symbol, mainTF, undefined, requiredCandles)
     const candlesSecondary = await binance.fetchOHLCV(symbol, secondaryTF, undefined, requiredCandles)
     const candlesTertiary = await binance.fetchOHLCV(symbol, tertiaryTF, undefined, requiredCandles)
 
-    const closesMain = candlesMain.map(c => c.close)
-    const highsMain = candlesMain.map(c => c.high)
-    const lowsMain = candlesMain.map(c => c.low)
+    const closesMain = mainCandles.map(c => c.close)
+    const highsMain = mainCandles.map(c => c.high)
+    const lowsMain = mainCandles.map(c => c.low)
 
     // 检查是否有足够的数据计算EMA
     if (closesMain.length < emaSlow) {
@@ -59,9 +60,9 @@ export async function calculateIndicators(
 
     // 计算ADX（多周期）
     const adxMainValues = ADX.calculate({
-      high: candlesMain.map(c => c.high),
-      low: candlesMain.map(c => c.low),
-      close: candlesMain.map(c => c.close),
+      high: mainCandles.map(c => c.high),
+      low: mainCandles.map(c => c.low),
+      close: mainCandles.map(c => c.close),
       period: 14,
     })
 
@@ -238,22 +239,29 @@ export function checkADXTrend(indicators: TechnicalIndicators, config?: BotConfi
 
 /**
  * 检查EMA交叉（金叉/死叉/预判交叉）
+ * @returns 统一格式的EMA交叉信号
  */
 export function checkEMACross(
   emaFastValues: number[],
   emaSlowValues: number[],
   price: number,
   config?: BotConfig,
-) {
+): TradingSignal {
   // 优先判断EMA金叉/死叉（直接入场信号）
-  let isCrossSignal = false
-  let crossDirection: 'LONG' | 'SHORT' | null = null
-  let crossReason = ''
-  let crossFailureReason: string | null = null
+  let triggered = false
+  let direction: 'LONG' | 'SHORT' | null = null
+  let reason = ''
+  const data: Record<string, any> = {}
 
   // 使用缓存中已计算好的EMA值，不再重复计算
   if (emaFastValues.length < 2 || emaSlowValues.length < 2) {
-    return { isCrossSignal, crossDirection, crossReason, crossFailureReason }
+    return {
+      type: 'EMA_CROSS',
+      triggered: false,
+      direction: null,
+      reason: 'EMA数据不足，无法判断交叉',
+      data: { emaFastValuesLength: emaFastValues.length, emaSlowValuesLength: emaSlowValues.length }
+    }
   }
 
   const fastCurrent = emaFastValues.at(-1)!
@@ -283,125 +291,106 @@ export function checkEMACross(
   const goldenCross = crossEntryEnabled && fastPrev <= slowPrev && fastCurrent > slowCurrent
   const deadCross = crossEntryEnabled && fastPrev >= slowPrev && fastCurrent < slowCurrent
 
+  // 填充扩展数据
+  data.fastCurrent = fastCurrent
+  data.fastPrev = fastPrev
+  data.slowCurrent = slowCurrent
+  data.slowPrev = slowPrev
+  data.emaDiffPercent = emaDiffPercent
+  data.isNearCross = isNearCross
+  data.isTrendAligned = isTrendAligned
+  data.canPredict = canPredict
+  data.goldenCross = goldenCross
+  data.deadCross = deadCross
+  data.crossEntryEnabled = crossEntryEnabled
+  data.predictiveCrossEnabled = predEnabled
+
   if (canPredict && !goldenCross && !deadCross) {
-    isCrossSignal = true
-    crossDirection = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
-    const crossType = crossDirection === 'LONG' ? '金叉' : '死叉'
-    crossReason = `预判交叉：${crossDirection} ${emaFastName}即将${crossType}${emaSlowName}，差值: ${(emaDiffPercent * 100).toFixed(3)}%`
+    triggered = true
+    direction = fastCurrent < slowCurrent ? 'LONG' : 'SHORT'
+    const crossType = direction === 'LONG' ? '金叉' : '死叉'
+    reason = `预判交叉：${direction} ${emaFastName}即将${crossType}${emaSlowName}，差值: ${(emaDiffPercent * 100).toFixed(3)}%`
+    data.isPredictive = true
   } else if (goldenCross) {
-    isCrossSignal = true
-    crossDirection = 'LONG'
-    crossReason = `实际金叉：LONG ${emaFastName}上穿${emaSlowName}`
-  } else if (deadCross) {
-    isCrossSignal = true
-    crossDirection = 'SHORT'
-    crossReason = `实际死叉]：SHORT ${emaFastName}下穿${emaSlowName}`
-  } else if (showCrossFailureReason) {
-    const details: string[] = []
-    if (predEnabled) {
-      details.push(`差值: ${(emaDiffPercent * 100).toFixed(2)}% > ${(distancePercent * 100).toFixed(2)}%`)
-      !isTrendAligned && details.push('趋势不对齐')
-    }
-    if (crossEntryEnabled) {
-      const prevRel = fastPrev <= slowPrev ? '≤' : '≥'
-      const currRel = fastCurrent <= slowCurrent ? '≤' : '≥'
-      details.push(`未交叉：前值${fastPrev.toFixed(2)}${prevRel}${slowPrev.toFixed(2)}，当前${fastCurrent.toFixed(2)}${currRel}${slowCurrent.toFixed(2)}`)
-    }
-    crossFailureReason = details.length ? `交叉入场检测：${details.join('，')}` : null
-  }
-
-  return { isCrossSignal, crossDirection, crossReason, crossFailureReason }
-}
-
-/**
- * 判断趋势方向
- */
-export function getTrendDirection(
-  price: number,
-  indicators: TechnicalIndicators,
-  config?: BotConfig,
-  candles?: OHLCV[]
-) {
-  const { ema20: emaFast, ema60: emaSlow, emaFastValues, emaSlowValues } = indicators
-  const { fastName: emaFastName, slowName: emaSlowName } = getEMAPeriodConfig(config)
-  const showCrossFail = config?.indicatorsConfig?.showCrossFailureReason ?? false
-  // 调用独立交叉检测函数
-  const cross = checkEMACross(emaFastValues, emaSlowValues, price, config)
-  const emaFastAboveSlow = emaFast > emaSlow
-  const priceAboveFast = price > emaFast
-  const priceBelowFast = price < emaFast
-
-  // 做多条件：快线 > 慢线 且 价格 > 快线
-  const isLong = emaFastAboveSlow && priceAboveFast
-  // 做空条件：快线 < 慢线 且 价格 < 快线
-  const isShort = !emaFastAboveSlow && priceBelowFast
-
-  let direction: 'LONG' | 'SHORT' | 'IDLE' = 'IDLE'
-  let reason = ''
-
-  if (cross.isCrossSignal && cross.crossDirection) {
-    direction = cross.crossDirection
-    reason = cross.crossReason
-  } else if (isLong) {
+    triggered = true
     direction = 'LONG'
-    const trendReason = `[趋势做多] LONG ${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) > ${emaFastName}`
-    reason = showCrossFail && cross.crossFailureReason ? `${trendReason}，${cross.crossFailureReason}` : trendReason
-  } else if (isShort) {
+    reason = `实际金叉：LONG ${emaFastName}上穿${emaSlowName}`
+    data.isPredictive = false
+  } else if (deadCross) {
+    triggered = true
     direction = 'SHORT'
-    const trendReason = `[趋势做空] SHORT ${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) < ${emaFastName}`
-    reason = showCrossFail && cross.crossFailureReason ? `${trendReason}，${cross.crossFailureReason}` : trendReason
+    reason = `实际死叉：SHORT ${emaFastName}下穿${emaSlowName}`
+    data.isPredictive = false
   } else {
-    const details: string[] = []
-    if (emaFastAboveSlow && !priceAboveFast) {
-      details.push(`${emaFastName}(${emaFast.toFixed(2)}) > ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) ≤ ${emaFastName}`)
-    } else if (!emaFastAboveSlow && !priceBelowFast) {
-      details.push(`${emaFastName}(${emaFast.toFixed(2)}) < ${emaSlowName}(${emaSlow.toFixed(2)})，价格(${price.toFixed(2)}) ≥ ${emaFastName}`)
+    triggered = false
+    direction = null
+    if (showCrossFailureReason) {
+      const details: string[] = []
+      if (predEnabled) {
+        details.push(`差值: ${(emaDiffPercent * 100).toFixed(2)}% > ${(distancePercent * 100).toFixed(2)}%`)
+        !isTrendAligned && details.push('趋势不对齐')
+      }
+      if (crossEntryEnabled) {
+        const prevRel = fastPrev <= slowPrev ? '≤' : '≥'
+        const currRel = fastCurrent <= slowCurrent ? '≤' : '≥'
+        details.push(`未交叉：前值${fastPrev.toFixed(2)}${prevRel}${slowPrev.toFixed(2)}，当前${fastCurrent.toFixed(2)}${currRel}${slowCurrent.toFixed(2)}`)
+      }
+      reason = details.length ? `交叉入场检测：${details.join('，')}` : '未触发EMA交叉信号'
     } else {
-      details.push(`${emaFastName}(${emaFast.toFixed(2)}) ≈ ${emaSlowName}(${emaSlow.toFixed(2)})，价格震荡`)
-    }
-    showCrossFail && cross.crossFailureReason && details.push(cross.crossFailureReason)
-    reason = details.join('；')
-  }
-
-  // OI趋势过滤（仅当OI功能启用时生效）
-  const oiEnabled = config?.indicatorsConfig?.openInterest?.enabled ?? false
-  if (oiEnabled && direction !== 'IDLE') {
-    const { openInterestTrend, openInterestChangePercent } = indicators
-    let oiPass = true
-    let oiFailReason = ''
-
-    if (direction === 'LONG') {
-      // 多头 = 必须增仓 + 变化率为正
-      oiPass = openInterestTrend !== 'decreasing' && openInterestChangePercent > 0
-      if (!oiPass) {
-        oiFailReason = `OI趋势：${openInterestTrend}（${openInterestChangePercent}%）`
-      }
-    } else if (direction === 'SHORT') {
-      // 空头 = 必须增仓 + 变化率为负
-      oiPass = openInterestTrend !== 'decreasing' && openInterestChangePercent < 0
-      if (!oiPass) {
-        oiFailReason = `OI趋势：${openInterestTrend}（${openInterestChangePercent}%）`
-      }
-    }
-
-    if (!oiPass) {
-      direction = 'IDLE'
-      reason = `${reason}；${oiFailReason}`
+      reason = '未触发EMA交叉信号'
     }
   }
 
   return {
+    type: 'EMA_CROSS',
+    triggered,
     direction,
     reason,
-    data: {
-      price,
-      ema20: emaFast,
-      ema60: emaSlow,
-      isCrossSignal: cross.isCrossSignal,
-      crossDirection: cross.crossDirection,
-      crossCandleTimestamp: candles?.at(-1)?.timestamp,
-      crossFailureReason: cross.crossFailureReason,
-      conditions: { ema20AboveEma60: emaFastAboveSlow, priceAboveEma20: priceAboveFast, priceBelowEma20: priceBelowFast, isLong, isShort }
-    }
+    data
   }
 }
+
+/**
+ * 根据OI趋势过滤交易方向
+ */
+export function filterTrendByOpenInterest(
+  direction: 'LONG' | 'SHORT' | 'IDLE',
+  indicators: TechnicalIndicators,
+  config?: BotConfig
+): {
+  direction: 'LONG' | 'SHORT' | 'IDLE',
+  additionalReason: string
+} {
+  const oiEnabled = config?.indicatorsConfig?.openInterest?.enabled ?? false
+  if (!oiEnabled || direction === 'IDLE') {
+    return { direction, additionalReason: '' }
+  }
+
+  const { openInterestTrend, openInterestChangePercent } = indicators
+  let oiPass = true
+  let oiFailReason = ''
+
+  if (direction === 'LONG') {
+    // 多头 = 必须增仓 + 变化率为正
+    oiPass = openInterestTrend !== 'decreasing' && openInterestChangePercent > 0
+    if (!oiPass) {
+      oiFailReason = `OI趋势：${openInterestTrend}（${openInterestChangePercent}%）`
+    }
+  } else if (direction === 'SHORT') {
+    // 空头 = 必须增仓 + 变化率为负
+    oiPass = openInterestTrend !== 'decreasing' && openInterestChangePercent < 0
+    if (!oiPass) {
+      oiFailReason = `OI趋势：${openInterestTrend}（${openInterestChangePercent}%）`
+    }
+  }
+
+  if (!oiPass) {
+    return {
+      direction: 'IDLE',
+      additionalReason: oiFailReason
+    }
+  }
+
+  return { direction, additionalReason: '' }
+}
+

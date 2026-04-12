@@ -21,7 +21,7 @@
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minScore": 70,
+    "minScore": 75,
     "minConfidence": 75,
     "conditionMode": "SCORE_ONLY",
     "maxRiskLevel": "MEDIUM",
@@ -66,7 +66,7 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 0.8,
+    "activationRatio": 1,
     "trailingDistance": 1.2,
     "minMovePercent": 0.18
   },
@@ -84,71 +84,60 @@
         "slow": 120
       }
     },
-    "crossEntryEnabled": false,
-    "showCrossFailureReason": true,
-    "predictiveCross": {
-      "enabled": true,
-      "distancePercent": 0.0012,
-      "onlyTrend": true
-    },
-    "adxTrend": {
-      "adx15mThreshold": 23,
-      "adx1hThreshold": 20,
-      "adx4hThreshold": 15,
-      "enableAdx15mVs1hCheck": false
-    },
-    "longEntry": {
-      "emaDeviationThreshold": 0.012,
-      "emaDeviationEnabled": false,
-      "emaSlowDeviationThreshold": 0.03,
-      "emaSlowDeviationEnabled": false,
-      "rsiMin": 40,
-      "rsiMax": 65,
-      "candleShadowThreshold": 0.008,
-      "volumeConfirmation": true,
-      "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.5
-    },
-    "shortEntry": {
-      "emaDeviationThreshold": 0.012,
-      "emaDeviationEnabled": false,
-      "emaSlowDeviationThreshold": 0.03,
-      "emaSlowDeviationEnabled": false,
-      "rsiMin": 35,
-      "rsiMax": 60,
-      "candleShadowThreshold": 0.009,
-      "volumeConfirmation": true,
-      "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.8
-    },
-    "priceBreakout": {
-      "enabled": false,
-      "period": 3,
-      "requireConfirmation": false,
-      "confirmationCandles": 1
-    },
-    "volatility": {
-      "enabled": true,
-      "minATRPercent": 0.58,
-      "skipSymbols": []
-    },
-    "priceAction": {
-      "enabled": true,
-      "skipOtherChecks": true,
-      "pinBarEnabled": true,
-      "shadowBodyRatio": 5,
-      "maxBodyRatio": 0.3,
-      "engulfingEnabled": true,
-      "minEngulfRatio": 1.8
-    },
-    "openInterest": {
-      "enabled": true,
-      "trendPeriod": 12,
-      "trendThresholdPercent": 0.5,
-      "changePeriod": {
-        "short_term": 96,
-        "medium_term": 24
-      }
-    }
+     "adxTrend": {
+       "adx15mThreshold": 23,
+       "adx1hThreshold": 20,
+       "adx4hThreshold": 15,
+       "enableAdx15mVs1hCheck": false
+     },
+     "priceBreakout": {
+       "enabled": false,
+       "period": 3,
+       "requireConfirmation": false,
+       "confirmationCandles": 1
+     },
+     "volatility": {
+       "enabled": true,
+       "minATRPercent": 0.58,
+       "skipSymbols": []
+     },
+     "openInterest": {
+       "enabled": true,
+       "trendPeriod": 12,
+       "trendThresholdPercent": 0.5,
+       "changePeriod": {
+         "short_term": 96,
+         "medium_term": 24
+       }
+     },
+     "crossEntryEnabled": false,
+     "showCrossFailureReason": true,
+     "predictiveCross": {
+       "enabled": true,
+       "distancePercent": 0.0012,
+       "onlyTrend": true
+     },
+     "entryConfig": {
+       "emaDeviationThreshold": 0.012,
+       "emaDeviationEnabled": false,
+       "emaSlowDeviationThreshold": 0.03,
+       "emaSlowDeviationEnabled": false,
+       "rsiMin": 35,
+       "rsiMax": 65,
+       "candleShadowThreshold": 0.0085,
+       "volumeConfirmation": true,
+       "volumeEMAPeriod": 12,
+       "volumeEMAMultiplier": 1.5,
+       "minScoreThreshold": 70
+     },
+     "priceAction": {
+       "enabled": true,
+       "skipOtherChecks": true,
+       "pinBarEnabled": true,
+       "shadowBodyRatio": 5,
+       "maxBodyRatio": 0.3,
+       "engulfingEnabled": true,
+       "minEngulfRatio": 1.8
+     }
   }
 }

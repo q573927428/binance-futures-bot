@@ -180,32 +180,19 @@ export interface IndicatorsConfig {
     enableAdx15mVs1hCheck: boolean // 启用15分钟ADX > 1小时ADX检查 (默认 true)
   }
   
-  // 做多入场条件配置
-  longEntry: {
+  // 统一入场条件配置（PA风格，不再区分多空）
+  entryConfig: {
     emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
     emaDeviationEnabled: boolean   // 是否启用EMA偏离检查 (默认 true)
     emaSlowDeviationThreshold: number  // 慢速EMA偏离阈值 (默认 0.05 = 5%)，根据策略模式动态变化
     emaSlowDeviationEnabled: boolean   // 是否启用慢速EMA偏离检查 (默认 true)，根据策略模式动态变化
     rsiMin: number                 // RSI最小值 (默认 40)
-    rsiMax: number                 // RSI最大值 (默认 60)
-    candleShadowThreshold: number  // K线下影线阈值 (默认 0.005 = 0.5%)
+    rsiMax: number                 // RSI最大值 (默认 57.5，函数内部根据方向动态调整)
+    candleShadowThreshold: number  // K线影线阈值 (默认 0.005 = 0.5%)
     volumeConfirmation: boolean    // 成交量确认 (默认 true)
     volumeEMAPeriod: number        // EMA成交量周期 (默认 10)
     volumeEMAMultiplier: number    // EMA成交量倍数 (默认 1.2)
-  }
-  
-  // 做空入场条件配置
-  shortEntry: {
-    emaDeviationThreshold: number  // EMA偏离阈值 (默认 0.005 = 0.5%)
-    emaDeviationEnabled: boolean   // 是否启用EMA偏离检查 (默认 true)
-    emaSlowDeviationThreshold: number  // 慢速EMA偏离阈值 (默认 0.05 = 5%)，根据策略模式动态变化
-    emaSlowDeviationEnabled: boolean   // 是否启用慢速EMA偏离检查 (默认 true)，根据策略模式动态变化
-    rsiMin: number                 // RSI最小值 (默认 40)
-    rsiMax: number                 // RSI最大值 (默认 55)
-    candleShadowThreshold: number  // K线上影线阈值 (默认 0.005 = 0.5%)
-    volumeConfirmation: boolean    // 成交量确认 (默认 true)
-    volumeEMAPeriod: number        // EMA成交量周期 (默认 10)
-    volumeEMAMultiplier: number    // EMA成交量倍数 (默认 1.2)
+    minScoreThreshold: number      // 入场最低评分阈值 (默认 70)
   }
   
   // 价格突破配置
@@ -391,6 +378,18 @@ export interface AIAnalysis {
     support?: number
     resistance?: number
   }
+}
+
+// 统一交易信号接口（所有信号函数返回格式）
+export interface TradingSignal {
+  // 核心必填字段
+  type: string                              // 信号类型，支持任意扩展
+  triggered: boolean                        // 是否触发有效信号
+  direction: 'LONG' | 'SHORT' | null        // 信号方向，无方向时为null
+  reason: string                            // 信号描述/原因
+  
+  // 扩展字段，所有信号特有数据都放这里
+  data?: Record<string, any>                // 任意自定义扩展数据
 }
 
 // 分析检查点结果
