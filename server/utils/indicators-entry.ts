@@ -159,28 +159,6 @@ function checkPriceBreakout(
 }
 
 /**
- * 检查做多价格突破条件（兼容旧接口）
- */
-export function checkPriceBreakoutLong(
-  price: number,
-  candles: OHLCV[],
-  config?: BotConfig
-): { passed: boolean; reason: string; data?: any } {
-  return checkPriceBreakout('LONG', price, candles, config)
-}
-
-/**
- * 检查做空价格突破条件（兼容旧接口）
- */
-export function checkPriceBreakoutShort(
-  price: number,
-  candles: OHLCV[],
-  config?: BotConfig
-): { passed: boolean; reason: string; data?: any } {
-  return checkPriceBreakout('SHORT', price, candles, config)
-}
-
-/**
  * 检查价格是否靠近快速/中速EMA（回踩条件）
  */
 export function checkEMANearCondition(
@@ -478,7 +456,7 @@ export function checkEntry(
   const isLong = direction === 'LONG'
   const actionType = isLong ? '回踩' : '反弹'
 
-  // 第二步：OI趋势匹配（25分）
+  // 第二步：OI趋势匹配（30分）
   if (oiConfig?.enabled) {
     let oiMatch = false
     if (isLong) {
@@ -490,14 +468,14 @@ export function checkEntry(
     }
 
     if (oiMatch) {
-      totalScore += 25
-      scoreDetails.push(`OI匹配：+25分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
+      totalScore += 30
+      scoreDetails.push(`OI匹配：+30分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
     } else {
       scoreDetails.push(`OI不匹配：+0分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
     }
   } else {
-    totalScore += 25
-    scoreDetails.push('OI未启用：+25分')
+    totalScore += 30
+    scoreDetails.push('OI未启用：+30分')
   }
 
   // 调用独立条件函数
@@ -508,10 +486,10 @@ export function checkEntry(
   const volumeResult = checkVolumeCondition(direction, lastCandle, volumeHistory || [], config)
   const breakoutResult = checkPriceBreakoutCondition(direction, price, candles15m || [], config)
 
-  // EMA接近条件（20分）
+  // EMA接近条件（10分）
   if (emaNearResult.passed) {
-    totalScore += 20
-    scoreDetails.push(`EMA接近：+20分 (${emaNearResult.reason})`)
+    totalScore += 10
+    scoreDetails.push(`EMA接近：+10分 (${emaNearResult.reason})`)
   } else {
     scoreDetails.push(`EMA接近：+0分 (${emaNearResult.reason})`)
   }
@@ -532,18 +510,18 @@ export function checkEntry(
     scoreDetails.push(`RSI区间：+0分 (${rsiResult.reason})`)
   }
 
-  // K线确认（15分）
+  // K线确认（10分）
   if (candleResult.passed) {
-    totalScore += 15
-    scoreDetails.push(`K线确认：+15分 (${candleResult.reason})`)
+    totalScore += 10
+    scoreDetails.push(`K线确认：+10分 (${candleResult.reason})`)
   } else {
     scoreDetails.push(`K线确认：+0分 (${candleResult.reason})`)
   }
 
-  // 成交量确认（20分）
+  // 成交量确认（30分）
   if (volumeResult.passed) {
-    totalScore += 20
-    scoreDetails.push(`成交量：+20分 (${volumeResult.reason})`)
+    totalScore += 30
+    scoreDetails.push(`成交量：+30分 (${volumeResult.reason})`)
   } else {
     scoreDetails.push(`成交量：+0分 (${volumeResult.reason})`)
   }
