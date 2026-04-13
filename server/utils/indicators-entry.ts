@@ -449,7 +449,6 @@ export function checkEntry(
   }
 
   const isLong = direction === 'LONG'
-  const actionType = isLong ? '回踩' : '反弹'
 
   // 第二步：OI趋势匹配（30分）
   if (oiConfig?.enabled) {
@@ -464,13 +463,11 @@ export function checkEntry(
 
     if (oiMatch) {
       totalScore += 30
-      scoreDetails.push(`OI匹配：+30分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
     } else {
       scoreDetails.push(`OI不匹配：+0分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
     }
   } else {
     totalScore += 30
-    scoreDetails.push('OI未启用：+30分')
   }
 
   // 调用独立条件函数
@@ -484,7 +481,6 @@ export function checkEntry(
   // EMA接近条件（10分）
   if (emaNearResult.passed) {
     totalScore += 10
-    scoreDetails.push(`EMA接近：+10分 (${emaNearResult.reason})`)
   } else {
     scoreDetails.push(`EMA接近：+0分 (${emaNearResult.reason})`)
   }
@@ -492,7 +488,6 @@ export function checkEntry(
   // EMA偏离度（10分）
   if (emaSlowDevResult.passed) {
     totalScore += 10
-    scoreDetails.push(`EMA偏离：+10分 (${emaSlowDevResult.reason})`)
   } else {
     scoreDetails.push(`EMA偏离：+0分 (${emaSlowDevResult.reason})`)
   }
@@ -500,7 +495,6 @@ export function checkEntry(
   // RSI区间（10分）
   if (rsiResult.passed) {
     totalScore += 10
-    scoreDetails.push(`RSI区间：+10分 (${rsiResult.reason})`)
   } else {
     scoreDetails.push(`RSI区间：+0分 (${rsiResult.reason})`)
   }
@@ -508,7 +502,6 @@ export function checkEntry(
   // K线确认（10分）
   if (candleResult.passed) {
     totalScore += 10
-    scoreDetails.push(`K线确认：+10分 (${candleResult.reason})`)
   } else {
     scoreDetails.push(`K线确认：+0分 (${candleResult.reason})`)
   }
@@ -516,7 +509,6 @@ export function checkEntry(
   // 成交量确认（30分）
   if (volumeResult.passed) {
     totalScore += 30
-    scoreDetails.push(`成交量：+30分 (${volumeResult.reason})`)
   } else {
     scoreDetails.push(`成交量：+0分 (${volumeResult.reason})`)
   }
@@ -524,8 +516,8 @@ export function checkEntry(
   // 判断是否通过
   const triggered = totalScore >= minScoreThreshold
   const reason = triggered 
-    ? `趋势入场检测，总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
-    : `趋势入场检测，总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
+    ? `趋势检测: 总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
+    : `趋势检测: 总分${totalScore}/${minScoreThreshold}分：${scoreDetails.join('，')}`
 
   // 填充扩展数据
   data.score = totalScore
