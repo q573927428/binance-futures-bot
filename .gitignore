@@ -18,6 +18,7 @@ data/kline-simple/
 data/bot-state.json
 data/strategy-analysis.json
 data/trade-history.json
+data/ai-learning-result.json
 
 # Misc
 .DS_Store
