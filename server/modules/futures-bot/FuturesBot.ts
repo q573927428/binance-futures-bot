@@ -28,8 +28,24 @@ export class FuturesBot {
   private positionMonitor: PositionMonitor
   private positionCloser: PositionCloser
   private positionValidator: PositionValidator
-  private strategyAnalyzer: StrategyAnalyzer | null = null
+  private strategyAnalyzers: Record<string, StrategyAnalyzer> = {} // 多持仓策略分析器字典
+  private lastStrategyAnalyzerSaveTime: number = 0 // 上次保存策略分析器数据时间
   private isInitialized: boolean = false
+
+  // 保留单实例兼容旧代码
+  private get strategyAnalyzer(): StrategyAnalyzer | null {
+    const state = this.stateManager.getState()
+    if (state.currentPosition) {
+      return this.strategyAnalyzers[state.currentPosition.symbol] || null
+    }
+    return null
+  }
+  private set strategyAnalyzer(analyzer: StrategyAnalyzer | null) {
+    const state = this.stateManager.getState()
+    if (state.currentPosition && analyzer) {
+      this.strategyAnalyzers[state.currentPosition.symbol] = analyzer
+    }
+  }
 
   constructor() {
     const defaultConfig = getDefaultConfig()
@@ -203,54 +219,88 @@ export class FuturesBot {
   }
 
   /**
-   * 监控持仓
+   * 监控所有持仓
    */
   private async monitorPosition(): Promise<void> {
     const state = this.stateManager.getState()
-    if (!state.currentPosition) return
+    state.positions = state.positions || {}
+    const positions = Object.values(state.positions)
+    
+    if (positions.length === 0) return
 
     try {
-      const position = state.currentPosition
-      
-      // 第一步：检查交易所实际持仓状态（新增容错机制）
-      const isConsistent = await this.positionValidator.checkPositionConsistency(position)
-      
-      // 如果持仓不一致（已被平仓），直接返回
-      if (!isConsistent) {
-        // 同步验证器的状态回主状态
-        const validatorState = this.positionValidator['state']
-        this.stateManager.setState(validatorState)
-        this.syncStateToModules()
-        return
+      // 批量检查所有持仓的一致性
+      for (const position of positions) {
+        const isConsistent = await this.positionValidator.checkPositionConsistency(position)
+        if (!isConsistent) {
+          // 从不一致的持仓中移除
+          delete state.positions[position.symbol]
+          delete this.strategyAnalyzers[position.symbol]
+          state.positionCount = Object.keys(state.positions).length
+          if (state.currentPosition?.symbol === position.symbol) {
+            state.currentPosition = null
+          }
+          logger.warn('持仓验证', `${position.symbol} 持仓不一致，已从状态中移除`)
+        }
       }
 
-      // 监控持仓（传入策略分析器）
-      const result = await this.positionMonitor.monitorPosition(position, this.strategyAnalyzer || undefined)
+      // 批量监控所有持仓
+      const toClose = await this.positionMonitor.monitorAllPositions(this.strategyAnalyzers)
       
       // 同步监控器的状态
       const monitorState = this.positionMonitor['state']
       this.stateManager.setState(monitorState)
       this.syncStateToModules()
       
-      // 如果需要平仓
-      if (result.shouldClose && result.reason) {
-        await this.closePositionIfExists(result.reason)
-      } else {
-        // 更新ADX值到分析器
-        const indicators = await this.binance.fetchPositions(position.symbol)
-        // 这里简化处理，ADX更新在分析器的analyzeSymbol中完成
-        
-        // 定期保存策略分析器数据（每5分钟保存一次，减少IO操作）
-        const now = Date.now()
-        const state = this.stateManager.getState()
-        const lastUpdateTime = state.strategyAnalyzerData?.lastUpdateTime || 0
-        
-        if (now - lastUpdateTime > 5 * 60 * 1000) { // 5分钟
-          await this.saveStrategyAnalyzerData()
+      // 批量平仓
+      if (toClose.length > 0) {
+        for (const { position, reason } of toClose) {
+          await this.closeSinglePosition(position, reason)
         }
       }
+
+      // 定期保存所有策略分析器数据（每5分钟保存一次，减少IO操作）
+      const now = Date.now()
+      if (now - this.lastStrategyAnalyzerSaveTime > 5 * 60 * 1000) { // 5分钟
+        await this.saveAllStrategyAnalyzerData()
+        this.lastStrategyAnalyzerSaveTime = now
+      }
     } catch (error: any) {
-      logger.error('持仓监控', '监控失败', error.message)
+      logger.error('持仓监控', '批量监控失败', error.message)
+    }
+  }
+
+  /**
+   * 平仓单个持仓
+   */
+  private async closeSinglePosition(position: any, reason: string): Promise<void> {
+    try {
+      // 获取平仓价格
+      const exitPrice = await this.getExitPrice(position, reason)
+      
+      // 记录出场指标（切换到对应交易对的策略分析器）
+      const currentAnalyzer = this.strategyAnalyzer
+      this.strategyAnalyzer = this.strategyAnalyzers[position.symbol] || null
+      await this.recordExitIndicators(position)
+      
+      // 生成策略分析指标
+      await this.generateStrategyAnalysisMetrics(position, exitPrice, reason)
+      
+      // 执行平仓
+      await this.positionCloser.closePosition(position, reason)
+      
+      // 恢复原来的策略分析器
+      this.strategyAnalyzer = currentAnalyzer
+      
+      // 同步平仓器的状态
+      const closerState = this.positionCloser['state']
+      this.stateManager.setState(closerState)
+      this.syncStateToModules()
+
+      // 清理该交易对的策略分析器
+      delete this.strategyAnalyzers[position.symbol]
+    } catch (error: any) {
+      logger.error('平仓', `${position.symbol} 平仓失败: ${error.message}`)
     }
   }
 
@@ -535,11 +585,11 @@ export class FuturesBot {
     try {
       const state = this.stateManager.getState()
       
-      // 检查是否已有持仓
-      if (state.currentPosition) {
+      // 检查该交易对是否已有持仓
+      if (state.positions?.[params.symbol]) {
         return {
           success: false,
-          message: '已有持仓，请先平仓'
+          message: `${params.symbol} 已有持仓，请先平仓`
         }
       }
 
@@ -572,7 +622,27 @@ export class FuturesBot {
   }
 
   /**
-   * 保存策略分析器数据到状态
+   * 保存所有策略分析器数据到状态
+   */
+  private async saveAllStrategyAnalyzerData(): Promise<void> {
+    try {
+      const state = this.stateManager.getState()
+      state.strategyAnalyzerDataList = state.strategyAnalyzerDataList || []
+      
+      // 序列化所有策略分析器数据
+      const analyzerDataList = Object.values(this.strategyAnalyzers).map(analyzer => analyzer.serialize())
+      state.strategyAnalyzerDataList = analyzerDataList
+      
+      // 保存到状态和文件
+      this.stateManager.setState(state)
+      await saveBotState(state)
+    } catch (error: any) {
+      logger.error('策略分析', '批量保存策略分析器数据失败', error.message)
+    }
+  }
+
+  /**
+   * 保存单个策略分析器数据到状态
    */
   private async saveStrategyAnalyzerData(): Promise<void> {
     if (!this.strategyAnalyzer) {

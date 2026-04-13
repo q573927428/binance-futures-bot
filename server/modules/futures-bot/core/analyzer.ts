@@ -210,4 +210,18 @@ export class MarketAnalyzer {
       logger.info('分析结果', `${symbol}${priceStr} 分析未通过: ${summary}`)
     }
   }
+
+  /**
+   * 获取交易对之前的ADX值（用于持仓监控止盈条件）
+   */
+  async getPreviousADX(symbol: string): Promise<number> {
+    try {
+      const indicators = await this.indicatorsCache.getIndicators(symbol)
+      // 优先返回15分钟ADX，兼容长短策略
+      return indicators.adx15m
+    } catch (error) {
+      logger.warn('分析器', `获取${symbol}历史ADX失败，返回默认值25`)
+      return 25
+    }
+  }
 }

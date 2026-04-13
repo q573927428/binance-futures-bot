@@ -17,7 +17,7 @@ export class PositionMonitor {
   private indicatorsCache: IndicatorsCache
   private config: BotConfig
   private state: BotState
-  private getPreviousADX: (symbol: string) => number | undefined
+  private getPreviousADX: (symbol: string) => Promise<number>
   private lastLogTime: number = 0
   private logInterval: number = 60000 // 默认60秒
 
@@ -27,7 +27,7 @@ export class PositionMonitor {
     indicatorsCache: IndicatorsCache,
     config: BotConfig,
     state: BotState,
-    getPreviousADX: (symbol: string) => number | undefined
+    getPreviousADX: (symbol: string) => Promise<number>
   ) {
     this.binance = binance
     this.priceService = priceService
@@ -56,7 +56,45 @@ export class PositionMonitor {
   }
 
   /**
-   * 监控持仓
+   * 监控所有持仓
+   * @returns 返回需要平仓的持仓列表
+   */
+  async monitorAllPositions(
+    strategyAnalyzers?: Record<string, StrategyAnalyzer>
+  ): Promise<Array<{ position: Position; reason: string }>> {
+    try {
+      this.state.positions = this.state.positions || {}
+      const positions = Object.values(this.state.positions)
+      const toClose: Array<{ position: Position; reason: string }> = []
+      let totalPnL = 0
+
+      for (const position of positions) {
+        const analyzer = strategyAnalyzers?.[position.symbol]
+        const result = await this.monitorPosition(position, analyzer)
+        
+        if (result.shouldClose && result.reason) {
+          toClose.push({ position, reason: result.reason })
+        }
+
+        // 累计总盈亏
+        const price = await this.priceService.getPrice(position.symbol)
+        const { pnl } = calculatePnL(price, position)
+        totalPnL += pnl
+      }
+
+      // 更新总盈亏
+      this.state.totalPnL = totalPnL
+      await saveBotState(this.state)
+
+      return toClose
+    } catch (error: any) {
+      logger.error('持仓监控', '批量监控失败', error.message)
+      return []
+    }
+  }
+
+  /**
+   * 监控单个持仓
    * @returns 返回是否需要平仓以及平仓原因
    */
   async monitorPosition(
@@ -83,10 +121,16 @@ export class PositionMonitor {
         this.lastLogTime = now
       }
 
-      // 保存当前价格和盈亏到state中，供前端显示
-      this.state.currentPrice = price
-      this.state.currentPnL = pnl
-      this.state.currentPnLPercentage = pnlPercentage
+      // 保存当前价格和盈亏到state中，供前端显示（仅当前选中持仓）
+      if (this.state.currentPosition?.symbol === position.symbol) {
+        this.state.currentPrice = price
+        this.state.currentPnL = pnl
+        this.state.currentPnLPercentage = pnlPercentage
+      }
+
+      // 更新持仓到多持仓字典
+      this.state.positions = this.state.positions || {}
+      this.state.positions[position.symbol] = position
       await saveBotState(this.state)
 
       // 如果有策略分析器，记录价格点
@@ -235,10 +279,15 @@ export class PositionMonitor {
       position.lastStopLossUpdate = Date.now()
 
       // 5. 更新状态到state
-      if (this.state.currentPosition) {
+      this.state.positions = this.state.positions || {}
+      this.state.positions[position.symbol] = position
+      
+      // 如果是当前选中持仓，也更新currentPosition
+      if (this.state.currentPosition?.symbol === position.symbol) {
         this.state.currentPosition = position
-        await saveBotState(this.state)
       }
+      
+      await saveBotState(this.state)
 
       logger.success('移动止损', `止损已更新至 ${newStopLoss.toFixed(2)}`)
     } catch (error: any) {
@@ -275,8 +324,14 @@ export class PositionMonitor {
     }
 
     // 如果有更新，保存到状态
-    if (updated && this.state.currentPosition) {
-      this.state.currentPosition = position
+    if (updated) {
+      this.state.positions = this.state.positions || {}
+      this.state.positions[position.symbol] = position
+      
+      // 如果是当前选中持仓，也更新currentPosition
+      if (this.state.currentPosition?.symbol === position.symbol) {
+        this.state.currentPosition = position
+      }
       // 注意：这里不调用 saveBotState，因为 monitorPosition 会在稍后保存
     }
   }

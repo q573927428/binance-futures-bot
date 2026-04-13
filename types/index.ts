@@ -424,6 +424,7 @@ export interface TradeSignal {
 
 // 仓位信息
 export interface Position {
+  id: string // 持仓唯一标识
   symbol: string
   direction: Direction
   entryPrice: number
@@ -448,6 +449,7 @@ export interface Position {
   stopLossOrderTimestamp?: number
   lastStopLossUpdate?: number  // 上次止损更新时间（用于移动止损）
   trailingStopData?: TrailingStopData  // 移动止损数据
+  strategyAnalyzerData?: StrategyAnalyzerData // 该持仓对应的策略分析器数据
 }
 
 // 订单信息
@@ -592,7 +594,10 @@ export interface CircuitBreaker {
 // 机器人状态
 export interface BotState {
   status: PositionStatus
-  currentPosition: Position | null
+  currentPosition: Position | null // 兼容字段，保留为当前活跃展示的持仓
+  positions: Record<string, Position> // 多持仓字典，key为交易对symbol
+  positionCount: number // 当前持仓数量
+  totalPnL: number // 所有持仓总盈亏
   circuitBreaker: CircuitBreaker
   todayTrades: number
   dailyPnL: number
@@ -601,18 +606,19 @@ export interface BotState {
   isRunning: boolean  // 是否正在运行（扫描循环）
   allowNewTrades: boolean  // 是否允许新交易（用于每日交易限制控制）
   lastTradeTime?: number   // 上次交易时间（用于冷却时间检查）
-  currentPrice?: number  // 当前价格（仅当有持仓时有效）
-  currentPnL?: number    // 当前盈亏金额（仅当有持仓时有效）
-  currentPnLPercentage?: number  // 当前盈亏百分比（仅当有持仓时有效）
+  currentPrice?: number  // 当前价格（仅当有单个持仓时有效，兼容用）
+  currentPnL?: number    // 当前盈亏金额（仅当有单个持仓时有效，兼容用）
+  currentPnLPercentage?: number  // 当前盈亏百分比（仅当有单个持仓时有效，兼容用）
   // 总统计数据
   totalTrades?: number
-  totalPnL?: number
   winRate?: number
   // 优化相关字段
   lastIndicatorUpdate?: number  // 上次指标计算时间
   lastPrice?: number           // 上次计算指标时的价格
-  // 策略分析器持久化数据（用于项目重启时恢复）
+  // 策略分析器持久化数据（兼容字段，多持仓后下移到Position中）
   strategyAnalyzerData?: StrategyAnalyzerData
+  // 多持仓策略分析器持久化数据列表
+  strategyAnalyzerDataList?: StrategyAnalyzerData[]
 }
 
 // 加密货币余额

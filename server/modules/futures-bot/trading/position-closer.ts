@@ -52,18 +52,31 @@ export class PositionCloser {
   }
 
   /**
+   * 批量平仓
+   */
+  async closePositions(positions: Array<{ position: Position; reason: string }>): Promise<void> {
+    for (const { position, reason } of positions) {
+      try {
+        await this.closePosition(position, reason)
+      } catch (error: any) {
+        logger.error('平仓', `${position.symbol} 平仓失败: ${error.message}`)
+      }
+    }
+  }
+
+  /**
    * 平仓
    */
   async closePosition(position: Position, reason: string): Promise<void> {
     try {
-      logger.info('平仓', `准备平仓: ${reason}`)
+      logger.info('平仓', `${position.symbol} 准备平仓: ${reason}`)
 
       this.state.status = PositionStatus.CLOSING
       await saveBotState(this.state)
 
       // 确保方向是LONG或SHORT
       if (position.direction === 'IDLE') {
-        logger.error('平仓', '持仓方向为IDLE，无法平仓')
+        logger.error('平仓', `${position.symbol} 持仓方向为IDLE，无法平仓`)
         return
       }
 
@@ -115,8 +128,24 @@ export class PositionCloser {
       const breaker = checkCircuitBreaker(this.state.dailyPnL, consecutiveLosses, account.balance, this.config.riskConfig)
 
       this.state.circuitBreaker = breaker
-      this.state.currentPosition = null
-      this.state.status = breaker.isTriggered ? PositionStatus.HALTED : PositionStatus.MONITORING
+      
+      // 从多持仓字典中删除该持仓
+      this.state.positions = this.state.positions || {}
+      delete this.state.positions[position.symbol]
+      this.state.positionCount = Object.keys(this.state.positions).length
+      
+      // 如果当前展示的持仓就是被平仓的，清空currentPosition
+      if (this.state.currentPosition?.symbol === position.symbol) {
+        this.state.currentPosition = null
+      }
+      
+      // 如果还有其他持仓，保持POSITION状态，否则返回监控状态
+      if (this.state.positionCount > 0) {
+        this.state.status = PositionStatus.POSITION
+      } else {
+        this.state.status = breaker.isTriggered ? PositionStatus.HALTED : PositionStatus.MONITORING
+      }
+      
       this.state.lastTradeTime = Date.now() // 更新上次交易时间（平仓时间）
       
       // 如果触发熔断，停止运行

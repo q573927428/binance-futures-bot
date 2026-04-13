@@ -258,6 +258,7 @@ export class PositionOpener {
 
       // 更新状态
       const position: Position = {
+        id: `${signal.symbol}_${Date.now()}`, // 生成唯一持仓ID
         symbol: signal.symbol,
         direction: signal.direction,
         entryPrice: signal.price,
@@ -283,7 +284,11 @@ export class PositionOpener {
         stopLossOrderTimestamp: stopOrder.timestamp,
       }
 
-      this.state.currentPosition = position
+      // 兼容多持仓结构
+      this.state.positions = this.state.positions || {}
+      this.state.positions[signal.symbol] = position
+      this.state.positionCount = Object.keys(this.state.positions).length
+      this.state.currentPosition = position // 兼容字段，新持仓作为当前展示
       this.state.status = PositionStatus.POSITION
       this.state.todayTrades += 1
       this.state.lastTradeTime = Date.now() // 更新上次交易时间（开仓时间）
@@ -502,8 +507,9 @@ export class PositionOpener {
 
       logger.success('止损', `止损单已设置`, stopOrder)
 
-      // 更新状态
+       // 更新状态
       const position: Position = {
+        id: `${params.symbol}_${Date.now()}`, // 生成唯一持仓ID
         symbol: params.symbol,
         direction: params.direction,
         entryPrice: entryPrice,
@@ -527,7 +533,11 @@ export class PositionOpener {
         stopLossOrderTimestamp: stopOrder.timestamp,
       }
 
-      this.state.currentPosition = position
+      // 兼容多持仓结构
+      this.state.positions = this.state.positions || {}
+      this.state.positions[params.symbol] = position
+      this.state.positionCount = Object.keys(this.state.positions).length
+      this.state.currentPosition = position // 兼容字段，新持仓作为当前展示
       this.state.status = PositionStatus.POSITION
       this.state.todayTrades += 1
       this.state.lastTradeTime = Date.now()

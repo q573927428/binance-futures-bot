@@ -1,60 +1,63 @@
 <template>
-  <el-card v-if="botStore.hasPosition" class="card" shadow="hover">
+  <el-card v-if="hasPositions" class="card" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>🎯 当前持仓</span>
-        <div class="header-actions">
+        <span>🎯 当前持仓 ({{ positions.length }}个)</span>
+      </div>
+    </template>
+
+    <div v-for="position in positions" :key="position.symbol" class="position-info" style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
+      <div class="position-header">
+        <div class="position-title">
+          <div class="symbol-display">
+            <div class="symbol-name">{{ position.symbol }}</div>
+            <div class="direction-tag">
+              <el-tag :type="position.direction === 'LONG' ? 'success' : 'danger'" size="large">
+                {{ position.direction }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+        <div class="position-actions">
           <el-button
             text
-            type="primary"
-            @click="handleClosePosition"
-            :loading="isClosing"
+            type="danger"
+            @click="handleClosePosition(position.symbol)"
+            :loading="closingSymbol === position.symbol"
           >
             <el-icon><ElIconRemove /></el-icon>
             手动平仓
           </el-button>
         </div>
       </div>
-    </template>
-
-    <div v-if="botStore.state?.currentPosition" class="position-info">
       <!-- 仪表盘布局 -->
       <div class="dashboard-layout">
         <!-- 左侧：交易对和基本信息 -->
         <div class="dashboard-left">
-          <div class="symbol-display">
-            <div class="symbol-name">{{ botStore.state.currentPosition.symbol }}</div>
-            <div class="direction-tag">
-              <el-tag :type="botStore.state.currentPosition.direction === 'LONG' ? 'success' : 'danger'" size="large">
-                {{ botStore.state.currentPosition.direction }}
-              </el-tag>
-            </div>
-          </div>
-          
           <div class="basic-info">
             <div class="info-item">
               <span class="info-label">杠杆</span>
-              <span class="info-value">{{ botStore.state.currentPosition.leverage }}x</span>
+              <span class="info-value">{{ position.leverage }}x</span>
             </div>
             <div class="info-item">
               <span class="info-label">数量</span>
-              <span class="info-value">{{ botStore.state.currentPosition.quantity }}</span>
+              <span class="info-value">{{ position.quantity }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">开仓时间</span>
-              <span class="info-value">{{ dayjs(botStore.state.currentPosition.openTime).format('MM-DD HH:mm') }}</span>
+              <span class="info-value">{{ dayjs(position.openTime).format('MM-DD HH:mm') }}</span>
             </div>
           </div>
         </div>
 
         <!-- 右侧：盈亏数据 -->
         <div class="dashboard-right">
-          <div class="pnl-display" :class="getPnlClass()">
+          <div class="pnl-display" :class="getPnlClass(position)">
             <div class="pnl-amount">
-              {{ botStore.state.currentPnL ? botStore.state.currentPnL.toFixed(2) : '--' }} U
+              {{ (position.currentPnL ?? position.pnl ?? botStore.state?.currentPnL) ? (position.currentPnL ?? position.pnl ?? botStore.state?.currentPnL).toFixed(2) : '--' }} U
             </div>
             <div class="pnl-percentage">
-              {{ botStore.state.currentPnLPercentage ? botStore.state.currentPnLPercentage.toFixed(2) + '%' : '--' }}
+              {{ (position.currentPnLPercentage ?? position.pnlPercentage ?? botStore.state?.currentPnLPercentage) ? (position.currentPnLPercentage ?? position.pnlPercentage ?? botStore.state?.currentPnLPercentage).toFixed(2) + '%' : '--' }}
             </div>
           </div>
         </div>
@@ -66,38 +69,38 @@
           <!-- 上方标签区域 -->
           <div class="price-labels-top">
             <div 
-              v-if="hasTrailingStop"
+              v-if="hasTrailingStop(position)"
               class="price-label-top initial-stop-loss" 
-              :style="getInitialStopLossStyle()"
+              :style="getInitialStopLossStyle(position)"
             >
               <div class="label-text">📌 初始止损</div>
             </div>
             
             <div 
-              v-if="!hasTrailingStop"
+              v-if="!hasTrailingStop(position)"
               class="price-label-top stop-loss" 
-              :style="getStopLossStyle()"
+              :style="getStopLossStyle(position)"
             >
               <div class="label-text">🛡️ 止损</div>
             </div>
             
             <div 
               class="price-label-top entry" 
-              :style="getEntryPriceStyle()"
+              :style="getEntryPriceStyle(position)"
             >
               <div class="label-text">🚀 入场</div>
             </div>
             
             <div 
               class="price-label-top take-profit1" 
-              :style="getTakeProfit1Style()"
+              :style="getTakeProfit1Style(position)"
             >
               <div class="label-text">🎯 TP1</div>
             </div>
             
             <div 
               class="price-label-top take-profit2" 
-              :style="getTakeProfit2Style()"
+              :style="getTakeProfit2Style(position)"
             >
               <div class="label-text">🏆 TP2</div>
             </div>
@@ -106,40 +109,40 @@
           <!-- 上方金额区域 -->
           <div class="price-values-top">
             <div 
-              v-if="hasTrailingStop"
+              v-if="hasTrailingStop(position)"
               class="price-value-top initial-stop-loss" 
-              :style="getInitialStopLossStyle()"
+              :style="getInitialStopLossStyle(position)"
             >
-              {{ (botStore.state.currentPosition.initialStopLoss || botStore.state.currentPosition.stopLoss).toFixed(3) }}
+              {{ (position.initialStopLoss || position.stopLoss).toFixed(3) }}
             </div>
             
             <div 
-              v-if="!hasTrailingStop"
+              v-if="!hasTrailingStop(position)"
               class="price-value-top stop-loss" 
-              :style="getStopLossStyle()"
+              :style="getStopLossStyle(position)"
             >
-              {{ botStore.state.currentPosition.stopLoss.toFixed(3) }}
+              {{ position.stopLoss.toFixed(3) }}
             </div>
             
             <div 
               class="price-value-top entry" 
-              :style="getEntryPriceStyle()"
+              :style="getEntryPriceStyle(position)"
             >
-              {{ botStore.state.currentPosition.entryPrice.toFixed(3) }}
+              {{ position.entryPrice.toFixed(3) }}
             </div>
             
             <div 
               class="price-value-top take-profit1" 
-              :style="getTakeProfit1Style()"
+              :style="getTakeProfit1Style(position)"
             >
-              {{ botStore.state.currentPosition.takeProfit1.toFixed(3) }}
+              {{ position.takeProfit1.toFixed(3) }}
             </div>
             
             <div 
               class="price-value-top take-profit2" 
-              :style="getTakeProfit2Style()"
+              :style="getTakeProfit2Style(position)"
             >
-              {{ botStore.state.currentPosition.takeProfit2.toFixed(3) }}
+              {{ position.takeProfit2.toFixed(3) }}
             </div>
           </div>
           
@@ -151,36 +154,36 @@
               
               <!-- 价格标记点在线性进度条上方 -->
               <div 
-                v-if="hasTrailingStop"
+                v-if="hasTrailingStop(position)"
                 class="linear-marker-dot initial-stop-loss" 
-                :style="getInitialStopLossStyle()"
+                :style="getInitialStopLossStyle(position)"
               ></div>
               <div 
-                v-if="hasTrailingStop"
+                v-if="hasTrailingStop(position)"
                 class="linear-marker-dot trailing-stop-loss" 
-                :style="getStopLossStyle()"
+                :style="getStopLossStyle(position)"
               ></div>
               <div 
-                v-if="!hasTrailingStop"
+                v-if="!hasTrailingStop(position)"
                 class="linear-marker-dot stop-loss" 
-                :style="getStopLossStyle()"
+                :style="getStopLossStyle(position)"
               ></div>
               <div 
                 class="linear-marker-dot entry" 
-                :style="getEntryPriceStyle()"
+                :style="getEntryPriceStyle(position)"
               ></div>
               <div 
                 class="linear-marker-dot current" 
-                :style="getCurrentPriceStyle()"
-                :class="getCurrentPriceClass()"
+                :style="getCurrentPriceStyle(position)"
+                :class="getCurrentPriceClass(position)"
               ></div>
               <div 
                 class="linear-marker-dot take-profit1" 
-                :style="getTakeProfit1Style()"
+                :style="getTakeProfit1Style(position)"
               ></div>
               <div 
                 class="linear-marker-dot take-profit2" 
-                :style="getTakeProfit2Style()"
+                :style="getTakeProfit2Style(position)"
               ></div>
             </div>
           </div>
@@ -188,10 +191,10 @@
           <!-- 下方并排显示区域 -->
           <div class="bottom-row-container">
             <!-- 移动止损区域 -->
-            <div v-if="hasTrailingStop" class="trailing-stop-bottom">
+            <div v-if="hasTrailingStop(position)" class="trailing-stop-bottom">
               <div 
                 class="trailing-stop-label" 
-                :style="getStopLossStyle()"
+                :style="getStopLossStyle(position)"
               >
                 <div class="label-icon">▲</div>
                 <div class="label-text">移动止损</div>
@@ -199,17 +202,17 @@
               
               <div 
                 class="trailing-stop-value" 
-                :style="getStopLossStyle()"
+                :style="getStopLossStyle(position)"
               >
-                {{ botStore.state.currentPosition.stopLoss.toFixed(3) }}
+                {{ position.stopLoss.toFixed(3) }}
               </div>
             </div>
             
             <!-- 当前价格区域 -->
-            <div class="current-price-bottom" :class="getCurrentPriceClass()">
+            <div class="current-price-bottom" :class="getCurrentPriceClass(position)">
               <div 
                 class="current-label" 
-                :style="getCurrentPriceStyle()"
+                :style="getCurrentPriceStyle(position)"
               >
                 <div class="label-icon">▲</div>
                 <div class="label-text">当前价格</div>
@@ -217,9 +220,9 @@
               
               <div 
                 class="current-value" 
-                :style="getCurrentPriceStyle()"
+                :style="getCurrentPriceStyle(position)"
               >
-                {{ botStore.state.currentPrice?.toFixed(3) || '--' }}
+                {{ botStore.state?.currentPrice?.toFixed(3) || '--' }}
               </div>
             </div>
           </div>
@@ -277,6 +280,28 @@ const passwordDialogVisible = ref(false)
 const passwordInput = ref('')
 const isClosing = ref(false)
 const requiresPassword = ref(false)
+const closingSymbol = ref<string | null>(null)
+const currentClosingSymbol = ref<string | null>(null)
+
+// 所有持仓列表（兼容新的多持仓结构和旧的单持仓结构）
+const positions = computed<any[]>(() => {
+  if (!botStore.state) return []
+  
+  // 如果有positions对象（新结构）
+  if (botStore.state.positions && typeof botStore.state.positions === 'object') {
+    return Object.values(botStore.state.positions as Record<string, any>)
+  }
+  
+  // 兼容旧的单持仓结构
+  if (botStore.state.currentPosition) {
+    return [botStore.state.currentPosition as any]
+  }
+  
+  return []
+})
+
+// 是否有持仓
+const hasPositions = computed(() => positions.value.length > 0)
 
 // 监听持仓状态变化，有持仓时订阅共享轮询，无持仓时取消订阅
 watch(() => botStore.hasPosition, (hasPosition) => {
@@ -295,8 +320,7 @@ onUnmounted(() => {
 })
 
 // 计算价格区间相关数据（考虑所有关键价格点，添加缓冲避免重叠）
-const priceRange = computed(() => {
-  const position = botStore.state?.currentPosition
+function getPriceRange(position: any) {
   if (!position) return { min: 0, max: 0, range: 0 }
   
   // 考虑所有关键价格点：初始止损、当前止损、入场、TP1、TP2
@@ -322,47 +346,47 @@ const priceRange = computed(() => {
     max: bufferedMax, 
     range: bufferedMax - bufferedMin 
   }
-})
+}
 
 // 获取当前价格位置百分比
-const currentPricePosition = computed(() => {
-  const position = botStore.state?.currentPosition
-  const currentPrice = botStore.state?.currentPrice
-  if (!position || !currentPrice || priceRange.value.range === 0) return 50
+function getCurrentPricePosition(position: any) {
+  const currentPrice = position.currentPrice || botStore.state?.currentPrice
+  const priceRange = getPriceRange(position)
+  if (!position || !currentPrice || priceRange.range === 0) return 50
   
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, currentPrice))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, currentPrice))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取入场价格位置百分比
-const entryPricePosition = computed(() => {
-  const position = botStore.state?.currentPosition
-  if (!position || priceRange.value.range === 0) return 50
+function getEntryPricePosition(position: any) {
+  const priceRange = getPriceRange(position)
+  if (!position || priceRange.range === 0) return 50
   
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, position.entryPrice))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, position.entryPrice))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取盈亏显示类名
-function getPnlClass() {
-  const pnl = botStore.state?.currentPnL
+function getPnlClass(position: any) {
+  // 兼容不同的盈亏存储位置
+  const pnl = position.currentPnL ?? position.pnl ?? botStore.state?.currentPnL
   if (!pnl) return 'pnl-neutral'
   return pnl >= 0 ? 'pnl-positive' : 'pnl-negative'
 }
 
 // 获取当前价格样式
-function getCurrentPriceStyle() {
+function getCurrentPriceStyle(position: any) {
   return {
-    left: `${currentPricePosition.value}%`
+    left: `${getCurrentPricePosition(position)}%`
   }
 }
 
 // 获取当前价格类名
-function getCurrentPriceClass() {
-  const position = botStore.state?.currentPosition
+function getCurrentPriceClass(position: any) {
   if (!position) return 'price-neutral'
   
-  const currentPrice = botStore.state?.currentPrice
+  const currentPrice = position.currentPrice || botStore.state?.currentPrice
   if (!currentPrice) return 'price-neutral'
   
   // 根据价格相对于入场价的位置决定颜色
@@ -374,89 +398,89 @@ function getCurrentPriceClass() {
 }
 
 // 检查是否触发了移动止损
-const hasTrailingStop = computed(() => {
-  const position = botStore.state?.currentPosition
+function hasTrailingStop(position: any) {
   if (!position) return false
   
   // 如果有初始止损且与当前止损不同，说明触发了移动止损
   return position.initialStopLoss !== undefined && 
          position.initialStopLoss !== position.stopLoss
-})
+}
 
 // 获取初始止损价格位置百分比
-const initialStopLossPosition = computed(() => {
-  const position = botStore.state?.currentPosition
-  if (!position || priceRange.value.range === 0) return 0
+function getInitialStopLossPosition(position: any) {
+  const priceRange = getPriceRange(position)
+  if (!position || priceRange.range === 0) return 0
   
   const initialStopLoss = position.initialStopLoss || position.stopLoss
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, initialStopLoss))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, initialStopLoss))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取当前止损价格位置百分比（移动止损后）
-const stopLossPosition = computed(() => {
-  const position = botStore.state?.currentPosition
-  if (!position || priceRange.value.range === 0) return 0
+function getStopLossPosition(position: any) {
+  const priceRange = getPriceRange(position)
+  if (!position || priceRange.range === 0) return 0
   
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, position.stopLoss))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, position.stopLoss))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取止盈TP1价格位置百分比
-const takeProfit1Position = computed(() => {
-  const position = botStore.state?.currentPosition
-  if (!position || priceRange.value.range === 0) return 100
+function getTakeProfit1Position(position: any) {
+  const priceRange = getPriceRange(position)
+  if (!position || priceRange.range === 0) return 100
   
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, position.takeProfit1))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, position.takeProfit1))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取止盈TP2价格位置百分比
-const takeProfit2Position = computed(() => {
-  const position = botStore.state?.currentPosition
-  if (!position || priceRange.value.range === 0) return 100
+function getTakeProfit2Position(position: any) {
+  const priceRange = getPriceRange(position)
+  if (!position || priceRange.range === 0) return 100
   
-  const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, position.takeProfit2))
-  return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
-})
+  const normalizedPrice = Math.max(priceRange.min, Math.min(priceRange.max, position.takeProfit2))
+  return ((normalizedPrice - priceRange.min) / priceRange.range) * 100
+}
 
 // 获取止损价格样式
-function getStopLossStyle() {
+function getStopLossStyle(position: any) {
   return {
-    left: `${stopLossPosition.value}%`
+    left: `${getStopLossPosition(position)}%`
   }
 }
 
 // 获取入场价格样式
-function getEntryPriceStyle() {
+function getEntryPriceStyle(position: any) {
   return {
-    left: `${entryPricePosition.value}%`
+    left: `${getEntryPricePosition(position)}%`
   }
 }
 
 // 获取止盈TP1价格样式
-function getTakeProfit1Style() {
+function getTakeProfit1Style(position: any) {
   return {
-    left: `${takeProfit1Position.value}%`
+    left: `${getTakeProfit1Position(position)}%`
   }
 }
 
 // 获取初始止损价格样式
-function getInitialStopLossStyle() {
+function getInitialStopLossStyle(position: any) {
   return {
-    left: `${initialStopLossPosition.value}%`
+    left: `${getInitialStopLossPosition(position)}%`
   }
 }
 
 // 获取止盈TP2价格样式
-function getTakeProfit2Style() {
+function getTakeProfit2Style(position: any) {
   return {
-    left: `${takeProfit2Position.value}%`
+    left: `${getTakeProfit2Position(position)}%`
   }
 }
 
 // 处理平仓按钮点击
-async function handleClosePosition() {
+async function handleClosePosition(symbol: string) {
+  currentClosingSymbol.value = symbol
   // 先检查是否需要密码验证
   try {
     const response = await $fetch<{ success: boolean; requiresPassword: boolean }>('/api/bot/check-password')
@@ -489,8 +513,10 @@ async function executeClosePosition() {
 
 // 使用密码执行平仓
 async function executeClosePositionWithPassword(password: string) {
+  closingSymbol.value = currentClosingSymbol.value
   isClosing.value = true
   try {
+    // 目前先使用旧接口，后续后端支持指定交易对后再调整
     const result = await botStore.closePosition(password, '手动平仓')
     
     if (result.success) {
@@ -506,6 +532,8 @@ async function executeClosePositionWithPassword(password: string) {
     ElMessage.error('平仓失败: ' + (error.message || String(error)))
   } finally {
     isClosing.value = false
+    closingSymbol.value = null
+    currentClosingSymbol.value = null
   }
 }
 </script>
