@@ -173,41 +173,36 @@ export function checkEMANearCondition(
   reason: string;
   data: any
 } {
-  const { ema20: emaFast, ema30: emaMedium } = indicators
-  const { fastName: emaFastName, mediumName: emaMediumName } = getEMAPeriodConfig(config)
+  const { ema20: emaFast } = indicators
+  const { fastName: emaFastName } = getEMAPeriodConfig(config)
   const entryConfig = config?.indicatorsConfig?.entryConfig
   const emaDeviationThreshold = entryConfig?.emaDeviationThreshold || 0.005
   const emaDeviationEnabled = entryConfig?.emaDeviationEnabled ?? true
 
   const nearFastEMA = Math.abs(price - emaFast) / emaFast <= emaDeviationThreshold
-  const nearMediumEMA = Math.abs(price - emaMedium) / emaMedium <= emaDeviationThreshold
-  const nearEMA = nearFastEMA || nearMediumEMA
-  const nearEMAType = nearFastEMA ? emaFastName : nearMediumEMA ? emaMediumName : 'none'
-  const passed = !emaDeviationEnabled || nearEMA
+  const passed = !emaDeviationEnabled || nearFastEMA
+
+  const emaFastPercent = calculatePercentage(price, emaFast)
 
   let reason = ''
   if (passed) {
     reason = emaDeviationEnabled 
-      ? `价格${direction === 'LONG' ? '回踩' : '反弹'}${nearEMAType}`
+      ? `价格${direction === 'LONG' ? '回踩' : '反弹'}EMA（距离${emaFastName}: ${emaFastPercent}%）`
       : 'EMA接近检查已禁用'
   } else {
-    const emaFastPercent = calculatePercentage(price, emaFast)
-    const emaMediumPercent = calculatePercentage(price, emaMedium)
-    reason = `价格未${direction === 'LONG' ? '回踩' : '反弹'}EMA（距离${emaFastName}: ${emaFastPercent}%，${emaMediumName}: ${emaMediumPercent}%）`
+    reason = `价格未${direction === 'LONG' ? '回踩' : '反弹'}EMA（距离${emaFastName}: ${emaFastPercent}%）`
   }
 
   return {
     passed,
-    nearEMA,
-    nearEMAType,
+    nearEMA: nearFastEMA,
+    nearEMAType: nearFastEMA ? emaFastName : 'none',
     reason,
     data: {
       emaDeviationEnabled,
       emaDeviationThreshold,
       nearFastEMA,
-      nearMediumEMA,
       emaFast,
-      emaMedium,
       price
     }
   }
