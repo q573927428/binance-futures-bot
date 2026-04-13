@@ -3,6 +3,39 @@ import type { OHLCV, TechnicalIndicators, BotConfig, TradingSignal } from '../..
 import { calculatePercentage, getEMAPeriodConfig } from './indicators-shared'
 
 /**
+ * 通用工具：检查K线时间有效性，避免K线刚开始时数据不稳定
+ */
+function checkCandleTimeValidity(
+  lastCandle: OHLCV,
+  strategyMode: string,
+  minElapsedRatio: number = 0.1
+): {
+  isValid: boolean
+  elapsedRatio: number
+  reason: string
+} {
+  const candleStartTime = lastCandle.timestamp
+  const currentTime = Date.now()
+  // 根据策略模式确定时间框架（中长期1小时=3600000ms，短期15分钟=900000ms）
+  const timeframeMs = strategyMode === 'medium_term' ? 60 * 60 * 1000 : 15 * 60 * 1000
+  const elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
+  
+  if (elapsedRatio < minElapsedRatio) {
+    return {
+      isValid: false,
+      elapsedRatio,
+      reason: `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，数据不稳定，不通过`
+    }
+  }
+  
+  return {
+    isValid: true,
+    elapsedRatio,
+    reason: ''
+  }
+}
+
+/**
  * 通用工具：检查成交量确认
  */
 function checkVolumeConfirmation(
@@ -25,17 +58,14 @@ function checkVolumeConfirmation(
     const volumeEMAValues = EMA.calculate({ period: volumeEMAPeriod, values: volumeHistory })
     const volumeEMA = volumeEMAValues[volumeEMAValues.length - 1] || 0
     
-    // 计算当前K线已过去的时间比例
-    const candleStartTime = lastCandle.timestamp
-    const currentTime = Date.now()
-    // 根据策略模式确定时间框架（中长期1小时=3600000ms，短期15分钟=900000ms）
-    const timeframeMs = strategyMode === 'medium_term' ? 60 * 60 * 1000 : 15 * 60 * 1000
-    elapsedRatio = Math.min((currentTime - candleStartTime) / timeframeMs, 1)
+    // 检查K线时间有效性
+    const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+    elapsedRatio = timeValidity.elapsedRatio;
     
-    if (elapsedRatio < 0.1) {
+    if (!timeValidity.isValid) {
       // 前10%时间成交量不稳定，不通过成交量检查
       volumePassed = false
-      volumeReason = `K线刚开始(${(elapsedRatio * 100).toFixed(1)}%)，成交量数据不稳定，不通过`
+      volumeReason = timeValidity.reason
     } else {
       // 按时间比例预测完整K线成交量
       predictedVolume = currentVolume / elapsedRatio
@@ -550,8 +580,19 @@ function detectPinBar(
   config: any,
   emaFast: number,
   emaSlow: number,
-  price: number
+  price: number,
+  strategyMode: string
 ): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
+  // 先检查K线时间有效性
+  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+  if (!timeValidity.isValid) {
+    return {
+      triggered: false,
+      direction: null,
+      reason: timeValidity.reason
+    };
+  }
+
   const shadowBodyRatio = config.shadowBodyRatio ?? 3;
   const maxBodyRatio = config.maxBodyRatio ?? 0.3;
 
@@ -602,8 +643,19 @@ function detectPinBar(
 function detectEngulfing(
   lastCandle: OHLCV,
   prevCandle: OHLCV,
-  config: any
+  config: any,
+  strategyMode: string
 ): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
+  // 先检查K线时间有效性
+  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+  if (!timeValidity.isValid) {
+    return {
+      triggered: false,
+      direction: null,
+      reason: timeValidity.reason
+    };
+  }
+
   const minEngulfRatio = config.minEngulfRatio ?? 1.8;
   
   const lastBodySize = Math.abs(lastCandle.close - lastCandle.open);
@@ -650,8 +702,8 @@ export function checkPriceActionSignal(
   emaFast?: number,
   emaSlow?: number
 ): TradingSignal {
-  // @ts-ignore - 后续会更新类型定义
   const paConfig = config?.indicatorsConfig?.priceAction;
+  const { strategyMode } = getEMAPeriodConfig(config);
   
   // PA未启用直接返回
   if (!paConfig?.enabled) {
@@ -687,7 +739,7 @@ export function checkPriceActionSignal(
   
   // 1. 检测Pin Bar
   if (paConfig.pinBarEnabled && price !== undefined && emaFast !== undefined && emaSlow !== undefined) {
-    const pinBarResult = detectPinBar(lastCandle, paConfig, emaFast, emaSlow, price);
+    const pinBarResult = detectPinBar(lastCandle, paConfig, emaFast, emaSlow, price, strategyMode);
     if (pinBarResult.triggered) {
       data.signalType = 'pinBar';
       return {
@@ -702,7 +754,7 @@ export function checkPriceActionSignal(
   
   // 2. 检测吞没形态
   if (paConfig.engulfingEnabled) {
-    const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig);
+    const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig, strategyMode);
     if (engulfingResult.triggered) {
       data.signalType = 'engulfing';
       return {
