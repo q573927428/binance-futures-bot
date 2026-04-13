@@ -56,8 +56,7 @@ export class FuturesBot {
       this.priceService,
       indicatorsCache,
       defaultConfig,
-      defaultState,
-      (symbol) => this.analyzer.getPreviousADX(symbol)
+      defaultState
     )
     this.positionCloser = new PositionCloser(this.binance, defaultConfig, defaultState)
     this.positionValidator = new PositionValidator(this.binance, defaultConfig, defaultState, () => this.strategyAnalyzer)

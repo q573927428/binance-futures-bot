@@ -17,7 +17,6 @@ export class PositionMonitor {
   private indicatorsCache: IndicatorsCache
   private config: BotConfig
   private state: BotState
-  private getPreviousADX: (symbol: string) => number | undefined
   private lastLogTime: number = 0
   private logInterval: number = 60000 // 默认60秒
 
@@ -26,15 +25,13 @@ export class PositionMonitor {
     priceService: PriceService,
     indicatorsCache: IndicatorsCache,
     config: BotConfig,
-    state: BotState,
-    getPreviousADX: (symbol: string) => number | undefined
+    state: BotState
   ) {
     this.binance = binance
     this.priceService = priceService
     this.indicatorsCache = indicatorsCache
     this.config = config
     this.state = state
-    this.getPreviousADX = getPreviousADX
     this.logInterval = this.config.positionScanInterval * 2 * 1000
   }
 
