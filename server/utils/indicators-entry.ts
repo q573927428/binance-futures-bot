@@ -35,158 +35,6 @@ function checkCandleTimeValidity(
   }
 }
 
-/**
- * 通用工具：检查成交量确认
- */
-function checkVolumeConfirmation(
-  volumeHistory: number[],
-  lastCandle: OHLCV,
-  strategyMode: string,
-  volumeEMAPeriod: number,
-  volumeEMAMultiplier: number,
-  volumeConfirmation: boolean
-) {
-  let volumePassed = true
-  let volumeReason = ''
-  let predictedVolume: number | null = null
-  let elapsedRatio: number | null = null
-  
-  if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumeEMAPeriod) {
-    const currentVolume = lastCandle.volume
-    
-    // 计算成交量EMA（使用历史已完成K线的成交量）
-    const volumeEMAValues = EMA.calculate({ period: volumeEMAPeriod, values: volumeHistory })
-    const volumeEMA = volumeEMAValues[volumeEMAValues.length - 1] || 0
-    
-    // 检查K线时间有效性
-    const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
-    elapsedRatio = timeValidity.elapsedRatio;
-    
-    if (!timeValidity.isValid) {
-      // 前10%时间成交量不稳定，不通过成交量检查
-      volumePassed = false
-      volumeReason = timeValidity.reason
-    } else {
-      // 按时间比例预测完整K线成交量
-      predictedVolume = currentVolume / elapsedRatio
-      volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
-      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA(x${volumeEMAMultiplier}): ${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
-    }
-  } else if (volumeConfirmation) {
-    volumePassed = false
-    volumeReason = '成交量数据不足，无法计算EMA'
-  }
-
-  return {
-    volumePassed,
-    volumeReason,
-    predictedVolume,
-    elapsedRatio
-  }
-}
-
-/**
- * 通用工具：检查价格突破
- */
-function checkPriceBreakout(
-  direction: 'LONG' | 'SHORT',
-  price: number,
-  candles: OHLCV[],
-  config?: BotConfig
-): { passed: boolean; reason: string; data?: any } {
-  // 使用配置参数或默认值
-  const enabled = config?.indicatorsConfig?.priceBreakout?.enabled ?? true
-  const period = config?.indicatorsConfig?.priceBreakout?.period ?? 5
-  const requireConfirmation = config?.indicatorsConfig?.priceBreakout?.requireConfirmation ?? true
-  const confirmationCandles = config?.indicatorsConfig?.priceBreakout?.confirmationCandles ?? 1
-
-  // 如果未启用价格突破指标，直接返回通过
-  if (!enabled) {
-    return {
-      passed: true,
-      reason: '价格突破指标未启用',
-      data: {
-        enabled: false,
-        period,
-        requireConfirmation,
-        confirmationCandles
-      }
-    }
-  }
-
-  // 检查是否有足够的K线数据
-  if (candles.length < period + confirmationCandles) {
-    return {
-      passed: false,
-      reason: `K线数据不足，需要至少${period + confirmationCandles}根K线，当前只有${candles.length}根`,
-      data: {
-        enabled,
-        period,
-        requireConfirmation,
-        confirmationCandles,
-        candlesCount: candles.length
-      }
-    }
-  }
-
-  // 获取最近N根K线（排除最后确认的K线）
-  const startIndex = Math.max(0, candles.length - period - confirmationCandles)
-  const endIndex = candles.length - confirmationCandles
-  const recentCandles = candles.slice(startIndex, endIndex)
-  
-  let targetPrice: number
-  let priceBreakout: boolean
-  let compareOperator: string
-  let targetName: string
-
-  if (direction === 'LONG') {
-    targetPrice = Math.max(...recentCandles.map(c => c.high))
-    priceBreakout = price > targetPrice
-    compareOperator = priceBreakout ? '>' : '≤'
-    targetName = '最高价'
-  } else {
-    targetPrice = Math.min(...recentCandles.map(c => c.low))
-    priceBreakout = price < targetPrice
-    compareOperator = priceBreakout ? '<' : '≥'
-    targetName = '最低价'
-  }
-  
-  let passed = priceBreakout
-  let reason = `当前价格${price.toFixed(2)} ${compareOperator} 最近${period}根K线${targetName}${targetPrice.toFixed(2)}`
-  
-  // 如果需要确认，检查最近确认K线的收盘价
-  if (requireConfirmation && priceBreakout) {
-    const confirmationCandlesSlice = candles.slice(-confirmationCandles)
-    let allConfirm: boolean
-    
-    if (direction === 'LONG') {
-      allConfirm = confirmationCandlesSlice.every(candle => candle.close > targetPrice)
-    } else {
-      allConfirm = confirmationCandlesSlice.every(candle => candle.close < targetPrice)
-    }
-    
-    passed = allConfirm
-    reason = allConfirm 
-      ? `${reason}，且最近${confirmationCandles}根K线收盘价确认突破`
-      : `${reason}，但最近${confirmationCandles}根K线收盘价未全部确认突破`
-  }
-
-  return {
-    passed,
-    reason,
-    data: {
-      enabled,
-      period,
-      requireConfirmation,
-      confirmationCandles,
-      price,
-      targetPrice,
-      priceBreakout,
-      recentCandlesCount: recentCandles.length,
-      confirmationCandlesCount: confirmationCandles
-    }
-  }
-}
 
 /**
  * 检查价格是否靠近快速EMA（回踩条件）
@@ -370,7 +218,7 @@ export function checkCandleConfirmCondition(
 }
 
 /**
- * 检查成交量条件（封装checkVolumeConfirmation）
+ * 检查成交量条件
  */
 export function checkVolumeCondition(
   direction: 'LONG' | 'SHORT',
@@ -388,9 +236,36 @@ export function checkVolumeCondition(
   const volumeEMAPeriod = entryConfig?.volumeEMAPeriod || 10
   const volumeEMAMultiplier = entryConfig?.volumeEMAMultiplier || 1.2
 
-  const { volumePassed, volumeReason, predictedVolume, elapsedRatio } = checkVolumeConfirmation(
-    volumeHistory || [], lastCandle, strategyMode, volumeEMAPeriod, volumeEMAMultiplier, volumeConfirmation
-  )
+  let volumePassed = true
+  let volumeReason = ''
+  let predictedVolume: number | null = null
+  let elapsedRatio: number | null = null
+  
+  if (volumeConfirmation && volumeHistory && volumeHistory.length >= volumeEMAPeriod) {
+    const currentVolume = lastCandle.volume
+    
+    // 计算成交量EMA（使用历史已完成K线的成交量）
+    const volumeEMAValues = EMA.calculate({ period: volumeEMAPeriod, values: volumeHistory })
+    const volumeEMA = volumeEMAValues[volumeEMAValues.length - 1] || 0
+    
+    // 检查K线时间有效性
+    const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+    elapsedRatio = timeValidity.elapsedRatio;
+    
+    if (!timeValidity.isValid) {
+      // 前10%时间成交量不稳定，不通过成交量检查
+      volumePassed = false
+      volumeReason = timeValidity.reason
+    } else {
+      // 按时间比例预测完整K线成交量
+      predictedVolume = currentVolume / elapsedRatio
+      volumePassed = predictedVolume >= volumeEMA * volumeEMAMultiplier
+      volumeReason = `成交量: ${currentVolume.toFixed(2)} (${(elapsedRatio * 100).toFixed(1)}%) → 预测: ${predictedVolume.toFixed(2)} vs ${volumeEMAPeriod}周期EMA(x${volumeEMAMultiplier}): ${(volumeEMA * volumeEMAMultiplier).toFixed(2)}`
+    }
+  } else if (volumeConfirmation) {
+    volumePassed = false
+    volumeReason = '成交量数据不足，无法计算EMA'
+  }
 
   return {
     passed: volumePassed,
@@ -406,7 +281,7 @@ export function checkVolumeCondition(
 }
 
 /**
- * 检查价格突破条件（封装checkPriceBreakout）
+ * 检查价格突破条件
  */
 export function checkPriceBreakoutCondition(
   direction: 'LONG' | 'SHORT',
@@ -426,11 +301,97 @@ export function checkPriceBreakoutCondition(
     }
   }
 
-  const res = checkPriceBreakout(direction, price, candles, config)
+  // 使用配置参数或默认值
+  const enabled = config?.indicatorsConfig?.priceBreakout?.enabled ?? true
+  const period = config?.indicatorsConfig?.priceBreakout?.period ?? 5
+  const requireConfirmation = config?.indicatorsConfig?.priceBreakout?.requireConfirmation ?? true
+  const confirmationCandles = config?.indicatorsConfig?.priceBreakout?.confirmationCandles ?? 1
+
+  // 如果未启用价格突破指标，直接返回通过
+  if (!enabled) {
+    return {
+      passed: true,
+      reason: '价格突破指标未启用',
+      data: {
+        enabled: false,
+        period,
+        requireConfirmation,
+        confirmationCandles
+      }
+    }
+  }
+
+  // 检查是否有足够的K线数据
+  if (candles.length < period + confirmationCandles) {
+    return {
+      passed: false,
+      reason: `K线数据不足，需要至少${period + confirmationCandles}根K线，当前只有${candles.length}根`,
+      data: {
+        enabled,
+        period,
+        requireConfirmation,
+        confirmationCandles,
+        candlesCount: candles.length
+      }
+    }
+  }
+
+  // 获取最近N根K线（排除最后确认的K线）
+  const startIndex = Math.max(0, candles.length - period - confirmationCandles)
+  const endIndex = candles.length - confirmationCandles
+  const recentCandles = candles.slice(startIndex, endIndex)
+  
+  let targetPrice: number
+  let priceBreakout: boolean
+  let compareOperator: string
+  let targetName: string
+
+  if (direction === 'LONG') {
+    targetPrice = Math.max(...recentCandles.map(c => c.high))
+    priceBreakout = price > targetPrice
+    compareOperator = priceBreakout ? '>' : '≤'
+    targetName = '最高价'
+  } else {
+    targetPrice = Math.min(...recentCandles.map(c => c.low))
+    priceBreakout = price < targetPrice
+    compareOperator = priceBreakout ? '<' : '≥'
+    targetName = '最低价'
+  }
+  
+  let passed = priceBreakout
+  let reason = `当前价格${price.toFixed(2)} ${compareOperator} 最近${period}根K线${targetName}${targetPrice.toFixed(2)}`
+  
+  // 如果需要确认，检查最近确认K线的收盘价
+  if (requireConfirmation && priceBreakout) {
+    const confirmationCandlesSlice = candles.slice(-confirmationCandles)
+    let allConfirm: boolean
+    
+    if (direction === 'LONG') {
+      allConfirm = confirmationCandlesSlice.every(candle => candle.close > targetPrice)
+    } else {
+      allConfirm = confirmationCandlesSlice.every(candle => candle.close < targetPrice)
+    }
+    
+    passed = allConfirm
+    reason = allConfirm 
+      ? `${reason}，且最近${confirmationCandles}根K线收盘价确认突破`
+      : `${reason}，但最近${confirmationCandles}根K线收盘价未全部确认突破`
+  }
+
   return {
-    passed: res.passed,
-    reason: res.reason,
-    data: res.data
+    passed,
+    reason,
+    data: {
+      enabled,
+      period,
+      requireConfirmation,
+      confirmationCandles,
+      price,
+      targetPrice,
+      priceBreakout,
+      recentCandlesCount: recentCandles.length,
+      confirmationCandlesCount: confirmationCandles
+    }
   }
 }
 
