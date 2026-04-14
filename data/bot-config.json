@@ -17,7 +17,7 @@
   "positionTimeoutHours": 6,
   "scanInterval": 180,
   "positionScanInterval": 30,
-  "tradeCooldownInterval": 100,
+  "tradeCooldownInterval": 3600,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
@@ -68,7 +68,7 @@
     "enabled": true,
     "activationRatio": 1,
     "trailingDistance": 1.2,
-    "minMovePercent": 0.18
+    "minMovePercent": 0.16
   },
   "indicatorsConfig": {
     "requiredCandles": 300,
@@ -86,7 +86,7 @@
     },
     "adxTrend": {
       "adx15mThreshold": 23,
-      "adx1hThreshold": 20,
+      "adx1hThreshold": 18,
       "adx4hThreshold": 15,
       "enableAdx15mVs1hCheck": false
     },
@@ -98,7 +98,7 @@
     },
     "volatility": {
       "enabled": true,
-      "minATRPercent": 0.58,
+      "minATRPercent": 0.38,
       "skipSymbols": []
     },
     "openInterest": {
@@ -120,21 +120,21 @@
     "entryConfig": {
       "emaDeviationThreshold": 0.012,
       "emaDeviationEnabled": true,
-      "emaSlowDeviationThreshold": 0.03,
-      "emaSlowDeviationEnabled": false,
+      "emaSlowDeviationThreshold": 0.015,
+      "emaSlowDeviationEnabled": true,
       "rsiMin": 35,
       "rsiMax": 65,
       "candleShadowThreshold": 0.0085,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
       "volumeEMAMultiplier": 1.5,
-      "minScoreThreshold": 100
+      "minScoreThreshold": 80
     },
     "priceAction": {
       "enabled": true,
       "skipOtherChecks": true,
       "pinBarEnabled": true,
-      "shadowBodyRatio": 5,
+      "shadowBodyRatio": 3.5,
       "maxBodyRatio": 0.3,
       "engulfingEnabled": true,
       "minEngulfRatio": 1.8

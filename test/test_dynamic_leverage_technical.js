@@ -4,7 +4,7 @@ console.log("=== 纯技术指标版动态杠杆计算测试 ===\n");
 // 最新配置（从data/bot-config.json获取）
 const config = {
   enabled: true,
-  minLeverage: 2,
+  minLeverage: 8,
   maxLeverage: 20,
   baseLeverage: 5,
   riskLevelMultipliers: {
