@@ -466,11 +466,11 @@
          <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.emaDeviationThreshold" :min="0.001" :max="5" :step="0.001" :precision="3" />
        </el-form-item>
 
-       <el-form-item :label="`启用EMA${slowEMAPeriod}偏离检查`">
+       <el-form-item :label="`启用价格偏离EMA${slowEMAPeriod}检查`">
          <el-switch v-model="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationEnabled" />
        </el-form-item>
 
-       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationEnabled" :label="`EMA${slowEMAPeriod}偏离阈值(%)`">
+       <el-form-item v-if="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationEnabled" :label="`价格偏离EMA${slowEMAPeriod}阈值(%)`">
          <el-input-number v-model="editConfig.indicatorsConfig.entryConfig.emaSlowDeviationThreshold" :min="0.001" :max="10" :step="0.001" :precision="3" />
        </el-form-item>
 

@@ -189,7 +189,7 @@ function checkPriceBreakout(
 }
 
 /**
- * 检查价格是否靠近快速/中速EMA（回踩条件）
+ * 检查价格是否靠近快速EMA（回踩条件）
  */
 export function checkEMANearCondition(
   direction: 'LONG' | 'SHORT',
@@ -255,7 +255,7 @@ export function checkEMASlowDeviationCondition(
   const { ema60: emaSlow } = indicators
   const { slowName: emaSlowName } = getEMAPeriodConfig(config)
   const entryConfig = config?.indicatorsConfig?.entryConfig
-  const emaSlowDeviationThreshold = entryConfig?.emaSlowDeviationThreshold || 0.05
+  const emaSlowDeviationThreshold = entryConfig?.emaSlowDeviationThreshold || 0.015
   const emaSlowDeviationEnabled = entryConfig?.emaSlowDeviationEnabled ?? true
 
   const emaSlowDeviation = Math.abs(price - emaSlow) / emaSlow
@@ -584,7 +584,7 @@ function detectPinBar(
   strategyMode: string
 ): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
   // 先检查K线时间有效性
-  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode, 0.3);
   if (!timeValidity.isValid) {
     return {
       triggered: false,
@@ -604,6 +604,22 @@ function detectPinBar(
   // 趋势判断
   const isUptrend = price > emaSlow && emaFast > emaSlow; // 上升趋势：价格在慢线上方 + 快线在慢线上方
   const isDowntrend = price < emaSlow && emaFast < emaSlow; // 下降趋势：价格在慢线下方 + 快线在慢线下方
+  
+  // 增加EMA慢线偏离度检查，避免高位/低位接盘
+  const deviationDirection = isUptrend ? 'LONG' : 'SHORT';
+  const deviationCheck = checkEMASlowDeviationCondition(
+    deviationDirection,
+    price,
+    { ema60: emaSlow } as TechnicalIndicators,
+    config
+  );
+  if (!deviationCheck.passed) {
+    return {
+      triggered: false,
+      direction: null,
+      reason: `未触发Pin Bar信号：${deviationCheck.reason}`
+    };
+  }
   
   if (lastBodySize / lastTotalSize <= maxBodyRatio) {
     // 看涨Pin Bar：长下影线 + 上升趋势
@@ -644,10 +660,13 @@ function detectEngulfing(
   lastCandle: OHLCV,
   prevCandle: OHLCV,
   config: any,
-  strategyMode: string
+  strategyMode: string,
+  emaFast: number,
+  emaSlow: number,
+  price: number
 ): { triggered: boolean; direction: 'LONG' | 'SHORT' | null; reason: string } {
   // 先检查K线时间有效性
-  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode);
+  const timeValidity = checkCandleTimeValidity(lastCandle, strategyMode, 0.3);
   if (!timeValidity.isValid) {
     return {
       triggered: false,
@@ -656,6 +675,24 @@ function detectEngulfing(
     };
   }
 
+  // 趋势判断
+  const isUptrend = price > emaSlow && emaFast > emaSlow; // 上升趋势：价格在慢线上方 + 快线在慢线上方
+  const isDowntrend = price < emaSlow && emaFast < emaSlow; // 下降趋势：价格在慢线下方 + 快线在慢线下方
+  
+  // 增加EMA慢线偏离度检查，避免高位/低位接盘
+  const longDeviationCheck = checkEMASlowDeviationCondition(
+    'LONG',
+    price,
+    { ema60: emaSlow } as TechnicalIndicators,
+    config
+  );
+  const shortDeviationCheck = checkEMASlowDeviationCondition(
+    'SHORT',
+    price,
+    { ema60: emaSlow } as TechnicalIndicators,
+    config
+  );
+  
   const minEngulfRatio = config.minEngulfRatio ?? 1.8;
   
   const lastBodySize = Math.abs(lastCandle.close - lastCandle.open);
@@ -663,31 +700,48 @@ function detectEngulfing(
   const prevIsBullish = prevCandle.close > prevCandle.open;
   const lastIsBullish = lastCandle.close > lastCandle.open;
   
-  // 看涨吞没：前阴后阳，阳线实体完全包裹阴线实体
+  // 看涨吞没：前阴后阳 + 阳线实体完全包裹阴线实体 + 上升趋势 + 偏离度满足
   if (!prevIsBullish && lastIsBullish && 
       lastCandle.open < prevCandle.close && 
       lastCandle.close > prevCandle.open &&
-      lastBodySize >= prevBodySize * minEngulfRatio) {
+      lastBodySize >= prevBodySize * minEngulfRatio &&
+      isUptrend &&
+      longDeviationCheck.passed) {
     return {
       triggered: true,
       direction: 'LONG',
-      reason: `[PA信号] 看涨吞没：阳线实体(${lastBodySize.toFixed(4)})完全包裹前阴线实体(${prevBodySize.toFixed(4)})，反转做多`
+      reason: `[PA信号] 看涨吞没：阳线实体(${lastBodySize.toFixed(4)})完全包裹前阴线实体(${prevBodySize.toFixed(4)})，上升趋势确认，反转做多`
     };
   }
   
-  // 看跌吞没：前阳后阴，阴线实体完全包裹阳线实体
+  // 看跌吞没：前阳后阴 + 阴线实体完全包裹阳线实体 + 下降趋势 + 偏离度满足
   if (prevIsBullish && !lastIsBullish && 
       lastCandle.open > prevCandle.close && 
       lastCandle.close < prevCandle.open &&
-      lastBodySize >= prevBodySize * minEngulfRatio) {
+      lastBodySize >= prevBodySize * minEngulfRatio &&
+      isDowntrend &&
+      shortDeviationCheck.passed) {
     return {
       triggered: true,
       direction: 'SHORT',
-      reason: `[PA信号] 看跌吞没：阴线实体(${lastBodySize.toFixed(4)})完全包裹前阳线实体(${prevBodySize.toFixed(4)})，反转做空`
+      reason: `[PA信号] 看跌吞没：阴线实体(${lastBodySize.toFixed(4)})完全包裹前阳线实体(${prevBodySize.toFixed(4)})，下降趋势确认，反转做空`
     };
   }
   
-  return { triggered: false, direction: null, reason: '未触发吞没形态信号' };
+  let reason = '未触发吞没形态信号';
+  if (!isUptrend && !isDowntrend) {
+    reason = '未触发吞没形态信号：当前为震荡趋势，不满足趋势条件';
+  } else if (isUptrend) {
+    reason = !longDeviationCheck.passed 
+      ? `未触发吞没形态信号：${longDeviationCheck.reason}`
+      : '未触发吞没形态信号：上升趋势仅允许看涨吞没';
+  } else if (isDowntrend) {
+    reason = !shortDeviationCheck.passed 
+      ? `未触发吞没形态信号：${shortDeviationCheck.reason}`
+      : '未触发吞没形态信号：下降趋势仅允许看跌吞没';
+  }
+  
+  return { triggered: false, direction: null, reason };
 }
 
 /**
@@ -753,8 +807,8 @@ export function checkPriceActionSignal(
   }
   
   // 2. 检测吞没形态
-  if (paConfig.engulfingEnabled) {
-    const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig, strategyMode);
+  if (paConfig.engulfingEnabled && price !== undefined && emaFast !== undefined && emaSlow !== undefined) {
+    const engulfingResult = detectEngulfing(lastCandle, prevCandle, paConfig, strategyMode, emaFast, emaSlow, price);
     if (engulfingResult.triggered) {
       data.signalType = 'engulfing';
       return {
