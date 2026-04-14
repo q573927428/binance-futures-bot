@@ -92,9 +92,10 @@ export class PositionOpener {
 
       if (this.config.dynamicLeverageConfig.enabled && signal.aiAnalysis) {
         try {
-          // 使用简化版动态杠杆计算
+          // 使用纯技术指标版动态杠杆计算
           const dynamicLeverage = calculateQuickLeverage(
-            signal.aiAnalysis,
+            signal.indicators,
+            signal.aiAnalysis?.riskLevel || 'MEDIUM',
             this.config.dynamicLeverageConfig
           )
 
@@ -114,9 +115,11 @@ export class PositionOpener {
             dynamicLeverage,
             safeLeverage,
             finalLeverage,
-            aiConfidence: signal.aiAnalysis.confidence,
-            aiScore: signal.aiAnalysis.score,
-            riskLevel: signal.aiAnalysis.riskLevel,
+            riskLevel: signal.aiAnalysis?.riskLevel || 'MEDIUM',
+            adx15m: signal.indicators.adx15m,
+            rsi: signal.indicators.rsi,
+            atrPercent: ((signal.indicators.atr / signal.indicators.ema20) * 100).toFixed(2) + '%',
+            openInterestTrend: signal.indicators.openInterestTrend
           }
 
           logger.info('动态杠杆', `杠杆计算完成 ${finalLeverage} X`, leverageCalculationDetails)
