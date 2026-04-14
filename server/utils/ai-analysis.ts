@@ -1,5 +1,7 @@
 import type { AIAnalysis, Direction, RiskLevel, TechnicalIndicators, BotConfig, AIConditionMode, TradingSignal } from '../../types'
 import { getLatestLearningResult, checkDailyLearning } from './ai-self-learning'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 interface AIAnalysisCache {
   data: AIAnalysis
@@ -150,6 +152,41 @@ function buildAIPrompt(
 }
 
 /**
+ * 保存AI分析结果到每日JSON文件
+ */
+async function saveAIAnalysisToFile(analysis: AIAnalysis): Promise<void> {
+  try {
+    // 确保目录存在
+    const saveDir = path.join(process.cwd(), 'data', 'ai-analysis')
+    await fs.mkdir(saveDir, { recursive: true })
+    
+    // 生成当天文件名
+    const date = new Date()
+    const dateStr = date.toISOString().split('T')[0]
+    const fileName = `ai-analysis-${dateStr}.json`
+    const filePath = path.join(saveDir, fileName)
+    
+    // 读取现有内容或创建新数组
+    let records: AIAnalysis[] = []
+    try {
+      const fileContent = await fs.readFile(filePath, 'utf-8')
+      records = JSON.parse(fileContent)
+    } catch (error: any) {
+      // 文件不存在或解析失败，使用空数组
+      if (error.code !== 'ENOENT') {
+        console.error('读取AI分析历史文件失败:', error.message)
+      }
+    }
+    
+    // 添加新记录并写入文件
+    records.push(analysis)
+    await fs.writeFile(filePath, JSON.stringify(records, null, 2), 'utf-8')
+  } catch (error: any) {
+    console.error('保存AI分析结果失败:', error.message)
+  }
+}
+
+/**
  * AI分析服务
  */
 export async function analyzeMarketWithAI(
@@ -262,12 +299,15 @@ export async function analyzeMarketWithAI(
       timestamp: Date.now(),
     })
 
+    // 异步保存到文件，不阻塞主流程
+    saveAIAnalysisToFile(finalAnalysis).catch(() => {})
+
     return finalAnalysis
   } catch (error: any) {
     console.error('AI分析失败:', error.message)
     
     // 返回默认分析结果（降级处理）
-    return {
+    const fallbackAnalysis: AIAnalysis = {
       symbol,
       timestamp: Date.now(),
       direction: 'IDLE',
@@ -284,6 +324,11 @@ export async function analyzeMarketWithAI(
         volume,
       },
     }
+
+    // 异步保存到文件，不阻塞主流程
+    saveAIAnalysisToFile(fallbackAnalysis).catch(() => {})
+
+    return fallbackAnalysis
   }
 }
 
