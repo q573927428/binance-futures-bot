@@ -441,7 +441,7 @@ export function checkEntry(
 
   const isLong = direction === 'LONG'
 
-  // 第二步：OI趋势匹配（30分）
+  // 第二步：OI趋势匹配（25分）
   if (oiConfig?.enabled) {
     let oiMatch = false
     if (isLong) {
@@ -453,12 +453,12 @@ export function checkEntry(
     }
 
     if (oiMatch) {
-      totalScore += 30
+      totalScore += 25
     } else {
       scoreDetails.push(`OI不匹配：+0分 (趋势${openInterestTrend}，变化率${openInterestChangePercent}%)`)
     }
   } else {
-    totalScore += 30
+    totalScore += 25
   }
 
   // 调用独立条件函数
@@ -476,9 +476,9 @@ export function checkEntry(
     scoreDetails.push(`EMA接近：+0分 (${emaNearResult.reason})`)
   }
 
-  // EMA偏离度（10分）
+  // EMA偏离度（22分）
   if (emaSlowDevResult.passed) {
-    totalScore += 10
+    totalScore += 22
   } else {
     scoreDetails.push(`EMA偏离：+0分 (${emaSlowDevResult.reason})`)
   }
@@ -497,9 +497,9 @@ export function checkEntry(
     scoreDetails.push(`K线确认：+0分 (${candleResult.reason})`)
   }
 
-  // 成交量确认（30分）
+  // 成交量确认（23分）
   if (volumeResult.passed) {
-    totalScore += 30
+    totalScore += 23
   } else {
     scoreDetails.push(`成交量：+0分 (${volumeResult.reason})`)
   }
