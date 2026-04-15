@@ -64,6 +64,12 @@ export class MarketAnalyzer {
         this.logAnalysisResult(symbol, false, `ADX不满足: ${adxResult.reason}`, price)
         return null
       }
+
+      // 新增：ADX斜率判断
+      if (indicators.adxSlope <= 0) {
+        this.logAnalysisResult(symbol, false, `ADX斜率不满足: ${indicators.adxSlope.toFixed(2)} <= 0`, price)
+        return null
+      }
       
       // 波动率检查
       const volatilityResult = checkVolatility(price, indicators, this.config, symbol)
