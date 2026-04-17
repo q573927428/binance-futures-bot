@@ -96,36 +96,56 @@ export function calculateMultipleEMAs(
 }
 
 /**
- * 获取EMA颜色配置
- * @param period EMA周期
- * @returns 颜色配置
+ * 获取EMA颜色配置（分层设计）
  */
 export function getEMAColor(period: number): string {
   const colorMap: Record<number, string> = {
-    14: '#298cf3', // 红色 - EMA14
-    20: '#4ECDC4', // 青色 - EMA20
-    30: '#FF6B6B', // 蓝色 - EMA30
-    60: '#DDA0DD', // 紫色 - EMA60
-    120: '#f3ab23', // 黄色 - EMA120
-    200: '#96CEB4'  // 绿色 - EMA200
+    // ===== 超短线 =====
+    5: '#FF9F1C',   // 橙色
+    9: '#FF3B30',   // 红色
+
+    // ===== 短线 =====
+    12: '#00C2FF',  // 浅蓝（MACD快线）
+    14: '#298CF3',  // 蓝
+    20: '#4ECDC4',  // 青
+    26: '#1A73E8',  // 深蓝（MACD慢线）
+    30: '#FF6B6B',  // 粉红
+
+    // ===== 中期 =====
+    50: '#A66CFF',  // 紫（关键趋势线）
+    60: '#DDA0DD',  // 浅紫
+
+    // ===== 长期 =====
+    120: '#F3AB23', // 黄
+    200: '#96CEB4'  // 绿（牛熊分界）
   }
 
   return colorMap[period] || '#FFFFFF'
 }
 
 /**
- * 获取EMA线宽配置
- * @param period EMA周期
- * @returns 线宽
+ * 获取EMA线宽配置（越重要越粗）
  */
 export function getEMAWidth(period: number): number {
   const widthMap: Record<number, number> = {
-    14: 1.5,
+    // 超短线
+    5: 1.5,
+    9: 1.5,
+
+    // 短线
+    12: 1.8,
+    14: 1.8,
     20: 2,
+    26: 2,
     30: 2,
+
+    // 中期
+    50: 2.5,
     60: 2.5,
-    120: 2.5,
-    200: 3
+
+    // 长期
+    120: 3,
+    200: 3.5
   }
 
   return widthMap[period] || 1.5
