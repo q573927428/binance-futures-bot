@@ -51,10 +51,10 @@
         <div class="dashboard-right">
           <div class="pnl-display" :class="getPnlClass()">
             <div class="pnl-amount">
-              {{ botStore.state.currentPnL ? botStore.state.currentPnL.toFixed(2) : '--' }} U
+              {{ realTimeCurrentPnL !== null ? realTimeCurrentPnL.toFixed(2) : (botStore.state.currentPnL ? botStore.state.currentPnL.toFixed(2) : '--') }} U
             </div>
             <div class="pnl-percentage">
-              {{ botStore.state.currentPnLPercentage ? botStore.state.currentPnLPercentage.toFixed(2) + '%' : '--' }}
+              {{ realTimeCurrentPnLPercentage !== null ? realTimeCurrentPnLPercentage.toFixed(2) + '%' : (botStore.state.currentPnLPercentage ? botStore.state.currentPnLPercentage.toFixed(2) + '%' : '--') }}
             </div>
           </div>
         </div>
@@ -219,7 +219,7 @@
                 class="current-value" 
                 :style="getCurrentPriceStyle()"
               >
-                {{ botStore.state.currentPrice?.toFixed(3) || '--' }}
+                {{ realTimeCurrentPrice !== null ? realTimeCurrentPrice.toFixed(3) : (botStore.state.currentPrice?.toFixed(3) || '--') }}
               </div>
             </div>
           </div>
@@ -278,20 +278,78 @@ const passwordInput = ref('')
 const isClosing = ref(false)
 const requiresPassword = ref(false)
 
+// 实时价格和盈亏（用于高频更新）
+const realTimeCurrentPrice = ref<number | null>(null)
+const realTimeCurrentPnL = ref<number | null>(null)
+const realTimeCurrentPnLPercentage = ref<number | null>(null)
+
+// 从store获取价格并计算盈亏
+function updatePriceFromStore() {
+  const position = botStore.state?.currentPosition
+  if (!position) {
+    realTimeCurrentPrice.value = null
+    realTimeCurrentPnL.value = null
+    realTimeCurrentPnLPercentage.value = null
+    return
+  }
+
+  const priceData = botStore.getPrice(position.symbol)
+  if (priceData && priceData.price) {
+    realTimeCurrentPrice.value = priceData.price
+
+    // 计算实时盈亏
+    const entryPrice = position.entryPrice
+    const quantity = position.quantity
+    const direction = position.direction
+    const currentPrice = realTimeCurrentPrice.value
+
+    if (entryPrice && quantity && currentPrice) {
+      let pnl: number
+      if (direction === 'LONG') {
+        pnl = (currentPrice - entryPrice) * quantity
+      } else {
+        pnl = (entryPrice - currentPrice) * quantity
+      }
+
+      const positionValue = entryPrice * quantity
+      const pnlPercentage = positionValue > 0 ? (pnl / positionValue) * 100 : 0
+
+      realTimeCurrentPnL.value = pnl
+      realTimeCurrentPnLPercentage.value = pnlPercentage
+    }
+  }
+}
+
+// 监听store价格变化
+watch(() => botStore.prices, () => {
+  updatePriceFromStore()
+}, { deep: true })
+
 // 监听持仓状态变化，有持仓时订阅共享轮询，无持仓时取消订阅
 watch(() => botStore.hasPosition, (hasPosition) => {
   if (hasPosition) {
-    // 有持仓时订阅共享轮询
+    // 有持仓时订阅共享轮询（30秒一次，获取完整状态）
     botStore.subscribeToPolling('current-positions')
+    // 订阅共享价格（3秒一次）
+    botStore.subscribeToPrices('current-positions')
+    // 立即更新一次价格
+    updatePriceFromStore()
   } else {
     // 无持仓时取消订阅共享轮询
     botStore.unsubscribeFromPolling('current-positions')
+    // 取消订阅共享价格
+    botStore.unsubscribeFromPrices('current-positions')
+    // 清空实时价格
+    realTimeCurrentPrice.value = null
+    realTimeCurrentPnL.value = null
+    realTimeCurrentPnLPercentage.value = null
   }
 }, { immediate: true })
 
-// 组件卸载时取消订阅共享轮询
+// 组件卸载时取消订阅共享轮询和价格
 onUnmounted(() => {
   botStore.unsubscribeFromPolling('current-positions')
+  botStore.unsubscribeFromPrices('current-positions')
 })
 
 // 计算价格区间相关数据（考虑所有关键价格点，添加缓冲避免重叠）
@@ -324,10 +382,10 @@ const priceRange = computed(() => {
   }
 })
 
-// 获取当前价格位置百分比
+// 获取当前价格位置百分比（优先使用实时价格）
 const currentPricePosition = computed(() => {
   const position = botStore.state?.currentPosition
-  const currentPrice = botStore.state?.currentPrice
+  const currentPrice = realTimeCurrentPrice.value !== null ? realTimeCurrentPrice.value : botStore.state?.currentPrice
   if (!position || !currentPrice || priceRange.value.range === 0) return 50
   
   const normalizedPrice = Math.max(priceRange.value.min, Math.min(priceRange.value.max, currentPrice))
@@ -343,10 +401,10 @@ const entryPricePosition = computed(() => {
   return ((normalizedPrice - priceRange.value.min) / priceRange.value.range) * 100
 })
 
-// 获取盈亏显示类名
+// 获取盈亏显示类名（优先使用实时数据）
 function getPnlClass() {
-  const pnl = botStore.state?.currentPnL
-  if (!pnl) return 'pnl-neutral'
+  const pnl = realTimeCurrentPnL.value !== null ? realTimeCurrentPnL.value : botStore.state?.currentPnL
+  if (pnl === null || pnl === undefined) return 'pnl-neutral'
   return pnl >= 0 ? 'pnl-positive' : 'pnl-negative'
 }
 
@@ -357,13 +415,13 @@ function getCurrentPriceStyle() {
   }
 }
 
-// 获取当前价格类名
+// 获取当前价格类名（优先使用实时数据）
 function getCurrentPriceClass() {
   const position = botStore.state?.currentPosition
   if (!position) return 'price-neutral'
   
-  const currentPrice = botStore.state?.currentPrice
-  if (!currentPrice) return 'price-neutral'
+  const currentPrice = realTimeCurrentPrice.value !== null ? realTimeCurrentPrice.value : botStore.state?.currentPrice
+  if (currentPrice === null || currentPrice === undefined) return 'price-neutral'
   
   // 根据价格相对于入场价的位置决定颜色
   if (position.direction === 'LONG') {

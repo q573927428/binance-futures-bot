@@ -169,6 +169,19 @@ const priceChangeAnimations = ref<Record<string, 'up' | 'down' | null>>({})
 // 计算属性
 const hasPrices = computed(() => cryptoPrices.value.length > 0)
 
+// 从store获取价格并更新
+function updatePricesFromStore() {
+  const prices = botStore.getAllPrices()
+  if (Object.keys(prices).length > 0) {
+    updateCryptoPrices(prices)
+  }
+}
+
+// 监听store价格变化
+watch(() => botStore.prices, () => {
+  updatePricesFromStore()
+}, { deep: true })
+
 // 获取WebSocket连接状态
 async function fetchWebSocketStatus() {
   try {
@@ -178,29 +191,6 @@ async function fetchWebSocketStatus() {
     }
   } catch (error) {
     console.error('获取WebSocket状态失败:', error)
-  }
-}
-
-// 获取价格数据
-async function fetchPrices() {
-  isLoading.value = true
-  try {
-    const response = await $fetch<ApiResponse>('/api/websocket/prices', {
-      params: {
-        symbols: DEFAULT_CRYPTOS.value.join(',')
-      }
-    })
-
-    if (response.success && response.data?.prices) {
-      updateCryptoPrices(response.data.prices)
-    } else {
-      ElMessage.warning('获取价格数据失败')
-    }
-  } catch (error: any) {
-    console.error('获取价格失败:', error)
-    ElMessage.error(`获取价格失败: ${error.message}`)
-  } finally {
-    isLoading.value = false
   }
 }
 
@@ -270,7 +260,7 @@ function triggerPriceAnimation(symbol: string, direction: 'up' | 'down') {
 
 // 刷新价格
 function refreshPrices() {
-  fetchPrices()
+  botStore.fetchPrices()
   ElMessage.success('正在刷新价格数据...')
 }
 
@@ -292,18 +282,12 @@ function openChartModal(crypto: CryptoPrice) {
   showChartModal.value = true
 }
 
-// 关闭图表弹窗
-function closeChartModal() {
-  showChartModal.value = false
-  selectedSymbol.value = ''
-}
-
 // 格式化函数
 function formatPrice(price: number): string {
   if (price === 0) return '0'
   
   if (price < 0.001) {
-    return price.toFixed(6)
+    return price.toFixed(5)
   } else if (price < 1) {
     return price.toFixed(3)
   } else if (price < 1000) {
@@ -360,41 +344,21 @@ function getCryptoIcon(symbol: string): string {
   return iconMap[baseSymbol] || ''
 }
 
-
-// 定时刷新
-let refreshInterval: NodeJS.Timeout | null = null
-
-function startAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-  }
-  
-  // 每10秒刷新一次价格
-  refreshInterval = setInterval(() => {
-    if (!isLoading.value) {
-      fetchPrices()
-    }
-  }, 10000)
-}
-
 // 组件生命周期
 onMounted(() => {
   fetchWebSocketStatus()
-  fetchPrices()
-  startAutoRefresh()
+  updatePricesFromStore()
+  
+  // 订阅共享价格
+  botStore.subscribeToPrices('crypto-price-cards')
   
   // 订阅共享轮询，自动更新配置
-  botStore.subscribeToPolling('crypto-price-cards', () => {
-    // 配置变化时重新获取价格
-    fetchPrices()
-  })
+  botStore.subscribeToPolling('crypto-price-cards')
 })
 
 onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval)
-    refreshInterval = null
-  }
+  // 取消订阅价格
+  botStore.unsubscribeFromPrices('crypto-price-cards')
   // 取消订阅轮询
   botStore.unsubscribeFromPolling('crypto-price-cards')
 })
