@@ -182,6 +182,25 @@ const lastPriceUpdate = ref<PriceData | null>(null)
 const webSocketClientId = ref<string>('')
 const currentSubscriptionSymbol = ref<string>('') // 跟踪当前订阅的交易对
 
+// 从store获取价格并更新
+function updatePriceFromStore() {
+  const symbolToUse = props.symbol || 'BTCUSDT'
+  const priceData = botStore.getPrice(symbolToUse)
+  
+  if (priceData && priceData.price) {
+    handlePriceUpdate({
+      symbol: symbolToUse,
+      price: priceData.price,
+      timestamp: Date.now()
+    })
+  }
+}
+
+// 监听store价格变化
+watch(() => botStore.prices, () => {
+  updatePriceFromStore()
+}, { deep: true })
+
 // 浮动面板相关
 const tooltipVisible = ref(false)
 const tooltipData = ref({
@@ -555,7 +574,7 @@ const cleanupOldSubscription = async (): Promise<boolean> => {
   }
 }
 
-// 订阅WebSocket价格更新
+// 订阅WebSocket价格更新（使用共享价格）
 const subscribeToPriceUpdates = async () => {
   const symbolToUse = props.symbol || 'BTCUSDT'
   
@@ -584,7 +603,10 @@ const subscribeToPriceUpdates = async () => {
     if (result.success) {
       console.log(`客户端 ${webSocketClientId.value} 已订阅 ${symbolToUse} 的价格更新`)
       currentSubscriptionSymbol.value = symbolToUse
-      startPricePolling()
+      // 使用共享价格订阅，替代独立轮询
+      botStore.subscribeToPrices('kline-chart-simple')
+      // 立即从store获取一次价格
+      updatePriceFromStore()
     } else {
       console.error('订阅价格更新失败:', result.message)
     }
@@ -651,52 +673,6 @@ const unsubscribeFromPriceUpdates = async (): Promise<boolean> => {
   return false
 }
 
-// 轮询获取最新价格
-let pricePollingInterval: NodeJS.Timeout | null = null
-let pricePollingGeneration = 0
-
-const startPricePolling = () => {
-  if (pricePollingInterval) {
-    clearInterval(pricePollingInterval)
-  }
-  
-  // 递增轮询代次
-  pricePollingGeneration++
-  const currentGeneration = pricePollingGeneration
-  
-  pricePollingInterval = setInterval(async () => {
-    const symbolToUse = props.symbol || 'BTCUSDT'
-    
-    // 检查轮询代次是否已过期（例如symbol已切换）
-    if (currentGeneration !== pricePollingGeneration) {
-      return
-    }
-    
-    try {
-      const response = await fetch(`/api/websocket/prices?symbols=${symbolToUse}`)
-      const result = await response.json()
-      
-      if (result.success && result.data?.prices?.[symbolToUse]) {
-        const priceData = result.data.prices[symbolToUse]
-        handlePriceUpdate({
-          symbol: symbolToUse,
-          price: priceData.price,
-          timestamp: Date.now()
-        })
-      }
-    } catch (error) {
-      console.error('获取最新价格失败:', error)
-    }
-  }, 3000)
-}
-
-const stopPricePolling = () => {
-  if (pricePollingInterval) {
-    clearInterval(pricePollingInterval)
-    pricePollingInterval = null
-  }
-}
-
 // 新K线检测相关 - 复用bot store的共享轮询
 const klineCheckSubscriberId = 'kline-chart-new-kline-check'
 
@@ -759,8 +735,8 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
       chartCanvasRef.value.clearMarkers()
     }
     
-    // 4. 停止旧的轮询
-    stopPricePolling()
+    // 4. 取消旧的共享价格订阅
+    botStore.unsubscribeFromPrices('kline-chart-simple')
     
     // 5. 清理旧的WebSocket订阅
     if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
@@ -811,8 +787,9 @@ onMounted(() => {
 
 // 组件卸载前同步清理
 onBeforeUnmount(() => {
-  stopPricePolling()
   stopNewKlineCheck()
+  // 取消共享价格订阅
+  botStore.unsubscribeFromPrices('kline-chart-simple')
 })
 
 // 组件卸载时异步清理
