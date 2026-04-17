@@ -1,5 +1,5 @@
 <template>
-  <!-- 配置面板 -->
+  <!-- 配置面板  -->
   <el-card class="config-card" shadow="hover">
     <template #header>
       <div class="card-header">
