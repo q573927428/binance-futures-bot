@@ -56,7 +56,7 @@ function buildAIPrompt(
   rsi: number,
   volume: number,
   priceChange24h: number,
-  indicators?: TechnicalIndicators,
+  indicators: TechnicalIndicators,
   config?: BotConfig
 ): string {
   // 获取策略模式，默认为短期
@@ -86,11 +86,7 @@ function buildAIPrompt(
 - RSI(14): ${rsi.toFixed(2)}
 - ${emaFastName}: ${ema20.toFixed(4)}
 - ${emaMediumName}: ${indicators ? indicators.ema30.toFixed(4) : 'N/A'}
-- ${emaSlowName}: ${ema60.toFixed(4)}`
-
-  // 如果提供了完整的技术指标，添加更多分析维度
-  if (indicators) {
-    prompt += `
+- ${emaSlowName}: ${ema60.toFixed(4)}
 
 ## 多时间框架技术指标：
 ### ADX趋势强度：
@@ -103,10 +99,7 @@ function buildAIPrompt(
 - ADX斜率: ${indicators.adxSlope.toFixed(4)}
 - 持仓量(OI): ${indicators.openInterest.toFixed(2)}
 - OI变化率: ${indicators.openInterestChangePercent.toFixed(2)}%
-- OI趋势: ${indicators.openInterestTrend}`
-  }
-
-  prompt += `
+- OI趋势: ${indicators.openInterestTrend}
 
 ## 分析要求：
 请基于以上数据，综合考虑所有你认为重要的因素进行分析，包括但不限于：
@@ -214,7 +207,7 @@ export async function analyzeMarketWithAI(
   rsi: number,
   volume: number,
   priceChange24h: number,
-  indicators?: TechnicalIndicators,
+  indicators: TechnicalIndicators,
   config?: BotConfig
 ): Promise<AIAnalysis> {
   const runtimeConfig = useRuntimeConfig()

@@ -14,7 +14,7 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 6,
+  "positionTimeoutHours": 8,
   "scanInterval": 180,
   "positionScanInterval": 30,
   "tradeCooldownInterval": 3600,
@@ -41,15 +41,15 @@
       "minute": 55
     },
     "takeProfit": {
-      "tp1RiskRewardRatio": 2.5,
-      "tp2RiskRewardRatio": 3.5,
+      "tp1RiskRewardRatio": 2,
+      "tp2RiskRewardRatio": 3,
       "tp1MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 80,
         "short": 20
       },
-      "adxDecreaseThreshold": 2,
-      "adxSlopePeriod": 3
+      "adxDecreaseThreshold": 1.2,
+      "adxSlopePeriod": 2
     },
     "dailyTradeLimit": 5
   },
@@ -57,7 +57,7 @@
     "enabled": true,
     "minLeverage": 5,
     "maxLeverage": 20,
-    "baseLeverage": 8,
+    "baseLeverage": 7,
     "riskLevelMultipliers": {
       "LOW": 1.5,
       "MEDIUM": 1,
@@ -66,28 +66,28 @@
   },
   "trailingStopConfig": {
     "enabled": true,
-    "activationRatio": 1,
+    "activationRatio": 0.8,
     "trailingDistance": 1.2,
     "minMovePercent": 0.16
   },
   "indicatorsConfig": {
-    "requiredCandles": 300,
+    "requiredCandles": 500,
     "emaPeriods": {
       "short_term": {
-        "fast": 14,
-        "medium": 30,
-        "slow": 60
+        "fast": 9,
+        "medium": 20,
+        "slow": 50
       },
       "medium_term": {
-        "fast": 14,
-        "medium": 60,
-        "slow": 120
+        "fast": 50,
+        "medium": 120,
+        "slow": 200
       }
     },
     "adxTrend": {
-      "adx15mThreshold": 23,
-      "adx1hThreshold": 18,
-      "adx4hThreshold": 15,
+      "adx15mThreshold": 18,
+      "adx1hThreshold": 15,
+      "adx4hThreshold": 12,
       "enableAdx15mVs1hCheck": false
     },
     "priceBreakout": {
@@ -114,30 +114,30 @@
     "showCrossFailureReason": true,
     "predictiveCross": {
       "enabled": true,
-      "distancePercent": 0.0012,
+      "distancePercent": 0.0015,
       "onlyTrend": true
     },
     "entryConfig": {
-      "emaDeviationThreshold": 0.012,
+      "emaDeviationThreshold": 0.01,
       "emaDeviationEnabled": true,
-      "emaSlowDeviationThreshold": 0.015,
+      "emaSlowDeviationThreshold": 0.016,
       "emaSlowDeviationEnabled": true,
       "rsiMin": 35,
       "rsiMax": 65,
       "candleShadowThreshold": 0.0085,
       "volumeConfirmation": true,
       "volumeEMAPeriod": 12,
-      "volumeEMAMultiplier": 1.5,
+      "volumeEMAMultiplier": 1.8,
       "minScoreThreshold": 80
     },
     "priceAction": {
       "enabled": true,
       "skipOtherChecks": true,
       "pinBarEnabled": true,
-      "shadowBodyRatio": 3.5,
+      "shadowBodyRatio": 3,
       "maxBodyRatio": 0.3,
       "engulfingEnabled": true,
-      "minEngulfRatio": 1.8
+      "minEngulfRatio": 1.6
     }
   }
 }
