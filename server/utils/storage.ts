@@ -217,7 +217,7 @@ export function getDefaultConfig(): BotConfig {
     maxStopLossPercentage: 2,         // 最大止损比例（%）
     positionTimeoutHours: 8,          // 持仓超时时间（小时）
     scanInterval: 180,                // 市场扫描间隔（秒）
-    positionScanInterval: 60,         // 持仓扫描间隔（秒）
+    positionScanInterval: 30,         // 持仓扫描间隔（秒）
     tradeCooldownInterval: 7200,      // 交易冷却时间间隔（秒）- 默认2小时
     aiConfig: { 
       enabled: true,                  // 启用AI分析
