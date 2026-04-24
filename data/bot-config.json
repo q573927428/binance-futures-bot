@@ -14,15 +14,15 @@
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
   "maxStopLossPercentage": 2,
-  "positionTimeoutHours": 8,
+  "positionTimeoutHours": 5,
   "scanInterval": 180,
   "positionScanInterval": 30,
-  "tradeCooldownInterval": 3600,
+  "tradeCooldownInterval": 1800,
   "aiConfig": {
     "enabled": true,
     "analysisInterval": 1500,
-    "minScore": 75,
-    "minConfidence": 75,
+    "minScore": 72,
+    "minConfidence": 72,
     "conditionMode": "SCORE_ONLY",
     "maxRiskLevel": "MEDIUM",
     "technicalPostAdjustmentMode": "PENALTY_ONLY",
@@ -67,8 +67,8 @@
   "trailingStopConfig": {
     "enabled": true,
     "activationRatio": 0.8,
-    "trailingDistance": 1.2,
-    "minMovePercent": 0.16
+    "trailingDistance": 1.6,
+    "minMovePercent": 0.18
   },
   "indicatorsConfig": {
     "requiredCandles": 500,
@@ -85,8 +85,8 @@
       }
     },
     "adxTrend": {
-      "adx15mThreshold": 18,
-      "adx1hThreshold": 15,
+      "adx15mThreshold": 20,
+      "adx1hThreshold": 16,
       "adx4hThreshold": 12,
       "enableAdx15mVs1hCheck": false
     },
@@ -114,7 +114,7 @@
     "showCrossFailureReason": true,
     "predictiveCross": {
       "enabled": true,
-      "distancePercent": 0.0015,
+      "distancePercent": 0.0018,
       "onlyTrend": true
     },
     "entryConfig": {

@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import type { SimpleKLineData, KLineApiResponse } from '../../../types/kline-simple'
 import type { PriceData } from '../../../types/websocket'
 import type { TradeHistory } from '../../../types'
@@ -74,7 +74,6 @@ const chartCanvasRef = ref<InstanceType<typeof KLineChartCanvas> | null>(null)
 
 // 导入工具函数
 import { formatTime } from './utils/kline-formatters'
-import { generateClientId, isDOGESymbol } from './utils/kline-helpers'
 import { calculateEMASeries, calculateATRSeries, calculateATRPercent } from '../../utils/ema-calculator'
 import { calculateRSISeries } from '../../utils/rsi-calculator'
 import { calculateADXSeries } from '../../utils/adx-calculator'
@@ -177,10 +176,7 @@ const tradeHistory = ref<TradeHistory[]>([])
 const loadingHistory = ref(false)
 
 // WebSocket相关
-const isWebSocketConnected = ref(false)
 const lastPriceUpdate = ref<PriceData | null>(null)
-const webSocketClientId = ref<string>('')
-const currentSubscriptionSymbol = ref<string>('') // 跟踪当前订阅的交易对
 
 // 从store获取价格并更新
 function updatePriceFromStore() {
@@ -441,18 +437,6 @@ const hideTooltip = () => {
   tooltipVisible.value = false
 }
 
-// 获取WebSocket连接状态
-const fetchWebSocketStatus = async () => {
-  try {
-    const response = await fetch('/api/websocket/status')
-    const result = await response.json()
-    if (result.success && result.data?.isConnected !== undefined) {
-      isWebSocketConnected.value = result.data.isConnected
-    }
-  } catch (error) {
-    console.error('获取WebSocket状态失败:', error)
-  }
-}
 
 // 处理实时价格更新
 const handlePriceUpdate = (priceData: PriceData) => {
@@ -540,139 +524,6 @@ const updateLastKlineWithPrice = (price: number, timestamp: number) => {
   }
 }
 
-// 清理旧的WebSocket订阅
-const cleanupOldSubscription = async (): Promise<boolean> => {
-  if (!webSocketClientId.value || !currentSubscriptionSymbol.value) {
-    return true
-  }
-  
-  const oldSymbol = currentSubscriptionSymbol.value
-  const clientId = webSocketClientId.value
-  
-  try {
-    const response = await fetch('/api/websocket/unsubscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        symbols: [oldSymbol],
-        clientId: clientId
-      })
-    })
-    
-    const result = await response.json()
-    if (result.success) {
-      return true
-    } else {
-      console.warn(`⚠️ 清理旧订阅失败: ${result.message}`)
-      return false
-    }
-  } catch (error: any) {
-    console.warn(`⚠️ 清理旧订阅异常: ${error.message}`)
-    return false
-  }
-}
-
-// 订阅WebSocket价格更新（使用共享价格）
-const subscribeToPriceUpdates = async () => {
-  const symbolToUse = props.symbol || 'BTCUSDT'
-  
-  // 如果当前已经有订阅，先清理旧的
-  if (currentSubscriptionSymbol.value && currentSubscriptionSymbol.value !== symbolToUse) {
-    await cleanupOldSubscription()
-  }
-  
-  try {
-    if (!webSocketClientId.value) {
-      webSocketClientId.value = generateClientId()
-    }
-    
-    const response = await fetch('/api/websocket/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        symbols: [symbolToUse],
-        clientId: webSocketClientId.value
-      })
-    })
-    
-    const result = await response.json()
-    if (result.success) {
-      console.log(`客户端 ${webSocketClientId.value} 已订阅 ${symbolToUse} 的价格更新`)
-      currentSubscriptionSymbol.value = symbolToUse
-      // 使用共享价格订阅，替代独立轮询
-      botStore.subscribeToPrices('kline-chart-simple')
-      // 立即从store获取一次价格
-      updatePriceFromStore()
-    } else {
-      console.error('订阅价格更新失败:', result.message)
-    }
-  } catch (error) {
-    console.error('订阅价格更新失败:', error)
-  }
-}
-
-// 取消订阅WebSocket价格更新
-const unsubscribeFromPriceUpdates = async (): Promise<boolean> => {
-  const symbolToUse = props.symbol || 'BTCUSDT'
-  
-  if (!webSocketClientId.value) {
-    console.log('没有clientId，无需取消订阅')
-    return true
-  }
-  
-  const clientId = webSocketClientId.value
-  const maxRetries = 2
-  const timeout = 3000
-  
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const controller = new AbortController()
-      
-      const timeoutId = setTimeout(() => controller.abort(), timeout)
-      
-      const response = await fetch('/api/websocket/unsubscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          symbols: [symbolToUse],
-          clientId: clientId
-        }),
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      
-      const result = await response.json()
-      if (result.success) {
-        console.log(`✅ 客户端 ${clientId} 已取消订阅 ${symbolToUse} 的价格更新`)
-        webSocketClientId.value = ''
-        return true
-      } else {
-        console.warn(`⚠️ 取消订阅失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, result.message)
-      }
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.warn(`⏰ 取消订阅超时 (尝试 ${attempt + 1}/${maxRetries + 1})`)
-      } else {
-        console.warn(`⚠️ 取消订阅失败 (尝试 ${attempt + 1}/${maxRetries + 1}):`, error.message)
-      }
-    }
-    
-    if (attempt < maxRetries) {
-      await new Promise(resolve => setTimeout(resolve, 500))
-    }
-  }
-  
-  console.error(`❌ 取消订阅 ${symbolToUse} 失败，已达到最大重试次数`)
-  return false
-}
-
 // 新K线检测相关 - 复用bot store的共享轮询
 const klineCheckSubscriberId = 'kline-chart-new-kline-check'
 
@@ -738,20 +589,11 @@ const handleSymbolChange = async (newSymbol: string, oldSymbol: string) => {
     // 4. 取消旧的共享价格订阅
     botStore.unsubscribeFromPrices('kline-chart-simple')
     
-    // 5. 清理旧的WebSocket订阅
-    if (oldSymbol && currentSubscriptionSymbol.value === oldSymbol) {
-      await cleanupOldSubscription()
-    }
-    
-    // 6. 重置WebSocket客户端ID，确保新订阅使用新的ID
-    webSocketClientId.value = ''
-    currentSubscriptionSymbol.value = ''
-    
-    // 7. 加载新数据
+    // 5. 加载新数据
     await loadKLineData()
     
-    // 8. 重新订阅价格更新
-    await subscribeToPriceUpdates()
+    // 6. 重新订阅价格更新
+    botStore.subscribeToPrices('kline-chart-simple')
     
     console.log(`✅ Symbol切换完成: ${oldSymbol} -> ${newSymbol}`)
   }
@@ -779,22 +621,17 @@ watch(() => props.timeframe, (newTimeframe, oldTimeframe) => {
 onMounted(() => {
   // 直接加载K线数据（会异步加载交易历史）
   loadKLineData()
-  fetchWebSocketStatus()
-  subscribeToPriceUpdates()
+  // 订阅价格更新
+  botStore.subscribeToPrices('kline-chart-simple')
   // 启动新K线检测
   startNewKlineCheck()
 })
 
-// 组件卸载前同步清理
-onBeforeUnmount(() => {
+// 组件卸载时取消订阅
+onUnmounted(() => {
   stopNewKlineCheck()
   // 取消共享价格订阅
   botStore.unsubscribeFromPrices('kline-chart-simple')
-})
-
-// 组件卸载时异步清理
-onUnmounted(async () => {
-  await unsubscribeFromPriceUpdates()
 })
 </script>
 
