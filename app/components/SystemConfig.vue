@@ -175,6 +175,11 @@
         <el-input-number v-model="editConfig.tradeCooldownInterval" :min="60" :max="86400" :step="60" />
       </el-form-item>
 
+      <el-form-item label="手续费率(%)">
+        <el-input-number v-model="editConfig.takerFeeRate" :min="0" :max="1" :step="0.0001" :precision="4" />
+        <small>默认0.05%</small>
+      </el-form-item>
+
       <el-divider>动态杠杆配置</el-divider>
 
       <el-form-item label="启用动态杠杆">

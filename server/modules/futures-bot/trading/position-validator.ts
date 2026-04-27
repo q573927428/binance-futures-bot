@@ -163,13 +163,13 @@ export class PositionValidator {
       const { pnl, pnlPercentage } = calculatePnL(exitPrice, position)
 
       // 记录交易历史并更新状态（手动平仓）
-      const updatedState = await recordTrade(position, exitPrice, '手动平仓')
+      const { pnl: netPnl, updatedState } = await recordTrade(position, exitPrice, '手动平仓', this.config.takerFeeRate)
       if (updatedState) {
         this.state = updatedState
       }
 
       // 更新每日盈亏（手动平仓影响每日盈亏）
-      this.state.dailyPnL += pnl
+      this.state.dailyPnL += netPnl
 
       // 手动平仓不计入连续止损次数，不影响熔断机制
       // 只有当实际亏损且是系统止损时才计入连续止损
@@ -397,13 +397,13 @@ export class PositionValidator {
       const { pnl, pnlPercentage } = calculatePnL(exitPrice, position)
 
       // 记录交易历史并更新状态
-      const updatedState = await recordTrade(position, exitPrice, reason)
+      const { pnl: netPnl, updatedState } = await recordTrade(position, exitPrice, reason, this.config.takerFeeRate)
       if (updatedState) {
         this.state = updatedState
       }
 
       // 更新每日盈亏
-      this.state.dailyPnL += pnl
+      this.state.dailyPnL += netPnl
 
       // 更新连续亏损次数
       let consecutiveLosses = this.state.circuitBreaker.consecutiveLosses

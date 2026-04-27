@@ -19,26 +19,33 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="quantity" label="数量" />
-      <el-table-column prop="leverage" label="杠杆" />
-      <el-table-column prop="entryPrice" label="入场价" width="120">
+      <el-table-column prop="quantity" label="数量" width="80"/>
+      <el-table-column prop="leverage" label="杠杆" width="60"/>
+      <el-table-column prop="entryPrice" label="入场价" width="100">
         <template #default="scope">
           {{ scope.row.entryPrice.toFixed(3) }}
         </template>
       </el-table-column>
-      <el-table-column prop="exitPrice" label="出场价" width="120">
+      <el-table-column prop="exitPrice" label="出场价" width="100">
         <template #default="scope">
           {{ scope.row.exitPrice.toFixed(3) }}
         </template>
       </el-table-column>
-      <el-table-column prop="pnl" label="盈亏(U)" width="100">
+      <el-table-column prop="pnl" label="盈亏(U)" width="80">
         <template #default="scope">
           <span :class="scope.row.pnl >= 0 ? 'text-success' : 'text-danger'">
             {{ scope.row.pnl.toFixed(2) }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column prop="pnlPercentage" label="盈亏(%)" width="100">
+      <el-table-column label="手续费(U)" width="100">
+        <template #default="scope">
+          <span class="text-danger">
+            {{ ((scope.row.entryFee || 0) + (scope.row.exitFee || 0)).toFixed(4) }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="pnlPercentage" label="盈亏(%)" width="80">
         <template #default="scope">
           <span :class="scope.row.pnlPercentage >= 0 ? 'text-success' : 'text-danger'">
             {{ scope.row.pnlPercentage.toFixed(2) }}%

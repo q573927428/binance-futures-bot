@@ -239,7 +239,18 @@ export function checkTP2Condition(
 }
 
 /**
- * 计算当前盈亏
+ * 计算手续费
+ */
+export function calculateFee(
+  price: number,
+  quantity: number,
+  feeRate: number
+): number {
+  return price * quantity * feeRate
+}
+
+/**
+ * 计算当前盈亏（不含手续费）
  */
 export function calculatePnL(
   currentPrice: number,
@@ -257,6 +268,38 @@ export function calculatePnL(
   const pnlPercentage = ((pnl / (entryPrice * quantity)) * 100) * leverage
   
   return { pnl, pnlPercentage }
+}
+
+/**
+ * 计算含手续费的盈亏百分比
+ */
+export function calculateNetPnLPercentage(
+  pnl: number,
+  entryFee: number,
+  exitFee: number,
+  position: Position
+): number {
+  const { entryPrice, quantity, leverage } = position
+  const netPnl = pnl - entryFee - exitFee
+  const netPnlPercentage = ((netPnl / (entryPrice * quantity)) * 100) * leverage
+  return netPnlPercentage
+}
+
+/**
+ * 计算净盈亏（扣除手续费）
+ */
+export function calculateNetPnL(
+  currentPrice: number,
+  position: Position,
+  feeRate: number
+): { pnl: number; pnlPercentage: number; entryFee: number; exitFee: number } {
+  const { pnl, pnlPercentage } = calculatePnL(currentPrice, position)
+  const entryFee = position.entryFee || calculateFee(position.entryPrice, position.quantity, feeRate)
+  const exitFee = calculateFee(currentPrice, position.quantity, feeRate)
+  const netPnl = pnl - entryFee - exitFee
+  const netPnlPercentage = calculateNetPnLPercentage(pnl, entryFee, exitFee, position)
+  
+  return { pnl: netPnl, pnlPercentage: netPnlPercentage, entryFee, exitFee }
 }
 
 /**

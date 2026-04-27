@@ -245,6 +245,9 @@ export interface BotConfig {
   // 策略模式
   strategyMode: StrategyMode
   
+  // 手续费率（吃单手续费率，默认 0.0005 = 0.05%）
+  takerFeeRate: number
+  
   // AI分析配置
   aiConfig: AIConfig
   
@@ -434,6 +437,7 @@ export interface Position {
   takeProfit1: number
   takeProfit2: number
   openTime: number
+  entryFee?: number        // 开仓手续费
   highestPrice?: number    // 持仓期间的最高价（多头追踪止损使用）
   lowestPrice?: number     // 持仓期间的最低价（空头追踪止损使用）
   orderId?: string
@@ -476,6 +480,8 @@ export interface TradeHistory {
   leverage: number
   pnl: number
   pnlPercentage: number
+  entryFee: number        // 开仓手续费
+  exitFee: number         // 平仓手续费
   openTime: number
   closeTime: number
   reason: string

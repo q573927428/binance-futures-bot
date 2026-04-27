@@ -301,6 +301,7 @@ function updatePriceFromStore() {
     const entryPrice = position.entryPrice
     const quantity = position.quantity
     const direction = position.direction
+    const leverage = position.leverage
     const currentPrice = realTimeCurrentPrice.value
 
     if (entryPrice && quantity && currentPrice) {
@@ -312,7 +313,7 @@ function updatePriceFromStore() {
       }
 
       const positionValue = entryPrice * quantity
-      const pnlPercentage = positionValue > 0 ? (pnl / positionValue) * 100 : 0
+      const pnlPercentage = positionValue > 0 ? ((pnl / positionValue) * 100) * leverage : 0
 
       realTimeCurrentPnL.value = pnl
       realTimeCurrentPnLPercentage.value = pnlPercentage

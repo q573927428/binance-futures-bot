@@ -67,6 +67,12 @@
             </span>
           </div>
         </el-col>
+        <el-col :span="6">
+          <div class="stat-box">
+            <span class="stat-label">总手续费</span>
+            <span class="stat-value text-danger">{{ totalFee.toFixed(2) }} U</span>
+          </div>
+        </el-col>
       </el-row>
     </div>
   </el-card>
@@ -189,6 +195,7 @@ const totalPnL = computed(() => {
 // 总胜率（基于筛选后的数据）
 const overallWinRate = computed(() => {
   if (sortedHistory.value.length === 0) return 0
+  // 胜率基于原始盈亏计算（不含手续费），即：pnl + entryFee + exitFee > 0
   const wins = sortedHistory.value.filter(t => t.pnl > 0).length
   return (wins / sortedHistory.value.length) * 100
 })
@@ -198,6 +205,12 @@ const averagePnL = computed(() => {
   if (sortedHistory.value.length === 0) return 0
   const total = sortedHistory.value.reduce((sum, trade) => sum + trade.pnl, 0)
   return total / sortedHistory.value.length
+})
+
+// 总手续费
+const totalFee = computed(() => {
+  if (sortedHistory.value.length === 0) return 0
+  return sortedHistory.value.reduce((sum, trade) => sum + (trade.entryFee || 0) + (trade.exitFee || 0), 0)
 })
 
 // 图表配置

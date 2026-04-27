@@ -2,7 +2,7 @@ import type { TradeSignal, Position, BotConfig, BotState, TechnicalIndicators } 
 import { PositionStatus } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
 import { calculateStopLoss, calculateTakeProfit, calculatePositionSize, calculateMaxUsdtAmount } from '../../../utils/indicators'
-import { getOrderSide } from '../../../utils/risk'
+import { getOrderSide, calculateFee } from '../../../utils/risk'
 import { 
   calculateQuickLeverage,
   calculateSafeLeverage,
@@ -259,6 +259,10 @@ export class PositionOpener {
 
       logger.success('止损', `止损单已设置`, stopOrder)
 
+      // 计算开仓手续费
+      const entryFee = calculateFee(signal.price, actualQuantity, this.config.takerFeeRate)
+      logger.info('开仓', `开仓手续费: ${entryFee.toFixed(4)} USDT`)
+
       // 更新状态
       const position: Position = {
         symbol: signal.symbol,
@@ -271,6 +275,7 @@ export class PositionOpener {
         takeProfit1,
         takeProfit2,
         openTime: Date.now(),
+        entryFee,  // 记录开仓手续费
         // 初始化极值价格，用于追踪止损
         highestPrice: signal.price,  // 多头：初始最高价 = 入场价
         lowestPrice: signal.price,   // 空头：初始最低价 = 入场价
@@ -476,6 +481,10 @@ export class PositionOpener {
       const actualQuantity = realPosition.quantity
       logger.info('持仓确认', `实际成交数量: ${actualQuantity} (下单数量: ${quantity})`)
 
+      // 计算开仓手续费
+      const entryFee = calculateFee(entryPrice, quantity, this.config.takerFeeRate)
+      logger.info('手动开仓', `开仓手续费: ${entryFee.toFixed(4)} USDT`)
+
       // 计算止损价格（使用默认ATR倍数）
       const stopLoss = calculateStopLoss(
         entryPrice,
@@ -517,6 +526,7 @@ export class PositionOpener {
         takeProfit1,
         takeProfit2,
         openTime: Date.now(),
+        entryFee,  // 记录开仓手续费
         highestPrice: entryPrice,
         lowestPrice: entryPrice,
         orderId: order.orderId,

@@ -82,7 +82,10 @@ export async function loadBotConfig(): Promise<BotConfig | null> {
 function calculateTotalStats(history: TradeHistory[]): { totalTrades: number; totalPnL: number; winRate: number } {
   const totalTrades = history.length
   const totalPnL = history.reduce((sum, trade) => sum + trade.pnl, 0)
+  
+  // 胜率基于原始盈亏计算（不含手续费），即：pnl + entryFee + exitFee > 0
   const winningTrades = history.filter(trade => trade.pnl > 0).length
+  
   const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0
   
   return {
@@ -211,6 +214,7 @@ export function getDefaultConfig(): BotConfig {
   return {
     strategyMode: 'medium_term',      // 策略模式：short_term(短期)或medium_term(中长期)
     symbols: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'DOGE/USDT', 'HYPE/USDT', 'XAU/USDT', 'XAG/USDT', 'BNB/USDT'],
+    takerFeeRate: 0.0005,             // 吃单手续费率（默认0.05%）
     leverage: 10,                     // 杠杆倍数（静态杠杆，当动态杠杆禁用时使用）
     maxRiskPercentage: 20,            // 单笔最大风险比例（%）
     stopLossATRMultiplier: 2.5,       // 止损ATR倍数

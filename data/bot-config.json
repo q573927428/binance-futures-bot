@@ -10,6 +10,7 @@
     "XAG/USDT",
     "BNB/USDT"
   ],
+  "takerFeeRate": 0.0005,
   "leverage": 10,
   "maxRiskPercentage": 20,
   "stopLossATRMultiplier": 2.5,
@@ -85,9 +86,9 @@
       }
     },
     "adxTrend": {
-      "adx15mThreshold": 20,
-      "adx1hThreshold": 16,
-      "adx4hThreshold": 12,
+      "adx15mThreshold": 18,
+      "adx1hThreshold": 12,
+      "adx4hThreshold": 10,
       "enableAdx15mVs1hCheck": false
     },
     "priceBreakout": {

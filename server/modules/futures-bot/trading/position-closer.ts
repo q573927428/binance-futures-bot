@@ -1,7 +1,7 @@
 import type { Position, BotConfig, BotState } from '../../../../types'
 import { PositionStatus } from '../../../../types'
 import { BinanceService } from '../../../utils/binance'
-import { getOrderSide, checkCircuitBreaker, calculatePnL } from '../../../utils/risk'
+import { getOrderSide, checkCircuitBreaker, calculateNetPnL } from '../../../utils/risk'
 import { logger } from '../../../utils/logger'
 import { saveBotState } from '../../../utils/storage'
 import { recordTrade } from '../helpers/trade-recorder'
@@ -42,11 +42,13 @@ export class PositionCloser {
     exitPrice: number,
     reason: string
   ): Promise<{ pnl: number; updatedState: BotState | null }> {
-    // 计算盈亏
-    const { pnl } = calculatePnL(exitPrice, position)
+    // 记录交易历史（内部会计算含手续费的盈亏）
+    const { pnl, updatedState } = await recordTrade(position, exitPrice, reason, this.config.takerFeeRate)
     
-    // 记录交易历史
-    const updatedState = await recordTrade(position, exitPrice, reason)
+    // 计算手续费并记录日志
+    const entryFee = position.entryFee || 0
+    const exitFee = exitPrice * position.quantity * this.config.takerFeeRate
+    logger.info('平仓', `手续费: 开仓 ${entryFee.toFixed(4)} USDT, 平仓 ${exitFee.toFixed(4)} USDT, 合计 ${(entryFee + exitFee).toFixed(4)} USDT`)
     
     return { pnl, updatedState }
   }
