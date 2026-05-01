@@ -248,12 +248,10 @@ export function getDefaultConfig(): BotConfig {
       takeProfit: {
         tp1RiskRewardRatio: 2,        // TP1盈亏比（1:2）
         tp2RiskRewardRatio: 3,        // TP2盈亏比（1:3）
-        tp1MinProfitRatio: 1,         // TP1最小盈利比例（1R）
         rsiExtreme: {
           long: 78,                   // 多头RSI极值
           short: 22,                  // 空头RSI极值
         },
-        adxDecreaseThreshold: 0.8,    // ADX下降阈值
         adxSlopePeriod: 3,            // ADX斜率计算周期
       },
       dailyTradeLimit: 5,             // 当天交易次数限制

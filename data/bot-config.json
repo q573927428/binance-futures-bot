@@ -44,12 +44,10 @@
     "takeProfit": {
       "tp1RiskRewardRatio": 2,
       "tp2RiskRewardRatio": 3,
-      "tp1MinProfitRatio": 1,
       "rsiExtreme": {
         "long": 80,
         "short": 20
       },
-      "adxDecreaseThreshold": 1.2,
       "adxSlopePeriod": 2
     },
     "dailyTradeLimit": 5
